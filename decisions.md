@@ -168,6 +168,9 @@ How this file works:
     pre-roll, transcribed (P-06).
   - **launchd_mic:** one short permission check: whether a launchd-started Python process gets
     the microphone, and whether the grant survives a change of interpreter (P-13).
+  - **voiceprint:** an ONNX parity check across phrase lengths, plus the memory of an
+    onnxruntime-only process. These back the settled choice to run the speaker model in ONNX
+    (D-002).
 - **Consequences:** Results for these go in the same sections of `spikes/RESULTS.md`. They don't
   change the Step 0 gate, which stays as the plan defines it.
 

@@ -35,3 +35,6 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   It has three modes: `calibrate` finds the nod and shake axes, `count` counts false nods over an
   hour of normal work with the plan's v1 detector, and `log` streams JSON lines. CI builds it on
   macOS.
+- Step 0 voiceprint spike (`spikes/voiceprint`): ECAPA scores for your phrases against a friend's,
+  with the gap between them. It also exports ECAPA to ONNX, checks parity with PyTorch at every
+  phrase length, and measures an onnxruntime-only process.

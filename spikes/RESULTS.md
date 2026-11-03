@@ -98,3 +98,18 @@ Steps: [motion/README.md](motion/README.md).
 | Motion sample rate                                         | note                           |        | —    |
 
 Notes:
+
+## 6. Voiceprint
+
+Steps: [voiceprint/README.md](voiceprint/README.md).
+
+| Check                                                         | Target                 | Result | Pass |
+| ------------------------------------------------------------- | ---------------------- | ------ | ---- |
+| Your held-out phrases: lowest score                           | note                   |        | —    |
+| Friend's phrases: highest score                               | note                   |        | —    |
+| Gap (your lowest minus their highest)                         | > 0                    |        |      |
+| ONNX vs PyTorch, lowest cosine across all lengths             | ≥ 0.999                |        |      |
+| Exporter that worked (dynamo or legacy)                       | note                   |        | —    |
+| onnxruntime-only process: ms per embedding and peak memory    | about 100 MB           |        |      |
+
+Notes:

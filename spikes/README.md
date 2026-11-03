@@ -12,6 +12,7 @@ there.
 | [audio_io](audio_io/)     | AirPods mic switch delay (Q-2), playback leak into the mic; P-06 self-approval | macOS with AirPods |
 | [launchd_mic](launchd_mic/) | Addition: mic permission for a launchd-started Python (P-13) | macOS |
 | [motion](motion/)         | `CMHeadphoneMotionManager` in Swift, false nods over an hour of normal work | macOS 14+, Xcode, head-tracking AirPods |
+| [voiceprint](voiceprint/) | ECAPA on 10 of your phrases and 10 of a friend's, the gap; ONNX parity | Any OS; written for the M2 |
 
 Conventions:
 
