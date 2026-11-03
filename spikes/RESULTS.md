@@ -54,3 +54,18 @@ Steps: [speech/README.md](speech/README.md).
 | Words skipped without espeak-ng (`g2p_coverage.py`)          | none, after normalising  | 476 of the top 1,000 PyPI names (47.6%) and 48 of 87 identifiers have no phonemes; all come back when spelled letter by letter (measured 3 Nov 2026) | No: needs P-03 |
 
 Notes:
+
+## 3. AirPods audio I/O
+
+Steps: [audio_io/README.md](audio_io/README.md).
+
+| Check                                                          | Target                         | Result | Pass |
+| -------------------------------------------------------------- | ------------------------------ | ------ | ---- |
+| **Q-2:** mic live after opening, median and max (`switch`)     | note; decides keeping it warm  |        | —    |
+| Output glitches when the mic opens                             | note                           |        | —    |
+| Output-to-mic delay (`leak`)                                   | note; sets the window guard    |        | —    |
+| Leak gain and leak above the noise floor (`leak`)              | note; decides barge-in         |        | —    |
+| Self-approval, any guard, with and without pre-roll (`selfcheck`) | never approves              |        |      |
+| Smallest guard where every window is quiet (`selfcheck`)       | pick it                        |        | —    |
+
+Notes:

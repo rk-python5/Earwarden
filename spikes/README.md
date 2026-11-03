@@ -9,6 +9,7 @@ there.
 | ------------------------- | ---------------------------------------------------- | --------------------------- |
 | [hook_probe](hook_probe/) | Real `PermissionRequest` payload, allow and deny from a script, round-trip time, Q-1 | Any machine with Claude Code |
 | [speech](speech/)         | Kokoro and Parakeet on the M2, time to first audio, 100 recorded replies (quiet and noisy); P-03, P-05, P-07, P-08 | macOS on Apple Silicon; pronunciation check anywhere |
+| [audio_io](audio_io/)     | AirPods mic switch delay (Q-2), playback leak into the mic; P-06 self-approval | macOS with AirPods |
 
 Conventions:
 

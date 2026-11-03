@@ -26,3 +26,5 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   - Parakeet evaluation with a per-word confidence score and a false-approval count.
   - A pronunciation-coverage check that runs on any OS. Its first result: without espeak-ng, 47.6%
     of the top 1,000 PyPI names would be skipped in speech.
+- Step 0 AirPods I/O spike (`spikes/audio_io`): mic switch delay (Q-2), playback leak and
+  output-to-mic delay, and a self-approval check (P-06).
