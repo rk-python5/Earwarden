@@ -14,3 +14,5 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   `0.0.1.dev0`, managed with uv on Python 3.11, checked with ruff, strict mypy and pytest.
 - Tests that keep the version, the changelog and the installed metadata in step, and that keep
   `import earshot` free of other imports.
+- CI on GitHub Actions (macOS 15, Apple Silicon): lint, format, strict types and tests on every push
+  to `main`.

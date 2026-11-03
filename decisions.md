@@ -27,6 +27,7 @@ How this file works:
 | D-007 | Living project docs: CLAUDE.md, decisions.md, CHANGELOG.md | Accepted |
 | D-008 | Distribution name `earshot-agents`, import name `earshot` | Accepted |
 | D-009 | Tooling: uv, Python 3.11, ruff, mypy, pytest              | Accepted |
+| D-010 | CI on GitHub-hosted macOS 15, Apple Silicon               | Accepted |
 
 ## Decisions
 
@@ -138,6 +139,18 @@ How this file works:
     macOS-only libraries (MLX, PyTorch, sounddevice) stay out of the project lock.
 - **Consequences:** If packaging later needs build hooks that `uv_build` lacks (for example
   bundling the Swift helper), switch to hatchling and record it here.
+
+### D-010 CI on GitHub-hosted macOS 15, Apple Silicon
+
+- **Date:** 2026-11-03 · **Status:** Accepted · **By:** design doc (macOS CI job), details by Claude
+- **Decision:**
+  - `.github/workflows/ci.yml` runs on every push to `main` (and on demand): `uv sync --locked`,
+    then ruff (lint and format), mypy and pytest.
+  - It runs on `macos-15`. GitHub retired the `macos-14` image on 2026-11-02, so macOS 14, the
+    plan's minimum, can only be tested on a real Mac.
+  - Third-party actions are pinned to a commit SHA; GitHub's own actions to a major version.
+- **Consequences:** Hosted runners have no Metal (see P-14), so jobs that need MLX models will need
+  a self-hosted runner.
 
 ## Proposals
 

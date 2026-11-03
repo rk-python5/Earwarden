@@ -46,7 +46,8 @@ uv run mypy                    # strict type check of src/ and tests/
 uv run pytest                  # tests
 ```
 
-Run all four before every push. CI runs the same checks.
+Run all four before every push. CI (`.github/workflows/ci.yml`, macOS 15 on Apple Silicon) runs
+the same checks on every push to `main`.
 
 ## Layout
 
