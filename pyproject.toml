@@ -1,0 +1,75 @@
+[project]
+name = "earshot-agents"
+version = "0.0.1.dev0"
+description = "Answer Claude Code permission prompts by voice, with confirmation strength set by risk."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "rehaan" }]
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/rk-python5/Earshot"
+Changelog = "https://github.com/rk-python5/Earshot/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "earshot"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "B",   # bugbear
+    "C4",  # comprehensions
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # import order
+    "N",   # naming
+    "PT",  # pytest style
+    "PTH", # pathlib over os.path
+    "RUF", # ruff-specific
+    "S",   # bandit security checks
+    "SIM", # simplifications
+    "UP",  # modern syntax for the target version
+    "W",   # pycodestyle warnings
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may assert and run the scripts under test as subprocesses.
+"tests/**" = ["S101", "S603"]
+# Spikes are measurement scripts that shell out to macOS tools.
+"spikes/**" = ["S603", "S607"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error"]

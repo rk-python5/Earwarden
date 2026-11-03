@@ -25,6 +25,8 @@ How this file works:
 | D-005 | Commit authorship                                         | Accepted |
 | D-006 | Versioning                                                | Accepted |
 | D-007 | Living project docs: CLAUDE.md, decisions.md, CHANGELOG.md | Accepted |
+| D-008 | Distribution name `earshot-agents`, import name `earshot` | Accepted |
+| D-009 | Tooling: uv, Python 3.11, ruff, mypy, pytest              | Accepted |
 
 ## Decisions
 
@@ -105,6 +107,37 @@ How this file works:
   - `decisions.md`: this log.
   - `CHANGELOG.md`: notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
     format.
+
+### D-008 Distribution name `earshot-agents`, import name `earshot`
+
+- **Date:** 2026-11-03 · **Status:** Accepted · **By:** design doc (launch section's fallback
+  order: `earshot`, then `earshot-ai`, then `earshot-agents`)
+- **Context:** `earshot` and `earshot-ai` are taken on PyPI (Q-3); `earshot-agents` is free.
+- **Decision:** The PyPI distribution is `earshot-agents`. The import package (`from earshot import
+  Earshot`) and the commands (`earshot`, `earshotd`, `earshot-hook`) keep the name `earshot`.
+- **Consequences:**
+  - pykeio's voice-activity-detection library on PyPI also uses the import name `earshot`, so the
+    two can't share one environment. `uv tool install` isolates Earshot, but a user's own agent
+    environment could hit the clash. Revisit if rehaan renames the project (the rest of Q-3).
+  - The name isn't reserved until the first upload. That's rehaan's call, and soon is safer:
+    `earshot-ai` was registered the day before the plan was dated.
+
+### D-009 Tooling: uv, Python 3.11, ruff, mypy, pytest
+
+- **Date:** 2026-11-03 · **Status:** Accepted · **By:** design doc (tech stack), details by Claude
+- **Decision:**
+  - **uv** manages the environment, the lock file (`uv.lock`, committed) and the build, through the
+    `uv_build` backend.
+  - **Python:** `.python-version` pins 3.11 and `requires-python` is `>=3.11`.
+  - **Layout:** `src/` package layout.
+  - **Lint and format:** ruff, line length 100, with a security rule set (`S`) because this is a
+    safety tool.
+  - **Types:** mypy in strict mode.
+  - **Tests:** pytest, with warnings treated as errors.
+  - **Spikes** declare their own dependencies inline (PEP 723) and run with `uv run`. Heavy,
+    macOS-only libraries (MLX, PyTorch, sounddevice) stay out of the project lock.
+- **Consequences:** If packaging later needs build hooks that `uv_build` lacks (for example
+  bundling the Swift helper), switch to hatchling and record it here.
 
 ## Proposals
 
@@ -286,7 +319,7 @@ From the plan's open-questions list.
 | --- | ------------------------------------------------------------------------------ | ------------------------------ | -------------------------------------------------------------- |
 | Q-1 | Does Claude Code show its dialog while a `PermissionRequest` hook is still running? | Step 0 hook spike          | Open. The hooks docs say the hook "runs when Claude Code is about to ask you for permission", which suggests the dialog waits for it. |
 | Q-2 | How long does the AirPods mic take to switch on with the M2?                   | Step 0 audio spike             | Open                                                           |
-| Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free. Whether the name is clear enough is still open. |
+| Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free, and D-008 adopts it. Whether the name is clear enough is still open. |
 | Q-4 | Which small model clears EarshotBench in under 300 ms?                         | Phase 3                        | Open                                                           |
 | Q-5 | Which 3–5 friends will record impostor and gesture data?                       | rehaan                         | Open                                                           |
 | Q-6 | Release the summarizer under Apache-2.0, or match its base model's license?    | rehaan, before Phase 5         | Open                                                           |

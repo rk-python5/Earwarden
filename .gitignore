@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Swift
+.build/
+.swiftpm/
+*.xcodeproj/
+xcuserdata/
+
+# Spike output: recordings, logs and raw measurements stay on the machine that made them.
+# Summaries with numbers go in spikes/RESULTS.md.
+spikes/**/out/
+
+# macOS
+.DS_Store

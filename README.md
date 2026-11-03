@@ -21,6 +21,17 @@ Pre-alpha. Step 0 (feasibility spikes) is in progress, and nothing is installabl
 - [Changelog](CHANGELOG.md)
 - [CLAUDE.md](CLAUDE.md): working rules for Claude Code sessions in this repo
 
+## Development
+
+You need [uv](https://docs.astral.sh/uv/); it fetches Python 3.11 if you don't have it.
+
+```sh
+uv sync
+uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest
+```
+
+The PyPI distribution will be `earshot-agents`; the import name and commands stay `earshot`.
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).

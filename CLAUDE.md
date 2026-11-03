@@ -32,7 +32,28 @@ Phase 1 components (daemon, contracts, policy engine and so on) before then.
 - **Authorship:** material rehaan provides (docs, results, notes) is committed with
   `--author="rehaan <108854279+rk-python5@users.noreply.github.com>"` so it counts on their GitHub
   profile. Claude's own work uses the session identity.
-- **Versioning:** follows D-006 in `decisions.md`.
+- **Versioning:** follows D-006 in `decisions.md`. The version lives only in `pyproject.toml`;
+  change it with `uv version` (for example `uv version --bump patch`). Every notable change gets a
+  line under *Unreleased* in `CHANGELOG.md`. `tests/test_versioning.py` keeps the two in step.
+
+## Commands
+
+```sh
+uv sync                        # create .venv with the dev tools (Python 3.11)
+uv run ruff check .            # lint
+uv run ruff format --check .   # formatting (drop --check to apply)
+uv run mypy                    # strict type check of src/ and tests/
+uv run pytest                  # tests
+```
+
+Run all four before every push. CI runs the same checks.
+
+## Layout
+
+- `docs/design/`: the spec (PDF).
+- `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
+  `src/earshot/__init__.py` free of imports; a test enforces it.
+- `tests/`: pytest.
 
 ## Invariants
 
