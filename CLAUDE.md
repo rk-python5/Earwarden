@@ -29,9 +29,16 @@ Phase 1 components (daemon, contracts, policy engine and so on) before then.
 - **Commits:** one coherent change per commit, never mixed with unrelated changes. Update
   `decisions.md`, `CHANGELOG.md`, `README.md` and this file in the same commit as the change they
   describe.
-- **Authorship:** material rehaan provides (docs, results, notes) is committed with
-  `--author="rehaan <108854279+rk-python5@users.noreply.github.com>"` so it counts on their GitHub
-  profile. Claude's own work uses the session identity.
+- **Authorship (D-012):** every commit is authored by rehaan, so it counts on the `rk-python5`
+  GitHub profile. Before your first commit in a session, run:
+
+  ```sh
+  git config author.name "rehaan"
+  git config author.email "108854279+rk-python5@users.noreply.github.com"
+  ```
+
+  Leave the committer as the session identity, because it signs the commits. Keep ending each
+  message with the `Co-Authored-By` trailer for Claude.
 - **Versioning:** follows D-006 in `decisions.md`. The version lives only in `pyproject.toml`;
   change it with `uv version` (for example `uv version --bump patch`). Every notable change gets a
   line under *Unreleased* in `CHANGELOG.md`. `tests/test_versioning.py` keeps the two in step.

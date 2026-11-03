@@ -21,4 +21,4 @@ Conventions:
   the standard library.
 - **Output:** recordings, logs and raw measurements go to each spike's `out/` folder, which is
   git-ignored. Only the summary numbers go into `RESULTS.md`.
-- **Results authorship:** results rehaan writes up are committed under rehaan's name (D-005).
+- **Authorship:** every commit, results included, is authored by rehaan (D-012).

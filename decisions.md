@@ -22,13 +22,14 @@ How this file works:
 | D-002 | Design decisions settled in the doc                       | Accepted |
 | D-003 | Work on `main` only                                       | Accepted |
 | D-004 | Commits in logical groupings                              | Accepted |
-| D-005 | Commit authorship                                         | Accepted |
+| D-005 | Commit authorship                                         | Superseded by D-012 |
 | D-006 | Versioning                                                | Accepted |
 | D-007 | Living project docs: CLAUDE.md, decisions.md, CHANGELOG.md | Accepted |
 | D-008 | Distribution name `earshot-agents`, import name `earshot` | Accepted |
 | D-009 | Tooling: uv, Python 3.11, ruff, mypy, pytest              | Accepted |
 | D-010 | CI on GitHub-hosted macOS 15, Apple Silicon               | Accepted |
 | D-011 | Step 0 also measures the design-review risks              | Accepted |
+| D-012 | Every commit is authored by rehaan                        | Accepted |
 
 ## Decisions
 
@@ -73,7 +74,7 @@ How this file works:
 
 ### D-005 Commit authorship
 
-- **Date:** 2026-11-03 · **Status:** Accepted · **By:** rehaan
+- **Date:** 2026-11-03 · **Status:** Superseded by D-012 · **By:** rehaan
 - **Decision:** Material rehaan provides (design docs, recorded results, notes) is committed with
   author `rehaan <108854279+rk-python5@users.noreply.github.com>`, the GitHub noreply address of
   `rk-python5`, so it counts on rehaan's GitHub profile. Work Claude writes is committed under the
@@ -174,7 +175,17 @@ How this file works:
 - **Consequences:** Results for these go in the same sections of `spikes/RESULTS.md`. They don't
   change the Step 0 gate, which stays as the plan defines it.
 
-## Proposals
+### D-012 Every commit is authored by rehaan
+
+- **Date:** 2026-11-03 · **Status:** Accepted · **By:** rehaan (supersedes D-005)
+- **Decision:** Every commit, including the ones Claude writes, has the author
+  `rehaan <108854279+rk-python5@users.noreply.github.com>`, so the work shows on the `rk-python5`
+  profile. In cloud sessions:
+  - The committer stays the session identity, which signs commits. A signature only shows as
+    verified on GitHub when the signing key belongs to the committer.
+  - Claude's part is credited by the `Co-Authored-By` trailer.
+  - Sessions set the author with repo-local git config (`author.name`, `author.email`). A fresh
+    clone doesn't carry that config, so `CLAUDE.md` asks each session to set it first.
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
 
