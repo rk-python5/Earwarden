@@ -16,3 +16,7 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   `import earshot` free of other imports.
 - CI on GitHub Actions (macOS 15, Apple Silicon): lint, format, strict types and tests on every push
   to `main`.
+- Step 0 hook probe (`spikes/hook_probe`): a stdlib-only Claude Code hook. It logs every event,
+  answers `PermissionRequest` with none, allow, deny or a timed hold, and comes with tools to
+  install it in a scratch project, time it and report the round trip. It answers Q-1. Results go in
+  `spikes/RESULTS.md`, the go/no-go note.

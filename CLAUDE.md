@@ -54,7 +54,11 @@ the same checks on every push to `main`.
 - `docs/design/`: the spec (PDF).
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.
-- `tests/`: pytest.
+- `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in
+  `spikes/RESULTS.md`. Spike scripts declare their dependencies inline (PEP 723) and run with
+  `uv run`. Their raw output goes to a git-ignored `out/` folder. Only `spikes/hook_probe` is
+  type-checked and tested in CI, because the rest need macOS hardware.
+- `tests/`: pytest. Tests for spikes live in `tests/spikes/`.
 
 ## Invariants
 
