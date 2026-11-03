@@ -36,6 +36,18 @@ Phase 1 components (daemon, contracts, policy engine and so on) before then.
   change it with `uv version` (for example `uv version --bump patch`). Every notable change gets a
   line under *Unreleased* in `CHANGELOG.md`. `tests/test_versioning.py` keeps the two in step.
 
+## Releasing
+
+Cut a release only when rehaan asks, or when a phase's gate passes (D-006).
+
+1. In `CHANGELOG.md`, rename *Unreleased* to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh empty
+   *Unreleased* above it, and update the compare links at the bottom.
+2. Run `uv version X.Y.Z`, then run the checks.
+3. Commit as "Release X.Y.Z", tag it with `git tag -a vX.Y.Z -m "…"`, and push the commit and
+   the tag.
+4. Run `uv version X.Y.(Z+1).dev0` and commit "Start X.Y.(Z+1) development", so `main` never
+   carries a released version number.
+
 ## Commands
 
 ```sh

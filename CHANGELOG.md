@@ -6,12 +6,17 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-11-03
+
+The Step 0 kit: project conventions, the package scaffold, CI, and the feasibility spikes ready to
+run on the Mac.
+
 ### Added
 
 - Technical design and build plan (revision of 3 Nov 2026) in `docs/design/`.
 - `CLAUDE.md`, `decisions.md` and this changelog.
-- Python package scaffold: distribution `earshot-agents`, import name `earshot`, version
-  `0.0.1.dev0`, managed with uv on Python 3.11, checked with ruff, strict mypy and pytest.
+- Python package scaffold: distribution `earshot-agents`, import name `earshot`, managed with uv on
+  Python 3.11, checked with ruff, strict mypy and pytest.
 - Tests that keep the version, the changelog and the installed metadata in step, and that keep
   `import earshot` free of other imports.
 - CI on GitHub Actions (macOS 15, Apple Silicon): lint, format, strict types and tests on every push
@@ -40,3 +45,6 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   phrase length, and measures an onnxruntime-only process.
 - The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
   and lists what gets decided at the gate.
+
+[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/rk-python5/Earshot/releases/tag/v0.0.1
