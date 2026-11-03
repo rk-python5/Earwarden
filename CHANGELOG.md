@@ -20,3 +20,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   answers `PermissionRequest` with none, allow, deny or a timed hold, and comes with tools to
   install it in a scratch project, time it and report the round trip. It answers Q-1. Results go in
   `spikes/RESULTS.md`, the go/no-go note.
+- Step 0 speech spike (`spikes/speech`):
+  - Kokoro time to first audio.
+  - A 50-reply recording kit, with decoy and negation replies, for quiet and noisy rooms.
+  - Parakeet evaluation with a per-word confidence score and a false-approval count.
+  - A pronunciation-coverage check that runs on any OS. Its first result: without espeak-ng, 47.6%
+    of the top 1,000 PyPI names would be skipped in speech.

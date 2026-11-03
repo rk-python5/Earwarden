@@ -28,6 +28,7 @@ How this file works:
 | D-008 | Distribution name `earshot-agents`, import name `earshot` | Accepted |
 | D-009 | Tooling: uv, Python 3.11, ruff, mypy, pytest              | Accepted |
 | D-010 | CI on GitHub-hosted macOS 15, Apple Silicon               | Accepted |
+| D-011 | Step 0 also measures the design-review risks              | Accepted |
 
 ## Decisions
 
@@ -152,6 +153,18 @@ How this file works:
 - **Consequences:** Hosted runners have no Metal (see P-14), so jobs that need MLX models will need
   a self-hosted runner.
 
+### D-011 Step 0 also measures the design-review risks
+
+- **Date:** 2026-11-03 · **Status:** Accepted · **By:** Claude, within Step 0 (measurement only; no
+  design change; rehaan can veto)
+- **Decision:** The week-1 spikes also collect evidence for the review proposals, so each can be
+  decided on numbers. This adds no new spikes: it extends the four the plan already has, plus one
+  short permission check.
+  - **speech:** pronunciation coverage without espeak-ng (P-03, P-04), per-word ASR confidence
+    (P-05), and decoy and negation replies in the recorded set (P-07, P-08).
+- **Consequences:** Results for these go in the same sections of `spikes/RESULTS.md`. They don't
+  change the Step 0 gate, which stays as the plan defines it.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -196,6 +209,13 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   "OOD words will be skipped" and drops words its dictionary doesn't know. Branch names, package
   names and lookalikes such as `reqeusts` are exactly those words. The fidelity checker reads the
   text, so it passes a sentence whose key words are silent.
+- **Evidence (Step 0, 3 Nov 2026, `spikes/speech/g2p_coverage.py`):** With no fallback, misaki
+  0.9.4 gives no phonemes for:
+  - 476 of the top 1,000 PyPI package names (47.6%)
+  - 48 of 87 typical identifiers
+  - "quickstart" in one of the plan-style summaries
+
+  Spelled letter by letter, all of them come back.
 - **Proposal:** The checker runs the pronunciation step and rejects any sentence with a word that
   gets no phonemes, and the normaliser spells such words letter by letter. Step 0 measures this
   (`spikes/speech`).
@@ -248,7 +268,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
 
 - **Problem:** Double Metaphone codes "orchard" as ARXRT/ARKRT and "orchid" as ARKT, one edit
   apart; "orchards" and "archer" are also one edit away. Any edit-distance allowance on the codes
-  lets "orchid" through, so the plan's own example fails.
+  lets "orchid" through, so the plan's own example fails. The codes are coarse for two-syllable
+  words too. In a 20-word candidate list, five pairs were one code edit apart: meadow/summit,
+  falcon/violin, velvet/walnut, walnut/violin, thistle/saddle. The Step 0 recordings use ten words
+  that are pairwise at least two edits apart, plus decoys.
 - **Proposal:** Require an exact code match, or pick the ~200 words so every pair, and every word
   against common English words, is at least 2 code edits apart.
 - **Decide by:** before Phase 2.
