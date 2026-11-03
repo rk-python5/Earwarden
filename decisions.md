@@ -164,6 +164,8 @@ How this file works:
     (P-05), and decoy and negation replies in the recorded set (P-07, P-08).
   - **audio_io:** a self-approval check: answer windows cut after the prompt, with and without
     pre-roll, transcribed (P-06).
+  - **launchd_mic:** one short permission check: whether a launchd-started Python process gets
+    the microphone, and whether the grant survives a change of interpreter (P-13).
 - **Consequences:** Results for these go in the same sections of `spikes/RESULTS.md`. They don't
   change the Step 0 gate, which stays as the plan defines it.
 

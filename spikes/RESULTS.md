@@ -69,3 +69,16 @@ Steps: [audio_io/README.md](audio_io/README.md).
 | Smallest guard where every window is quiet (`selfcheck`)       | pick it                        |        | —    |
 
 Notes:
+
+## 4. Microphone under launchd
+
+Steps: [launchd_mic/README.md](launchd_mic/README.md). This feeds P-13.
+
+| Check                                                    | Target              | Result | Pass |
+| -------------------------------------------------------- | ------------------- | ------ | ---- |
+| Prompt shown when started by launchd? Name it shows      | a prompt, clear name |       |      |
+| Verdict under launchd after granting                     | audio came through  |        |      |
+| Verdict from Terminal                                    | audio came through  |        | —    |
+| After switching the interpreter: asked again? verdict    | note                |        | —    |
+
+Notes:

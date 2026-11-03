@@ -28,3 +28,6 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     of the top 1,000 PyPI names would be skipped in speech.
 - Step 0 AirPods I/O spike (`spikes/audio_io`): mic switch delay (Q-2), playback leak and
   output-to-mic delay, and a self-approval check (P-06).
+- Step 0 launchd microphone check (`spikes/launchd_mic`): runs a mic recording as a one-off launchd
+  agent and from Terminal, to see whether macOS grants the mic and whether the grant survives an
+  interpreter change (P-13).
