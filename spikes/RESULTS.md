@@ -82,3 +82,19 @@ Steps: [launchd_mic/README.md](launchd_mic/README.md). This feeds P-13.
 | After switching the interpreter: asked again? verdict    | note                |        | —    |
 
 Notes:
+
+## 5. Head motion
+
+Steps: [motion/README.md](motion/README.md).
+
+| Check                                                      | Target                         | Result | Pass |
+| ---------------------------------------------------------- | ------------------------------ | ------ | ---- |
+| Motion available from a Mac CLI; prompt shown and its name | works                          |        |      |
+| Axes: nod and shake (`calibrate`)                          | note                           |        | —    |
+| Deliberate nods and shakes detected (`count --minutes 2`)  | all of them                    |        |      |
+| Threshold used                                             | note                           |        | —    |
+| False nods per hour of normal work, raw                    | note                           |        | —    |
+| False nods per hour inside answer windows (estimate)       | ≤ 1                            |        |      |
+| Motion sample rate                                         | note                           |        | —    |
+
+Notes:

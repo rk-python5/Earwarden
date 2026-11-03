@@ -11,6 +11,7 @@ there.
 | [speech](speech/)         | Kokoro and Parakeet on the M2, time to first audio, 100 recorded replies (quiet and noisy); P-03, P-05, P-07, P-08 | macOS on Apple Silicon; pronunciation check anywhere |
 | [audio_io](audio_io/)     | AirPods mic switch delay (Q-2), playback leak into the mic; P-06 self-approval | macOS with AirPods |
 | [launchd_mic](launchd_mic/) | Addition: mic permission for a launchd-started Python (P-13) | macOS |
+| [motion](motion/)         | `CMHeadphoneMotionManager` in Swift, false nods over an hour of normal work | macOS 14+, Xcode, head-tracking AirPods |
 
 Conventions:
 

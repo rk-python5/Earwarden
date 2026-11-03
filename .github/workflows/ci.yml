@@ -31,3 +31,13 @@ jobs:
         run: uv run mypy
       - name: Tests
         run: uv run pytest
+
+  motion-spike:
+    name: Build the Swift motion spike
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build
+        working-directory: spikes/motion
+        run: swift build -c release

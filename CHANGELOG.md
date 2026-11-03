@@ -31,3 +31,7 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - Step 0 launchd microphone check (`spikes/launchd_mic`): runs a mic recording as a one-off launchd
   agent and from Terminal, to see whether macOS grants the mic and whether the grant survives an
   interpreter change (P-13).
+- Step 0 head-motion spike (`spikes/motion`): a Swift command-line tool on `CMHeadphoneMotionManager`.
+  It has three modes: `calibrate` finds the nod and shake axes, `count` counts false nods over an
+  hour of normal work with the plan's v1 detector, and `log` streams JSON lines. CI builds it on
+  macOS.

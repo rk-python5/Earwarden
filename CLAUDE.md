@@ -47,7 +47,8 @@ uv run pytest                  # tests
 ```
 
 Run all four before every push. CI (`.github/workflows/ci.yml`, macOS 15 on Apple Silicon) runs
-the same checks on every push to `main`.
+the same checks on every push to `main`. It also builds the Swift spike in `spikes/motion`. That's the only place it
+compiles when you work in the Linux container, so check the CI run after changing Swift code.
 
 ## Layout
 
