@@ -3,6 +3,15 @@
 Fill this in as the spikes run. The Step 0 gate: all four week-1 tests pass, written up with
 numbers. When it passes, record it in `decisions.md`; Phase 1 starts after that.
 
+The plan's four week-1 tests map to the sections below:
+
+| Week-1 test                                 | Sections                           |
+| ------------------------------------------- | ---------------------------------- |
+| 1. Claude Code hook round trip              | 1                                  |
+| 2. Speech in and out on the M2 with AirPods | 2, 3 and 4 (4 is a review addition) |
+| 3. Head motion                              | 5                                  |
+| 4. Voiceprint                               | 6                                  |
+
 ## Setup
 
 | Item                             | Value |
@@ -113,3 +122,22 @@ Steps: [voiceprint/README.md](voiceprint/README.md).
 | onnxruntime-only process: ms per embedding and peak memory    | about 100 MB           |        |      |
 
 Notes:
+
+## Go/no-go
+
+| Week-1 test                                 | Pass? | Notes |
+| ------------------------------------------- | ----- | ----- |
+| 1. Claude Code hook round trip              |       |       |
+| 2. Speech in and out on the M2 with AirPods |       |       |
+| 3. Head motion                              |       |       |
+| 4. Voiceprint                               |       |       |
+
+Decided at the gate, from the numbers above:
+
+- **Q-1 and Q-2:** answered? Copy the answers into `decisions.md`.
+- **P-05** (confidence threshold), **P-06** (answer-window guard) and **P-13** (where mic
+  capture lives): accept, change or reject each.
+- Anything here that changes the plan, such as nods (section 5) or barge-in (section 3).
+
+**Decision:** Go / No-go, on (date), by (name). If it's Go, add a decision entry that the Step 0
+gate passed; the next release is then `0.1.0`, the first of Phase 1 (D-006).

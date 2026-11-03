@@ -11,7 +11,9 @@ Everything runs on your Mac: no cloud calls at runtime, and no account or API ke
 
 ## Status
 
-Pre-alpha. Step 0 (feasibility spikes) is in progress, and nothing is installable yet. The
+Pre-alpha. Step 0 (feasibility) is in progress, and nothing is installable yet. The spike kits
+are in [spikes/](spikes/), and their results feed the go/no-go note,
+[spikes/RESULTS.md](spikes/RESULTS.md). The
 [build plan](docs/design/earshot-technical-design-build-plan.pdf) lays out the road to v1.0.
 
 ## Documents

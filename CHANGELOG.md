@@ -38,3 +38,5 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - Step 0 voiceprint spike (`spikes/voiceprint`): ECAPA scores for your phrases against a friend's,
   with the gap between them. It also exports ECAPA to ONNX, checks parity with PyTorch at every
   phrase length, and measures an onnxruntime-only process.
+- The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
+  and lists what gets decided at the gate.
