@@ -53,7 +53,9 @@ Cut a release only when rehaan asks, or when a phase's gate passes (D-006).
 3. Commit as "Release X.Y.Z", tag it with `git tag -a vX.Y.Z -m "…"`, and push the commit and
    the tag. Cloud sessions can push `main` but not tags: GitHub answers HTTP 403, so don't
    retry. Instead, ask rehaan to run
-   `git fetch origin && git tag -a vX.Y.Z <release commit> -m "…" && git push origin vX.Y.Z`.
+   `git fetch origin && git tag -a vX.Y.Z <release commit> -m "…" && git push origin vX.Y.Z` from
+   their clone. To check the tag arrived, use the GitHub API (the `list_tags` tool). From a cloud
+   session, `git ls-remote` doesn't show tags even when they exist.
 4. Run `uv version X.Y.(Z+1).dev0` and commit "Start X.Y.(Z+1) development", so `main` never
    carries a released version number.
 
