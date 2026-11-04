@@ -9,6 +9,10 @@ in a scratch repo. When it passes, record it in `decisions.md` and release 0.1.0
 
 Keep this file current: mark a milestone done in the same commit that finishes it.
 
+**Changed 4 Nov (D-023):** the observe week is optional. In Phase 1 the daemon captures the mic
+itself (the helper app's audio half moves to Phase 2) and ends speech by energy (Silero VAD in
+Phase 2). The recorded-audio test runs by hand on the Mac.
+
 ## Scope
 
 From the build plan's Phase 1 list:
@@ -229,12 +233,12 @@ rehaan's Mac and AirPods.
 | Milestone 1   | P-12 lifecycle while the hook waits               | Accepted as D-020         |
 | Milestone 1   | P-19 the safety stub                              | Accepted as D-019         |
 | Milestone 3   | P-15 auto mode and observe mode                   | Accepted as D-021         |
-| Milestone 4   | P-03 check that summaries can be spoken           | Open; recommend accepting |
+| Milestone 4   | P-03 check that summaries can be spoken           | Accepted as D-024         |
 | Milestone 4   | P-04 own the Kokoro front-end                     | Accepted as D-022         |
-| Milestone 5   | P-14 recorded-audio tests on a self-hosted runner | Open; recommend accepting |
-| Milestone 6   | P-07 approve only on an exact match               | Open; recommend accepting |
-| Milestone 6   | P-16 don't route answers by session name          | Open; recommend accepting |
-| Milestone 7   | P-10 a keyed, anchored audit chain                | Open; recommend accepting |
+| Milestone 5   | P-14 recorded-audio tests on a self-hosted runner | Deferred by D-023         |
+| Milestone 6   | P-07 approve only on an exact match               | Accepted as D-024         |
+| Milestone 6   | P-16 don't route answers by session name          | Accepted as D-024         |
+| Milestone 7   | P-10 a keyed, anchored audit chain                | Keyed chain, D-025        |
 
 ## Where things live during development
 

@@ -40,6 +40,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   - how Earshot behaves while a hook waits (D-020)
   - auto mode as a first filter, with a week of observe mode (D-021)
   - Earshot's own Kokoro text front-end, clear of GPL code (D-022)
+- Decided to finish Phase 1 now (D-023 to D-025): the observe week is optional, the mic helper
+  and Silero VAD move to Phase 2, summaries must be speakable, only exact answers count, and the
+  audit chain is keyed.
 
 ### Changed
 
