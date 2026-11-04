@@ -65,7 +65,8 @@ Cut a release only when rehaan asks, or when a phase's gate passes (D-006).
    their clone. To check the tag arrived, use the GitHub API (the `list_tags` tool). From a cloud
    session, `git ls-remote` doesn't show tags even when they exist.
 4. Run `uv version X.Y.(Z+1).dev0` and commit "Start X.Y.(Z+1) development", so `main` never
-   carries a released version number.
+   carries a released version number. After the release that closes a phase, start the next
+   phase's minor instead: `0.(N+1).0.dev0`, as 0.0.2 was followed by `0.1.0.dev0` (D-006).
 
 ## Commands
 
