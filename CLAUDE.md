@@ -107,6 +107,9 @@ compiles when you work in the Linux container, so check the CI run after changin
   - `narrator/`: the template narrator, spoken forms, and secret redaction.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
     settings file, with a byte-for-byte backup.
+  - `voice/`: the voice decider and intent rules (testable anywhere), presence by keyboard idle
+    time, and `mac.py`, which speaks and listens with Kokoro, Parakeet and Whisper (macOS only;
+    `uv sync --group voice`).
   - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`
     the sessions and waiting requests, `cli.py` the command. `auth.py` keeps the shared token.
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in

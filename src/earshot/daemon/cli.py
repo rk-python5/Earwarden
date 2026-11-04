@@ -7,7 +7,7 @@ import logging
 import sys
 
 from earshot import paths
-from earshot.daemon.server import AlreadyRunningError, run_forever
+from earshot.daemon.server import AlreadyRunningError, Decider, hand_off, run_forever
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,10 +23,31 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="log every permission prompt (tool, mode, would voice be allowed), never answer",
     )
+    parser.add_argument(
+        "--voice",
+        action="store_true",
+        help="ask by voice through the headset (macOS; needs `uv sync --group voice`)",
+    )
+    parser.add_argument(
+        "--pin-voice",
+        action="store_true",
+        help="use voice even while you're at the keyboard (for testing)",
+    )
+    parser.add_argument("--headset", default="AirPods", help="part of the headset's device name")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s earshotd %(levelname)s %(message)s")
+    decider: Decider = hand_off
+    if args.voice:
+        from earshot.voice.decider import VoiceDecider
+        from earshot.voice.mac import MacVoice
+        from earshot.voice.presence import KeyboardPresence
+
+        voice = MacVoice(headset=args.headset)
+        print("Loading the voice models (the first time, they download)…", file=sys.stderr)
+        voice.load()  # until this finishes, there's no socket, so prompts go to the screen
+        decider = VoiceDecider(voice, KeyboardPresence(pinned=args.pin_voice))
     try:
-        run_forever(paths.resolve(args.home), observe=args.observe)
+        run_forever(paths.resolve(args.home), observe=args.observe, decider=decider)
     except AlreadyRunningError as exc:
         print(f"earshotd: {exc}", file=sys.stderr)
         return 1

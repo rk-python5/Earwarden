@@ -44,6 +44,16 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   in a hash chain keyed with HMAC-SHA256 (the key in the Keychain on a real install), with
   secrets redacted. `earshot audit verify` catches edited, deleted and reordered lines, and
   `earshot audit tail` shows the latest decisions.
+- The voice path (Phase 1, milestones 5 and 6), behind `earshotd --voice`:
+  - Only when you're away from the keyboard (or with `--pin-voice`) and the AirPods are the
+    output, Earshot plays the session's chime and says the request.
+  - For what the safety stub allows, it asks "Approve?" and listens. "Yes" approves, "no" denies,
+    "no, use poetry instead" denies with that message for the agent, "wait" hands off. One
+    unclear answer is asked again; silence is re-asked after a minute, up to three times.
+  - Everything else is only announced, with "it's on your screen".
+  - Kokoro speaks; Parakeet transcribes, with Whisper as the second listen when Parakeet is
+    unclear (D-017). Talking over Earshot stops it.
+  - The voice libraries are a separate, Mac-only install group: `uv sync --group voice`.
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)

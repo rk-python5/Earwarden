@@ -72,8 +72,8 @@ rehaan's Mac and AirPods.
 | 2 | The daemon core                            | Cloud           | D-020        | Done                      |
 | 3 | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | Built; observe week next  |
 | 4 | Narrator v0 and redaction                  | Cloud           | D-022, D-024 | Done                      |
-| 5 | Speech out and speech in                   | Mac             | D-022, P-14  | To do                     |
-| 6 | Intent, presence and the decision path     | Cloud           | P-07, P-16   | To do                     |
+| 5 | Speech out and speech in                   | Mac             | D-022, D-023 | Built; Mac check pending  |
+| 6 | Intent, presence and the decision path     | Cloud           | D-024        | Done                      |
 | 7 | The audit log                              | Cloud           | D-025        | Done                      |
 | 8 | The helper app, the LaunchAgent and doctor | Mac             | (D-016)      | To do                     |
 | 9 | End to end, and the gate                   | Cloud, then Mac | —            | To do                     |

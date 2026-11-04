@@ -395,6 +395,9 @@ How this file works:
   - Phase 1 ends speech by energy (400 ms of quiet, or 6 s), like the Step 0 `--trim`. Silero VAD
     comes in Phase 2.
   - P-14 (self-hosted runner) is deferred: the recorded-audio test runs by hand on the Mac.
+  - Phase 1 speaks through mlx-audio's own Kokoro pipeline with its espeak fallback switched off,
+    so espeak-ng is never called. Removing `misaki[en]` from the install entirely, as D-022 asks,
+    is done before any public release.
 - **Why:** rehaan wants Phase 1 finished without waiting a week. The gate (a real session approved
   by voice) needs none of the deferred pieces, and Swift and audio can only be tested on the Mac.
 
