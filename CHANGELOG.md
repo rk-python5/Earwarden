@@ -6,6 +6,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-11-04
+
+Step 0's results. All four week-1 tests ran on rehaan's Mac and passed, and the Step 0 gate passed
+(D-014).
+
 ### Added
 
 - `dev/activate`, sourced once per terminal on the Mac. It keeps uv, the Python it downloads, every
@@ -96,5 +101,6 @@ run on the Mac.
 - The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
   and lists what gets decided at the gate.
 
-[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/rk-python5/Earshot/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/rk-python5/Earshot/releases/tag/v0.0.1

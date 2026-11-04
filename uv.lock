@@ -81,7 +81,7 @@ wheels = [
 
 [[package]]
 name = "earshot-agents"
-version = "0.0.2.dev0"
+version = "0.0.2"
 source = { editable = "." }
 
 [package.dev-dependencies]
