@@ -62,17 +62,17 @@ arrive with Phase 2's policy engine. Until then, a stub applies (D-019, from P-1
 In build order. "Cloud" means Claude builds and tests it in a cloud session. "Mac" means it needs
 rehaan's Mac and AirPods.
 
-| #   | Milestone                                  | Where           | Rests on     | Status |
-| --- | ------------------------------------------ | --------------- | ------------ | ------ |
-| 1   | Contracts and the hook client              | Cloud           | D-019, D-020 | To do  |
-| 2   | The daemon core                            | Cloud           | D-020        | To do  |
-| 3   | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | To do  |
-| 4   | Narrator v0 and redaction                  | Cloud           | P-03, D-022  | To do  |
-| 5   | Speech out and speech in                   | Mac             | D-022, P-14  | To do  |
-| 6   | Intent, presence and the decision path     | Cloud           | P-07, P-16   | To do  |
-| 7   | The audit log                              | Cloud           | P-10         | To do  |
-| 8   | The helper app, the LaunchAgent and doctor | Mac             | (D-016)      | To do  |
-| 9   | End to end, and the gate                   | Cloud, then Mac | —            | To do  |
+| # | Milestone                                  | Where           | Rests on     | Status                    |
+| - | ------------------------------------------ | --------------- | ------------ | ------------------------- |
+| 1 | Contracts and the hook client              | Cloud           | D-019, D-020 | Built; Mac timing pending |
+| 2 | The daemon core                            | Cloud           | D-020        | To do                     |
+| 3 | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | To do                     |
+| 4 | Narrator v0 and redaction                  | Cloud           | P-03, D-022  | To do                     |
+| 5 | Speech out and speech in                   | Mac             | D-022, P-14  | To do                     |
+| 6 | Intent, presence and the decision path     | Cloud           | P-07, P-16   | To do                     |
+| 7 | The audit log                              | Cloud           | P-10         | To do                     |
+| 8 | The helper app, the LaunchAgent and doctor | Mac             | (D-016)      | To do                     |
+| 9 | End to end, and the gate                   | Cloud, then Mac | —            | To do                     |
 
 ### 1. Contracts and the hook client (cloud)
 
@@ -94,6 +94,12 @@ rehaan's Mac and AirPods.
   them on rehaan's Mac.
 - **Done when:** those tests pass in CI, and a round trip against a stub daemon stays within the
   plan's 80 ms on the Mac.
+- **Built (4 Nov):** the contracts, `wire.py` and `paths.py`, and `earshot-hook`. 212 tests pass.
+  In the cloud container the round trip took 38 ms median. Still to do: the same measurement on
+  the Mac, and a CI run on GitHub's Mac runners.
+- **Found in the payloads:** Claude Code 2.1.318 sends a `prompt_id` with every event, shared by
+  a request and its `PostToolUse`. The hook passes it on, and fingerprints the tool input of a
+  `PostToolUse`, so milestone 2 can match the two (D-020).
 
 ### 2. The daemon core (cloud)
 

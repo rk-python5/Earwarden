@@ -96,6 +96,11 @@ compiles when you work in the Linux container, so check the CI run after changin
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.
+  - `contracts.py`: the five messages as Pydantic models, at version 1.
+  - `wire.py` and `paths.py`: the wire format and file locations that the hook and the daemon
+    share. Standard library only.
+  - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
+    imports.
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in
   `spikes/RESULTS.md`. Spike scripts declare their dependencies inline (PEP 723) and run with
   `uv run`. Their raw output goes to a git-ignored `out/` folder. Only their stdlib and
@@ -103,6 +108,8 @@ compiles when you work in the Linux container, so check the CI run after changin
   `launchd_mic/agent.py`) are
   type-checked and tested in CI, because the rest need macOS hardware.
 - `tests/`: pytest. Tests for spikes live in `tests/spikes/`.
+  `tests/fixtures/claude_code/<version>/` holds real Claude Code hook payloads, with the home
+  folder shortened. Capture a new set when Claude Code changes its hook format.
 
 ## Invariants
 

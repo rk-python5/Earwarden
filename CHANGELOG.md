@@ -10,6 +10,15 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 - The Phase 1 plan (`docs/phase-1-plan.md`): nine milestones in build order, which ones need
   rehaan's Mac, and the decisions each one needs.
+- `earshot-hook`, Claude Code's command hook (Phase 1, milestone 1):
+  - It uses only the standard library and always exits 0.
+  - It prints nothing but a valid decision for a PermissionRequest; anything else hands off to
+    Claude Code's own dialog.
+  - It passes session and tool events on without waiting.
+  - It's tested for every fail-safe path against a stand-in daemon, with payloads captured from
+    Claude Code 2.1.318.
+- The five message contracts (`earshot.contracts`), with Pydantic as the first runtime
+  dependency, and the wire format and file locations shared by the hook and the daemon.
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)

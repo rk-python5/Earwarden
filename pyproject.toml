@@ -15,7 +15,12 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "pydantic>=2.11,<3",
+]
+
+[project.scripts]
+earshot-hook = "earshot.connectors.claude_code.hook:main"
 
 [project.urls]
 Repository = "https://github.com/rk-python5/Earshot"
@@ -66,6 +71,7 @@ select = [
 [tool.mypy]
 python_version = "3.11"
 strict = true
+plugins = ["pydantic.mypy"]
 files = ["src", "tests", "spikes/hook_probe", "spikes/speech/speech_data.py", "spikes/speech/combine.py", "spikes/launchd_mic/agent.py"]
 
 [tool.pytest.ini_options]
