@@ -298,6 +298,11 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Open the answer window only after playback has really ended, plus the measured output delay.
   - Never take pre-roll from before the window opened.
   - Add "Earshot hears itself" to the red-team suite. Step 0 measures it (`spikes/audio_io`).
+- **Evidence (Step 0, 4 Nov 2026, `audio_io`):** With the mic kept warm, none of 16 answer
+  windows held any of the prompt's speech, at guards from 0 to 500 ms, with and without pre-roll.
+  Playback leaks into the AirPods mic at 16.7 dB below the room's noise floor. With these AirPods
+  the risk didn't show up; the cheap guards are still worth keeping, because other headsets may
+  leak more.
 - **Decide by:** Step 0 gate.
 
 ### P-07 Approve only on an exact whole-utterance match
@@ -421,7 +426,7 @@ From the plan's open-questions list.
 | ID  | Question                                                                       | Answered by                    | Status                                                         |
 | --- | ------------------------------------------------------------------------------ | ------------------------------ | -------------------------------------------------------------- |
 | Q-1 | Does Claude Code show its dialog while a `PermissionRequest` hook is still running? | Step 0 hook spike          | **Answered 4 Nov 2026 (hook probe, rehaan's Mac, Claude Code 2.1.318): yes.** The dialog appears while the hook runs, and whichever answers first wins. Approving on screen lets the tool run while the hook keeps waiting; No or Esc end the hook with SIGTERM. So presence routing isn't needed to keep the session from freezing; it only decides whether Earshot speaks at all. See P-12 and `spikes/RESULTS.md`. |
-| Q-2 | How long does the AirPods mic take to switch on with the M2?                   | Step 0 audio spike             | Open                                                           |
+| Q-2 | How long does the AirPods mic take to switch on with the M2?                   | Step 0 audio spike             | **Answered 4 Nov 2026: 847 ms median, 931 ms max** (5 trials, `audio_io switch`). Long enough to clip the start of an answer, so the plan's fallback applies: keep the mic warm while an approval is pending, switching it on when the approval starts, while Earshot is still speaking. |
 | Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free, and D-008 adopts it. Whether the name is clear enough is still open. |
 | Q-4 | Which small model clears EarshotBench in under 300 ms?                         | Phase 3                        | Open                                                           |
 | Q-5 | Which 3–5 friends will record impostor and gesture data?                       | rehaan                         | Open                                                           |

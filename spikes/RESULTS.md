@@ -20,7 +20,7 @@ The plan's four week-1 tests map to the sections below:
 | Mac (chip, memory)               | MacBook Air, M2, 16 GB (from the plan) |
 | macOS version                    | 27.0.1 |
 | Claude Code version              | 2.1.318 |
-| AirPods model and firmware       | not used yet |
+| AirPods model and firmware       | pending (shows as "femida's AirPods - Find My", with separate input and output devices) |
 | Earshot version / commit         | 0.0.2.dev0, commit c281407 (hook probe) |
 
 ## 1. Hook probe
@@ -86,14 +86,25 @@ Steps: [audio_io/README.md](audio_io/README.md).
 
 | Check                                                          | Target                         | Result | Pass |
 | -------------------------------------------------------------- | ------------------------------ | ------ | ---- |
-| **Q-2:** mic live after opening, median and max (`switch`)     | note; decides keeping it warm  |        | —    |
-| Output glitches when the mic opens                             | note                           |        | —    |
-| Output-to-mic delay (`leak`)                                   | note; sets the window guard    |        | —    |
-| Leak gain and leak above the noise floor (`leak`)              | note; decides barge-in         |        | —    |
-| Self-approval, any guard, with and without pre-roll (`selfcheck`) | never approves              |        |      |
-| Smallest guard where every window is quiet (`selfcheck`)       | pick it                        |        | —    |
+| **Q-2:** mic live after opening, median and max (`switch`)     | note; decides keeping it warm  | **847 ms median, 931 ms max** (5 trials). The stream starts in about 93 ms but delivers silence until the AirPods switch to headset mode. Long enough to clip an answer, so keep the mic warm. | —    |
+| Output glitches when the mic opens                             | note                           | None reported by the output stream (0 in 5 trials) | —    |
+| Output-to-mic delay (`leak`)                                   | note; sets the window guard    | Not measurable: the leak was too faint to correlate (correlation −0.21), so the 257 ms printed isn't reliable | —    |
+| Leak gain and leak above the noise floor (`leak`)              | note; decides barge-in         | −55.6 dB gain, **16.7 dB below the room's noise floor**. The mic barely hears the AirPods' own playback, so barge-in works without echo cancellation or half-duplex. | —    |
+| Self-approval, any guard, with and without pre-roll (`selfcheck`) | never approves              | None in 16 windows (2 prompts × 4 guards, with and without pre-roll), with the mic kept warm | Yes |
+| Smallest guard where every window is quiet (`selfcheck`)       | pick it                        | 0 ms: no window held any of the prompt's speech | —    |
 
 Notes:
+
+- **Kept warm:** the self-approval check ran with the mic open the whole time, the way Earshot
+  would keep it warm, so the Q-2 fix and P-06 were tested together.
+- **A made-up "Mm-hmm.":** in one quiet window (tier 2, 500 ms guard, no pre-roll), Parakeet
+  transcribed "Mm-hmm." from near-silence. It isn't an approval under the strict rules (P-07), but
+  it shows two things: why recognition must sit behind voice-activity detection, and why fillers
+  must never approve.
+- **24 kHz input:** in headset mode the AirPods mic runs at 24 kHz (from the launchd run), and the
+  plan's models expect 16 kHz, so Earshot resamples. It's cheap.
+- **Download:** the first `selfcheck --asr` downloaded 2.47 GB of model files (about 5.5 minutes),
+  kept in `.tools/`.
 
 ## 4. Microphone under launchd
 
@@ -144,7 +155,7 @@ Notes:
 | Week-1 test                                 | Pass? | Notes |
 | ------------------------------------------- | ----- | ----- |
 | 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
-| 2. Speech in and out on the M2 with AirPods |       |       |
+| 2. Speech in and out on the M2 with AirPods | In progress | AirPods I/O and the launchd mic are done; the speech spike (Kokoro, Parakeet, 100 replies) is next |
 | 3. Head motion                              |       |       |
 | 4. Voiceprint                               |       |       |
 
