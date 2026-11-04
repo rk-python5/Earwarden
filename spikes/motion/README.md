@@ -5,19 +5,32 @@ nods over an hour of normal work. It's a small command-line tool that reads your
 motion and runs the plan's v1 detector: two rotation-rate swings of opposite sign within 1.2 s
 make a nod (pitch) or a shake (yaw).
 
-You need macOS 14 or later, Xcode 15 or later, and AirPods with head tracking (AirPods Pro, Max,
-or third generation and later) connected to the Mac. CI builds the tool on every push, so you know
-it compiles.
+You need:
+
+- macOS 14 or later
+- Xcode 15 or later, or Apple's Command Line Tools (anything that provides `swift`)
+- AirPods with head tracking (AirPods Pro, Max, AirPods 3rd generation or later, or AirPods 4),
+  connected to the Mac
+
+CI builds the tool on every push, so you know it compiles.
+
+**Always start it with `run.sh`, not by running the program directly.** macOS judges a program by
+the app responsible for it. Started straight from Terminal, the spike counts as Terminal's, and
+Terminal declares no use of motion data. So macOS stops it with a bare `abort` as soon as it asks
+for head motion, which is exactly what happened on rehaan's Mac. `run.sh` does three things:
+
+1. Builds the tool and wraps it in a small app, `.build/MotionSpike.app`, with its own name and
+   usage text.
+2. Signs it for this Mac only.
+3. Opens it as its own app, with its output in your terminal.
 
 ```sh
 cd spikes/motion
-swift build -c release
-.build/release/motion-spike calibrate
+./run.sh calibrate
 ```
 
-The first run should make macOS ask for motion access. Note the name the prompt shows; the
-executable carries its own usage text. If it says "denied", allow it in System Settings → Privacy &
-Security → Motion & Fitness.
+The first run makes macOS ask for motion access for "Earshot motion spike"; allow it. If you
+denied it by mistake, allow it in System Settings → Privacy & Security → Motion & Fitness.
 
 ## 1. Calibrate (1 minute)
 
@@ -26,7 +39,7 @@ rotation axis carries each gesture. If they aren't `x` for nods and `z` for shak
 `--pitch-axis` and `--yaw-axis` to the other commands. Then try some deliberate nods and shakes:
 
 ```sh
-.build/release/motion-spike count --minutes 2      # nod and shake a few times; all detected?
+./run.sh count --minutes 2      # nod and shake a few times; all detected?
 ```
 
 If small nods are missed, lower `--threshold` (rad/s, default 1.0). If one swing counts twice,
@@ -35,7 +48,7 @@ raise it.
 ## 2. False nods over an hour of normal work
 
 ```sh
-.build/release/motion-spike count --minutes 60
+./run.sh count --minutes 60
 ```
 
 Work normally: type, read, drink, talk, turn to look at things. Don't nod on purpose. Every
@@ -50,7 +63,7 @@ most 1 false nod per hour inside answer windows.
 dataset later:
 
 ```sh
-.build/release/motion-spike log > out/session.jsonl
+./run.sh --output out/session.jsonl log
 ```
 
 Record the numbers in [`../RESULTS.md`](../RESULTS.md), section 5.

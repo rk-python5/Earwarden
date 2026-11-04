@@ -38,6 +38,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - name: Build
+      - name: Build the app and check its bundle
         working-directory: spikes/motion
-        run: swift build -c release
+        run: |
+          ./run.sh --build-only
+          plutil -lint .build/MotionSpike.app/Contents/Info.plist
+          codesign --verify --verbose .build/MotionSpike.app

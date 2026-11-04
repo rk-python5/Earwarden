@@ -18,6 +18,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - `spikes/speech/combine.py`: works out a two-stage recogniser from two finished runs, a fast one
   first and a second listen only when it's unclear, judged with Earshot's rules. The challenge-word
   rule now lives in the tested `speech_data.py`.
+- `spikes/motion/run.sh` builds the head-motion spike as a small signed app and opens it as its own
+  app. Started from Terminal, macOS stopped it with `abort`, because the program counted as
+  Terminal's and Terminal declares no use of motion data. CI now builds and checks the app.
 
 ### Changed
 
