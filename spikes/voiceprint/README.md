@@ -25,18 +25,30 @@ Ask your friend first. Their recordings stay on your Mac (git-ignored) and are o
 
 ```sh
 uv run spikes/voiceprint/ecapa_gap.py
+uv run spikes/voiceprint/ecapa_gap.py --trim
 ```
 
-Your first five phrases build the profile. The other five, and all ten of your friend's, are
-scored against it. The report gives:
+`--trim` first cuts the silence around each phrase, keeping a quarter of a second either side. It
+uses the same rule as the speech spike's `--trim`, and it's what Earshot's voice detector will do.
+A phrase lasts about a second of each 3-second recording, so without trimming, the silence and
+room noise, the same for both of you, make up most of what's scored.
 
+Your first five phrases, in alphabetical order, build the profile. The other five, and all ten of
+your friend's, are scored against it. The report gives:
+
+- every phrase's score, yours and your friend's, where 1.0 means the same voice
 - your lowest score and your friend's highest
 - **the gap** between them: positive means a clean separation on this small sample
+- the gap on the phrases you both said outside the profile only. Your friend also says the five
+  phrases that built your profile, and saying the same words can raise a score, so this compares
+  like with like.
 - a mid-point threshold (Phase 2 calibrates the real one, aiming for at most 2% impostors accepted)
 - **ONNX parity:** the lowest cosine similarity between ONNX and PyTorch embeddings. The target is
   at least 0.999. Every recording is 3 seconds long, but Earshot will trim silence, so phrases
   will vary. Each recording is therefore also cut to 0.5, 1, 1.5, 2 and 2.5 seconds, and all
   lengths must pass.
+- the exported model's size, counting its weights. The exporter can put the weights in a
+  separate `.onnx.data` file next to the graph.
 - how fast and how big an onnxruntime-only process is: the speaker-model share of the memory
   budget, estimated at about 100 MB
 

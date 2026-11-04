@@ -36,11 +36,15 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   (`--trim`). It also adds two what-ifs for challenge phrases (lenient "approve", and the challenge
   word alone), and can compare other recognisers such as Parakeet v3, Whisper and Moonshine
   (`--model`).
+- The voiceprint report lists every phrase's score, and adds a gap over only the phrases both
+  speakers said outside the profile. It can cut the silence around each phrase first (`--trim`).
 
 ### Fixed
 
 - The voiceprint spike's ONNX check also cuts each recording to shorter lengths. Every recording
   is 3 seconds long, so the check had covered only one length.
+- The voiceprint report's model size counts the weights. The exporter writes them to a separate
+  file, so the report had shown 0.6 MB for an 83 MB model.
 
 ## [0.0.1] - 2026-11-03
 

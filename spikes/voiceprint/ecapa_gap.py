@@ -15,6 +15,7 @@
 """ECAPA voiceprint: is there a clear gap between your phrases and a friend's? Does ONNX match?
 
     uv run spikes/voiceprint/ecapa_gap.py
+    uv run spikes/voiceprint/ecapa_gap.py --trim     # cut the silence around each phrase first
     uv run spikes/voiceprint/ecapa_gap.py --you DIR --friend DIR --enroll 5
 
 By default it reads the challenge phrases recorded with the speech spike:
@@ -92,6 +93,27 @@ def load_wav(path: Path) -> np.ndarray:
     return mono
 
 
+def trim_silence(audio: np.ndarray, rate: int, margin_s: float = 0.25) -> np.ndarray:
+    """Keep the loud part plus a small margin, as the speech spike's --trim does."""
+    frame = int(0.02 * rate)
+    count = len(audio) // frame
+    if count == 0:
+        return audio
+    rms = np.sqrt(np.mean(np.square(audio[: count * frame].reshape(count, frame)), axis=1))
+    threshold = max(float(np.percentile(rms, 10)) * 4, 0.005)
+    active = np.flatnonzero(rms > threshold)
+    if active.size == 0:
+        return audio
+    margin = int(margin_s * rate)
+    start = max(0, int(active[0]) * frame - margin)
+    end = min(len(audio), (int(active[-1]) + 1) * frame + margin)
+    return audio[start:end]
+
+
+def verdict(gap: float) -> str:
+    return "clear separation" if gap > 0 else "OVERLAP: some phrases cannot be told apart"
+
+
 def unit(v: np.ndarray) -> np.ndarray:
     return v / np.linalg.norm(v)
 
@@ -139,6 +161,7 @@ def main() -> None:
     parser.add_argument("--you", type=Path, default=REPLIES / "you")
     parser.add_argument("--friend", type=Path, default=REPLIES / "friend")
     parser.add_argument("--enroll", type=int, default=5, help="your phrases used for the profile")
+    parser.add_argument("--trim", action="store_true", help="cut the silence around each phrase")
     parser.add_argument("--ort-child", nargs=2, help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.ort_child:
@@ -173,6 +196,10 @@ def main() -> None:
             return classifier.mods.embedding_model(feats).squeeze().numpy()
 
     clips = {path: load_wav(path) for path in yours + theirs}
+    if args.trim:
+        clips = {path: trim_silence(wav, RATE) for path, wav in clips.items()}
+        seconds = [len(wav) / RATE for wav in clips.values()]
+        print(f"Silence trimmed: phrases are now {min(seconds):.1f} to {max(seconds):.1f} s long")
     feats = {path: features(wav) for path, wav in clips.items()}
     timings = []
     embeddings = {}
@@ -181,26 +208,43 @@ def main() -> None:
         embeddings[path] = torch_embedding(f)
         timings.append((time.perf_counter() - begin) * 1000)
 
-    profile = unit(np.mean([unit(embeddings[p]) for p in yours[: args.enroll]], axis=0))
-    genuine = [float(unit(embeddings[p]) @ profile) for p in yours[args.enroll :]]
-    impostor = [float(unit(embeddings[p]) @ profile) for p in theirs]
+    def word(path: Path) -> str:
+        return path.stem.removeprefix("ch-")
+
+    enrolled, held_out = yours[: args.enroll], yours[args.enroll :]
+    profile = unit(np.mean([unit(embeddings[p]) for p in enrolled], axis=0))
+    profile_words = {word(p) for p in enrolled}
+    mine = {word(p): float(unit(embeddings[p]) @ profile) for p in held_out}
+    friends = {word(p): float(unit(embeddings[p]) @ profile) for p in theirs}
+
+    def cell(scores: dict[str, float], phrase: str) -> str:
+        if phrase in scores:
+            return f"{scores[phrase]:7.3f}"
+        return "profile" if phrase in profile_words else "      -"
+
+    print(f"\nProfile from {args.enroll} of your phrases. Scores against it (1.0 = same voice):")
+    print(f"  {'phrase':<10} {'yours':>7}  {'friend':>7}")
+    for phrase in sorted(profile_words | set(mine) | set(friends)):
+        print(f"  {phrase:<10} {cell(mine, phrase)}  {cell(friends, phrase)}")
+
+    genuine, impostor = list(mine.values()), list(friends.values())
     gap = min(genuine) - max(impostor)
-    print(
-        f"\nProfile from {args.enroll} of your phrases; scored {len(genuine)} more of yours "
-        f"and {len(impostor)} of your friend's."
-    )
-    print(f"  yours:    min {min(genuine):.3f}  median {statistics.median(genuine):.3f}")
+    print(f"\n  yours:    min {min(genuine):.3f}  median {statistics.median(genuine):.3f}")
     print(f"  friend's: max {max(impostor):.3f}  median {statistics.median(impostor):.3f}")
-    print(
-        f"  gap (your lowest minus their highest): {gap:+.3f}  "
-        f"{'clear separation' if gap > 0 else 'OVERLAP: some phrases cannot be told apart'}"
-    )
+    print(f"  gap (your lowest minus their highest): {gap:+.3f}  {verdict(gap)}")
+    # Your friend also said the profile's own phrases, which favours them. Same words only:
+    same = [score for phrase, score in friends.items() if phrase in mine]
+    if same and len(same) < len(impostor):
+        fair = min(genuine) - max(same)
+        print(f"  gap on the {len(same)} phrases you both said outside the profile: {fair:+.3f}")
     middle = (min(genuine) + max(impostor)) / 2
     print(f"  a threshold of {middle:.3f} would sit in the middle (Phase 2 calibrates it properly)")
     print(f"  PyTorch embedding time: median {statistics.median(timings):.0f} ms per phrase")
 
     OUT.mkdir(parents=True, exist_ok=True)
     onnx_path = OUT / "ecapa_embedding.onnx"
+    for old in OUT.glob(f"{onnx_path.name}*"):  # the graph, and its weights file if separate
+        old.unlink()
     sample = feats[yours[args.enroll]]
     exporter = export_onnx(classifier.mods.embedding_model, sample, onnx_path)
     import onnxruntime as ort
@@ -234,7 +278,8 @@ def main() -> None:
         print(f"  largest element difference: {max(diffs):.2e}")
     if failures:
         print(f"  onnxruntime FAILED on {len(failures)} cuts, for example {failures[0]}")
-    print(f"  file size: {onnx_path.stat().st_size / 1e6:.1f} MB")
+    size = sum(p.stat().st_size for p in OUT.glob(f"{onnx_path.name}*"))
+    print(f"  size with weights: {size / 1e6:.1f} MB")
 
     np.save(OUT / "sample_feats.npy", sample.numpy())
     child = subprocess.run(
