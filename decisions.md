@@ -158,8 +158,11 @@ How this file works:
 - **Decision:**
   - `.github/workflows/ci.yml` runs on every push to `main` (and on demand): `uv sync --locked`,
     then ruff (lint and format), mypy and pytest.
-  - A second job builds the Swift head-motion spike (`swift build` in `spikes/motion`), so Swift
+  - The same job builds the Swift head-motion spike (`swift build` in `spikes/motion`), so Swift
     written in the Linux dev container is compiled before rehaan runs it.
+  - **Changed 4 Nov 2026:** the Swift build was a second job until GitHub's Mac runners kept
+    leaving one of the two jobs waiting until its timeout. One job needs one runner, and uses
+    half the Mac minutes a private repository is allowed.
   - It runs on `macos-15`. GitHub retired the `macos-14` image on 2026-11-02, so macOS 14, the
     plan's minimum, can only be tested on a real Mac.
   - Third-party actions are pinned to a commit SHA; GitHub's own actions to a major version.

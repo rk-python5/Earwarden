@@ -14,10 +14,12 @@ concurrency:
 
 jobs:
   checks:
-    name: Lint, types and tests
+    name: Lint, types, tests and the Swift build
     # Apple Silicon. macos-14 was retired on 2026-11-02; see decisions.md D-010.
+    # One job, not two: GitHub's Mac runners kept one of two jobs waiting until its timeout,
+    # and a private repository's Mac minutes are counted per job.
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
@@ -31,14 +33,9 @@ jobs:
         run: uv run mypy
       - name: Tests
         run: uv run pytest
-
-  motion-spike:
-    name: Build the Swift motion spike
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build the app and check its bundle
+      - name: Build the Swift motion spike and check its bundle
+        # Runs even if a Python step failed, so a Swift change is always compiled.
+        if: ${{ !cancelled() }}
         working-directory: spikes/motion
         run: |
           ./run.sh --build-only

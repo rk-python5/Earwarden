@@ -33,6 +33,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   - auto mode as a first filter, with a week of observe mode (D-021)
   - Earshot's own Kokoro text front-end, clear of GPL code (D-022)
 
+### Changed
+
+- CI runs as one macOS job instead of two: GitHub's Mac runners kept leaving one of the two
+  waiting until its timeout. The Swift build still runs even when a Python check fails.
+
 ## [0.0.2] - 2026-11-04
 
 Step 0's results. All four week-1 tests ran on rehaan's Mac and passed, and the Step 0 gate passed
