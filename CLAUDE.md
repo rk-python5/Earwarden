@@ -39,6 +39,9 @@ Phase 1 components (daemon, contracts, policy engine and so on) before then.
 
   Leave the committer as the session identity, because it signs the commits. Keep ending each
   message with the `Co-Authored-By` trailer for Claude.
+- **Explaining:** whenever you ask rehaan to run something, explain each command: what it does,
+  why it's needed, what to watch for, and roughly how long it takes. Never hand over bare
+  commands.
 - **Versioning:** follows D-006 in `decisions.md`. The version lives only in `pyproject.toml`;
   change it with `uv version` (for example `uv version --bump patch`). Every notable change gets a
   line under *Unreleased* in `CHANGELOG.md`. `tests/test_versioning.py` keeps the two in step.
