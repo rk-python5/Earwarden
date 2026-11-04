@@ -31,6 +31,11 @@ How this file works:
 | D-011 | Step 0 also measures the design-review risks              | Accepted |
 | D-012 | Every commit is authored by rehaan                        | Accepted |
 | D-013 | On the Mac, every install stays inside the repo           | Accepted |
+| D-014 | The Step 0 gate passed                                    | Accepted |
+| D-015 | The answer window can't hear Earshot's own prompt (P-06)  | Accepted |
+| D-016 | A signed Swift helper owns the macOS plumbing (P-13)      | Accepted |
+| D-017 | Two-stage recognition: Parakeet, then Whisper (P-17)      | Accepted |
+| D-018 | Nods don't approve on their own (P-18)                    | Accepted |
 
 ## Decisions
 
@@ -211,6 +216,94 @@ How this file works:
   `.tools/python`, the spike's environment landed in `.tools/cache`, and nothing was written to the
   home folder.
 
+### D-014 The Step 0 gate passed
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan
+- **Decision:** Step 0 passes its gate. All four week-1 tests pass and are written up with numbers
+  in `spikes/RESULTS.md`, so Phase 1, the walking skeleton, can start.
+  - **Hook round trip:** yes. The hook starts in 19.7 ms (median), and Claude Code shows its own
+    dialog while the hook runs (Q-1).
+  - **Speech in and out:** yes, with two-stage recognition (D-017). Yes/no was 100% right on the
+    100 recorded replies, quiet and noisy.
+  - **Head motion:** yes, with nods not approving on their own (D-018). Motion works from a signed
+    app at 50 Hz.
+  - **Voiceprint:** yes. A friend's voice was told apart from rehaan's by +0.112 with the silence
+    trimmed, and ECAPA in ONNX matches PyTorch at every length.
+- **Settled at the gate:**
+  - P-05 is rejected.
+  - P-06, P-13, P-17 and P-18 are accepted as D-015 to D-018.
+  - Barge-in works as the plan hoped: playback leaks into the mic 16.7 dB below the room's noise
+    floor, so the half-duplex fallback isn't needed with these AirPods.
+- **Carried into Phase 1:**
+  - Kokoro's first audio took 237 ms, against a 200 ms budget.
+  - Whisper's second listens add about 1.2 s.
+  - Memory: the speech models exceed the 3 GB footprint until they're quantised, and the speaker
+    model's onnxruntime process peaked at 206 MB.
+- **Consequences:** Release 0.0.2 closes Step 0, and Phase 1's releases are `0.1.x` (D-006).
+
+### D-015 The answer window can't hear Earshot's own prompt
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, at the Step 0 gate (accepts P-06)
+- **Decision:**
+  - The answer window opens only after playback has really ended, plus the measured output delay.
+  - Pre-roll never reaches back before the window opened.
+  - "Earshot hears itself" joins the red-team suite.
+- **Why:** The tier-2 prompt ends with the exact answer ("say: approve orchard"), and at tier 1
+  nothing else stands in the way. Step 0 found no leak with rehaan's AirPods 4, but the guards are
+  cheap, and other headsets may leak more.
+
+### D-016 A signed Swift helper owns the macOS plumbing
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, at the Step 0 gate (accepts P-13)
+- **Decision:** `earshot-motion` is a small signed background app, a real app bundle. It owns mic
+  capture, device changes, the push-to-talk hotkey and head motion, and streams 16 kHz audio to
+  `earshotd`. Python keeps the models and the logic.
+- **Why (Step 0):**
+  - macOS grants the mic to a launchd-started Python separately for each interpreter, so every
+    Python update would bring a new prompt, named after Python rather than Earshot.
+  - Head motion only worked from a signed app bundle with a usage string, opened through Launch
+    Services. Run from Terminal, macOS stopped it with `abort`.
+  - Rebuilding an ad hoc–signed app reset its permission, so the helper needs a signing identity
+    that stays the same across builds. An Apple Development certificate does that on rehaan's Mac;
+    public releases need Developer ID and notarisation.
+- **Consequences:** The plan builds `earshot-motion` in Phase 2, for head motion only. Its mic
+  capture and device changes move into Phase 1, because speech in and the LaunchAgent depend on
+  them. Head motion stays in Phase 2, and the hotkey comes with push-to-talk.
+
+### D-017 Two-stage recognition: Parakeet first, Whisper when unclear
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, at the Step 0 gate (accepts P-17)
+- **Decision:**
+  - Parakeet v2 hears every reply, after voice-activity trimming.
+  - Only when its answer is unclear, an empty transcript included, does Whisper large-v3-turbo
+    get a second listen on the same audio.
+  - Both answers go through the same intent rules (P-07, P-08 and P-16 decide those).
+- **Why:** On rehaan's 100 recordings, no single recogniser met the plan's yes/no targets (98%
+  quiet, 95% noisy) within its 260 ms budget. Together they got 100% in quiet and noise and missed
+  no approvals. The second listen ran on 23 of 100 replies; time per reply was 70 ms median and
+  1.2 s p95.
+- **Consequences:**
+  - This replaces the plan's confidence score (P-05, rejected). A reply that's still unclear after
+    the second listen gets asked once more, then goes to the screen.
+  - Phase 1 handles the costs: the 1.2 s second listens (try shorter Whisper windows or a smaller
+    Whisper), and memory (try 8-bit Parakeet and 4-bit Whisper, or load Whisper only when needed).
+
+### D-018 Nods don't approve on their own
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, at the Step 0 gate (accepts P-18)
+- **Decision:**
+  - In v1.0 a nod never approves on its own. Either nods ship off (`nods = false`), or they need a
+    stricter pattern: a double nod within 2 s, with pitch clearly dominating yaw and roll, after
+    about a second of stillness. That pattern must be re-measured with the hour-long count and
+    stay under 1% of answer windows.
+  - A shake never denies on its own; it hands the prompt to the screen.
+  - Labelled `log` sessions build the plan's gesture dataset and classifier.
+- **Why:** On rehaan's AirPods 4, the plan's v1 detector counted 48 false nods in an hour of normal
+  work, so about 8% of answer windows would hold a nod nobody made. Calibration showed that shakes
+  move the nod axis at two-thirds of a nod's speed.
+- **Consequences:** Phase 2's nod detector is the stricter pattern; until it's proven, tier 1 relies
+  on voice.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -300,7 +393,9 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   of correct answers. On its own it's too weak a gate. A diagnosis run is pending.
 - **Recommendation (4 Nov, after the recogniser comparison):** reject. The two-stage recogniser
   (P-17) uses "unclear" as its trigger and reaches the targets without a confidence score.
-- **Decide by:** Step 0 gate.
+- **Status:** *Rejected* at the Step 0 gate (4 Nov 2026, rehaan). The two-stage recogniser (D-017)
+  meets the targets with "unclear" as its trigger, and on its own the score told right
+  transcripts from wrong ones too weakly.
 
 ### P-06 Earshot must not hear itself approve
 
@@ -317,7 +412,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   Playback leaks into the AirPods mic at 16.7 dB below the room's noise floor. With these AirPods
   the risk didn't show up; the cheap guards are still worth keeping, because other headsets may
   leak more.
-- **Decide by:** Step 0 gate.
+- **Status:** Accepted at the Step 0 gate as D-015.
 
 ### P-07 Approve only on an exact whole-utterance match
 
@@ -444,7 +539,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     changes with its code, so macOS treats each build as a new app. The helper needs a signing
     identity that stays the same across updates (an Apple Development or Developer ID
     certificate), or every update asks again.
-- **Decide by:** Step 0 gate.
+- **Status:** Accepted at the Step 0 gate as D-016.
 
 ### P-14 Audio integration tests on a self-hosted runner
 
@@ -503,7 +598,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     shorter windows or a smaller Whisper.
   - Memory: both models unquantised are about 3 GB of weights alone, before Kokoro. Try 8-bit
     Parakeet and 4-bit Whisper, or load Whisper only when needed.
-- **Decide by:** Step 0 gate.
+- **Status:** Accepted at the Step 0 gate as D-017.
 
 ### P-18 Nods don't approve until a stricter detector is proven
 
@@ -524,7 +619,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - A shake never denies on its own; it hands the prompt to the screen, so a false shake costs
     nothing.
   - Record labelled `log` sessions to build the plan's gesture dataset and classifier.
-- **Decide by:** before Phase 2 (where the nod detector is built).
+- **Status:** Accepted at the Step 0 gate as D-018.
 
 ## Open questions
 

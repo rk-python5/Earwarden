@@ -1,7 +1,7 @@
 # Step 0 results and go/no-go note
 
-Fill this in as the spikes run. The Step 0 gate: all four week-1 tests pass, written up with
-numbers. When it passes, record it in `decisions.md`; Phase 1 starts after that.
+The Step 0 gate: all four week-1 tests pass, written up with numbers. **It passed on 4 Nov 2026**
+(D-014 in `decisions.md`), so Phase 1 can start.
 
 The plan's four week-1 tests map to the sections below:
 
@@ -303,10 +303,16 @@ Notes:
 
 Decided at the gate, from the numbers above:
 
-- **Q-1 and Q-2:** answered? Copy the answers into `decisions.md`.
-- **P-05** (confidence threshold), **P-06** (answer-window guard) and **P-13** (where mic
-  capture lives): accept, change or reject each.
-- Anything here that changes the plan, such as nods (section 5) or barge-in (section 3).
+- **Q-1 and Q-2:** both answered and recorded in `decisions.md`.
+- **P-05** (confidence threshold): rejected. The two-stage recogniser doesn't need it.
+- **P-06** (answer-window guard): accepted as D-015.
+- **P-13** (where mic capture lives): accepted as D-016. The signed helper app owns mic capture,
+  and its audio half moves into Phase 1.
+- **P-17** (two-stage recognition): accepted as D-017.
+- **Nods (section 5):** P-18 accepted as D-018. A nod never approves on its own until a stricter
+  detector is proven.
+- **Barge-in (section 3):** no change. The mic barely hears playback, so barge-in works as planned
+  without the half-duplex fallback.
 
-**Decision:** Go / No-go, on (date), by (name). If it's Go, add a decision entry that the Step 0
-gate passed; the next release is then `0.1.0`, the first of Phase 1 (D-006).
+**Decision:** Go, on 2026-11-04, by rehaan (D-014). Release 0.0.2 closes Step 0, and Phase 1's
+releases are `0.1.x` (D-006).

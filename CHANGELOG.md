@@ -21,6 +21,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - Head-motion results (`spikes/RESULTS.md`, section 5): motion works from a signed app at 50 Hz,
   with nods on x and shakes on z, but the plan's v1 detector gives about 48 false nods an hour
   (P-18).
+- The Step 0 gate passed on 4 Nov 2026 (D-014). Decided at the gate:
+  - the answer window can't hear Earshot's own prompt (D-015)
+  - a signed Swift helper owns mic capture and the other macOS plumbing (D-016)
+  - two-stage recognition, Parakeet then Whisper (D-017)
+  - nods don't approve on their own (D-018)
+  - the per-word confidence score (P-05) is rejected
 - Voiceprint results (`spikes/RESULTS.md`, section 6): rehaan's voice and a friend's separate by
   +0.112 with the silence trimmed, and ECAPA in ONNX matches PyTorch at every length. The
   onnxruntime process peaks at 206 MB, about twice the estimate. All four week-1 tests now have

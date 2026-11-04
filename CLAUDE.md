@@ -16,11 +16,16 @@ AirPods, with confirmation strength set by risk tier. Tier 3 is never approvable
 
 ## Status
 
-Step 0 (week 1, feasibility) is in progress. Its gate: all four week-1 spikes pass, written up with
-numbers.
+Step 0 (week 1, feasibility) passed its gate on 4 Nov 2026 (D-014). Its results are in
+`spikes/RESULTS.md`, and the decisions taken at the gate are D-014 to D-018.
+
+Phase 1 (weeks 2–3, the walking skeleton) is next. Its gate: a real Claude Code session on
+rehaan's subscription, approved by voice end to end. Its scope is the plan's Phase 1 list, plus the
+helper app's mic capture and device changes (D-016) and two-stage recognition (D-017).
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build
-Phase 1 components (daemon, contracts, policy engine and so on) before then.
+Phase 2 components (policy engine, resolvers, challenge words, voiceprint, nod detector and so on)
+before Phase 1's gate passes.
 
 ## Working rules (set by rehaan)
 
