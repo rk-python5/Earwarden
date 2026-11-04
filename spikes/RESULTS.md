@@ -112,12 +112,18 @@ Steps: [launchd_mic/README.md](launchd_mic/README.md). This feeds P-13.
 
 | Check                                                    | Target              | Result | Pass |
 | -------------------------------------------------------- | ------------------- | ------ | ---- |
-| Prompt shown when started by launchd? Name it shows      | a prompt, clear name |       |      |
-| Verdict under launchd after granting                     | audio came through  |        |      |
-| Verdict from Terminal                                    | audio came through  |        | —    |
-| After switching the interpreter: asked again? verdict    | note                |        | —    |
+| Prompt shown when started by launchd? Name it shows      | a prompt, clear name | pending: did macOS show a popup, and with what name? | |
+| Verdict under launchd after granting                     | audio came through  | Audio came through: Python 3.11.18 started by launchd (parent pid 1), recording the AirPods at 24 kHz | Yes |
+| Verdict from Terminal                                    | audio came through  | Audio came through | —    |
+| After switching the interpreter: asked again? verdict    | note                | Audio came through with Python 3.12.16 under launchd; whether macOS asked again is pending | —    |
 
 Notes:
+
+- **Started from Terminal:** each run was started with `launchctl kickstart` from Terminal. An
+  agent that macOS starts at login might be treated differently, so test the real LaunchAgent at
+  a real login in Phase 1.
+- **Which program macOS checked:** the interpreter it would have checked lives inside the repo
+  (`.tools/python/cpython-3.11.18-…/bin/python3.11`, then `cpython-3.12.16`), because of D-013.
 
 ## 5. Head motion
 

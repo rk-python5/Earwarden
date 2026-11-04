@@ -395,6 +395,11 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
 - **Proposal:** Make `earshot-motion` a small signed background app that owns mic capture, device
   changes, the hotkey and head motion, and streams 16 kHz audio to `earshotd`. Python keeps the
   models and the logic. Step 0 tests launchd mic access (`spikes/launchd_mic`).
+- **Evidence so far (Step 0, 4 Nov 2026, `launchd_mic`):**
+  - Python started by launchd recorded real audio from the AirPods, with Python 3.11.18 and again
+    after switching to Python 3.12.16. So the first problem didn't show up in this run.
+  - Still pending: whether macOS showed a permission popup and what it said.
+  - Caveat: the runs were started from Terminal, and a login-started agent may differ.
 - **Decide by:** Step 0 gate.
 
 ### P-14 Audio integration tests on a self-hosted runner
