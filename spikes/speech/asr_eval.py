@@ -199,9 +199,12 @@ def main() -> None:
 
     with labels_path.open(newline="", encoding="utf-8") as f:
         labels = list(csv.DictReader(f))
-    model.generate(str(REPLIES / labels[0]["file"]))  # warm-up
 
-    rate = model.preprocessor_config.sample_rate
+    # Parakeet carries its sample rate in its config; Whisper always takes 16 kHz.
+    rate = int(getattr(getattr(model, "preprocessor_config", None), "sample_rate", 16_000))
+    first = np.array(load_audio(str(REPLIES / labels[0]["file"]), sr=rate, dtype=mx.float32))
+    transcribe(mx.array(first))  # warm-up, through the same path as the real run
+
     rows = []
     for label in labels:
         audio = np.array(load_audio(str(REPLIES / label["file"]), sr=rate, dtype=mx.float32))
