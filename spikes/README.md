@@ -7,12 +7,13 @@ there.
 
 Before you start, on the Mac:
 
-1. Install [uv](https://docs.astral.sh/uv/) with `curl -LsSf https://astral.sh/uv/install.sh | sh`
-   (or `brew install uv`), then open a new terminal.
-2. Run `uv sync` once in the repo root.
+1. In every new terminal, run `source dev/activate` in the repo. The first time, it installs uv
+   into a venv inside the repo. Everything the spikes install also stays inside the repo, under
+   the git-ignored `.tools/` and `.venv/` (D-013), including Python 3.11, libraries and models.
+2. Run `uv sync` once.
 
-The motion spike also needs Xcode. Run every command from the repo root unless a README says
-otherwise.
+The motion spike also needs Xcode, the one thing that lives outside the repo. Run every command
+from the repo root unless a README says otherwise.
 
 | Spike                     | Plan items covered                                   | Runs on                     |
 | ------------------------- | ---------------------------------------------------- | --------------------------- |

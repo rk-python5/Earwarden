@@ -12,8 +12,9 @@ design review:
   whether the plan's sound-alike challenge matching accepts decoys.
 
 Everything except `g2p_coverage.py` needs macOS on Apple Silicon. Each script declares its own
-dependencies, which `uv run` installs into a throwaway environment the first time. Several hundred
-MB of models come down from Hugging Face on the first run. Run the commands from the repo root.
+dependencies, which `uv run` installs into its own environment under `.tools/` the first time.
+Several hundred MB of models come down from Hugging Face on the first run, into
+`.tools/huggingface/`. Run the commands from the repo root, after `source dev/activate`.
 
 ## 1. Pronunciation coverage (any OS, already measured)
 

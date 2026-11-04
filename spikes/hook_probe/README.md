@@ -13,6 +13,7 @@ It runs anywhere Claude Code runs and needs no audio hardware. It uses the stand
 From the repo root:
 
 ```sh
+source dev/activate
 uv sync
 uv run python spikes/hook_probe/probe_cli.py install ~/earshot-probe
 claude --version                     # note it in spikes/RESULTS.md
@@ -30,7 +31,7 @@ don't share the raw log.
 
 ## Runs
 
-Switch modes from a second terminal in the repo root:
+Switch modes from a second terminal in the repo root, after `source dev/activate` there too:
 
 ```sh
 uv run python spikes/hook_probe/probe_cli.py mode <mode> [seconds]

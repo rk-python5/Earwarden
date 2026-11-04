@@ -5,7 +5,8 @@ check the gap. It adds one check the design depends on (D-002): ECAPA exported t
 same embeddings as PyTorch at every phrase length, so the daemon never needs PyTorch.
 
 It runs on any OS with the dependencies, but it was written for the M2. The first run downloads
-PyTorch and the ECAPA model from Hugging Face. Run the commands from the repo root.
+PyTorch and the ECAPA model from Hugging Face; both stay inside the repo, under `.tools/` and
+`out/`. Run the commands from the repo root, after `source dev/activate`.
 
 ## 1. Record the phrases
 

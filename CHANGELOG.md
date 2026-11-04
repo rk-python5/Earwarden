@@ -6,6 +6,16 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+### Added
+
+- `dev/activate`, sourced once per terminal on the Mac. It keeps uv, the Python it downloads, every
+  library, the spike scripts' environments and model downloads inside the repo, under the
+  git-ignored `.tools/` (D-013).
+
+### Changed
+
+- Setup instructions use `source dev/activate` instead of installing uv system-wide.
+
 ## [0.0.1] - 2026-11-03
 
 The Step 0 kit: project conventions, the package scaffold, CI, and the feasibility spikes ready to

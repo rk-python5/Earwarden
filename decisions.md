@@ -30,6 +30,7 @@ How this file works:
 | D-010 | CI on GitHub-hosted macOS 15, Apple Silicon               | Accepted |
 | D-011 | Step 0 also measures the design-review risks              | Accepted |
 | D-012 | Every commit is authored by rehaan                        | Accepted |
+| D-013 | On the Mac, every install stays inside the repo           | Accepted |
 
 ## Decisions
 
@@ -186,6 +187,29 @@ How this file works:
   - Claude's part is credited by the `Co-Authored-By` trailer.
   - Sessions set the author with repo-local git config (`author.name`, `author.email`). A fresh
     clone doesn't carry that config, so `CLAUDE.md` asks each session to set it first.
+
+### D-013 On the Mac, every install stays inside the repo
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan
+- **Decision:** Everything Earshot installs on rehaan's Mac goes through venvs inside the repo
+  folder. `source dev/activate`, once per terminal:
+  - creates `.tools/uv-venv`, a venv that holds uv itself, installed with pip from the Mac's
+    `python3`, and puts only `uv` and `uvx` on that terminal's PATH
+  - points uv's cache, Python downloads and tool folders at `.tools/`, and Hugging Face downloads
+    at `.tools/huggingface/`
+
+  The Python 3.11 that uv downloads, the dev tools, and every spike's libraries and models all end
+  up in `.tools/` or `.venv/`, both git-ignored. Nothing goes into the home folder or the shell
+  profile, and deleting the two folders removes it all.
+- **Exceptions:** Xcode, which the Swift spike needs, and the Mac's own `python3`, used once to
+  make the uv venv.
+- **Consequences:** D-009 stands: uv is still the tool, and this decides where it lives on the Mac.
+  CI and cloud sessions keep their preinstalled uv. The docs no longer suggest the system-wide uv
+  installer or `brew install uv`.
+- **Tested:** in a fresh clone with no uv on PATH and an empty home folder, `source dev/activate`,
+  `uv sync`, the full test suite and a spike script all ran. `.venv` was built on the Python in
+  `.tools/python`, the spike's environment landed in `.tools/cache`, and nothing was written to the
+  home folder.
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
 

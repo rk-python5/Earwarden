@@ -5,8 +5,9 @@ leaks into the mic. It adds the self-approval check from the design review (P-06
 that ends in "say: approve orchard" be heard by the mic and transcribed as the answer?
 
 You need macOS with AirPods connected as both input and output. Use your normal listening volume.
-Run the commands from the repo root. The first run installs the dependencies; `selfcheck --asr`
-also downloads Parakeet if the speech spike hasn't already.
+Run the commands from the repo root, after `source dev/activate`. The first run installs the
+dependencies inside the repo; `selfcheck --asr` also downloads Parakeet if the speech spike hasn't
+already.
 
 ```sh
 uv run spikes/audio_io/airpods_io.py devices     # check the AirPods appear as input and output

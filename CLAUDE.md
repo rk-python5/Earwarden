@@ -61,6 +61,10 @@ Cut a release only when rehaan asks, or when a phase's gate passes (D-006).
 
 ## Commands
 
+On rehaan's Mac, every install stays inside the repo, in venvs (D-013). Start each terminal there
+with `source dev/activate`, and never suggest system-wide installs (no `curl | sh`, no
+`brew install`, no global `pip`). Cloud containers already have uv and don't need it.
+
 ```sh
 uv sync                        # create .venv with the dev tools (Python 3.11)
 uv run ruff check .            # lint
@@ -75,6 +79,8 @@ compiles when you work in the Linux container, so check the CI run after changin
 
 ## Layout
 
+- `dev/activate`: sourced per terminal on the Mac. It keeps uv, its Python, caches, spike
+  environments and model downloads in the git-ignored `.tools/` (D-013).
 - `docs/design/`: the spec (PDF).
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.

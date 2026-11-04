@@ -25,14 +25,22 @@ are in [spikes/](spikes/), and their results feed the go/no-go note,
 
 ## Development
 
-You need [uv](https://docs.astral.sh/uv/); it fetches Python 3.11 if you don't have it. Install it
-with `curl -LsSf https://astral.sh/uv/install.sh | sh` (or `brew install uv`), then open a new
-terminal.
+Everything Earshot installs stays inside this folder, in venvs: uv itself, the Python 3.11 it
+downloads, every library and every model. Nothing goes into your system or shell profile
+(decisions.md, D-013). In each new terminal, from the repo:
+
+```sh
+source dev/activate
+```
+
+The first time, this puts uv into a venv in `.tools/` using your Mac's `python3`. Then:
 
 ```sh
 uv sync
 uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest
 ```
+
+To remove everything, delete `.tools/` and `.venv/`.
 
 The PyPI distribution will be `earshot-agents`; the import name and commands stay `earshot`.
 

@@ -1,0 +1,50 @@
+# Source this from inside the Earshot repo, once in every new terminal:
+#
+#     source dev/activate
+#
+# It keeps everything Earshot installs inside this repo (decisions.md, D-013), in .tools/, which
+# git ignores:
+#
+#   .tools/uv-venv/      a venv that holds uv itself, made on first use with the Mac's python3
+#   .tools/bin/          uv and uvx, put on PATH for this terminal only
+#   .tools/python/       the Python 3.11 that uv downloads
+#   .tools/cache/        uv's cache, including the environments the spike scripts run in
+#   .tools/huggingface/  models the spikes download
+#
+# The project's own libraries go into .venv/ as usual. Nothing goes into your home folder or your
+# shell profile. Delete .tools/ and .venv/ to remove all of it.
+
+earshot_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$earshot_root" ] || [ ! -f "$earshot_root/dev/activate" ]; then
+    echo "Run 'source dev/activate' from inside the Earshot repo." >&2
+    return 1 2>/dev/null || exit 1
+fi
+earshot_tools="$earshot_root/.tools"
+
+export UV_CACHE_DIR="$earshot_tools/cache"
+export UV_PYTHON_INSTALL_DIR="$earshot_tools/python"
+export UV_PYTHON_BIN_DIR="$earshot_tools/python/bin"
+export UV_TOOL_DIR="$earshot_tools/uv-tools"
+export UV_TOOL_BIN_DIR="$earshot_tools/bin"
+export UV_PYTHON_PREFERENCE="only-managed"
+export HF_HOME="$earshot_tools/huggingface"
+
+if [ ! -x "$earshot_tools/uv-venv/bin/uv" ]; then
+    echo "First run: installing uv into $earshot_tools/uv-venv"
+    if ! python3 -m venv "$earshot_tools/uv-venv" ||
+        ! "$earshot_tools/uv-venv/bin/python" -m pip install --quiet --no-cache-dir \
+            --disable-pip-version-check uv; then
+        echo "Couldn't install uv; see the messages above." >&2
+        return 1 2>/dev/null || exit 1
+    fi
+fi
+mkdir -p "$earshot_tools/bin"
+ln -sf "$earshot_tools/uv-venv/bin/uv" "$earshot_tools/bin/uv"
+ln -sf "$earshot_tools/uv-venv/bin/uvx" "$earshot_tools/bin/uvx"
+case ":$PATH:" in
+    *":$earshot_tools/bin:"*) ;;
+    *) export PATH="$earshot_tools/bin:$PATH" ;;
+esac
+
+echo "Earshot tools ready: $(uv --version), everything inside $earshot_tools"
+unset earshot_root earshot_tools

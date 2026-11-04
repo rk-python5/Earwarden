@@ -10,8 +10,8 @@ and macOS ties microphone permission to the binary that asks for it. This check 
 3. Does the permission survive a change of interpreter, as happens when uv upgrades Python?
 
 The answers decide whether the mic should move into a small signed helper app (P-13). Needs macOS.
-Run from the repo root with the system or uv Python; the script itself uses only the standard
-library.
+Run from the repo root after `source dev/activate`: `setup` uses uv to build the test venv in
+`out/`. The script itself uses only the standard library, so your Mac's `python3` runs it.
 
 ```sh
 python3 spikes/launchd_mic/agent.py setup                      # venv with sounddevice and numpy
