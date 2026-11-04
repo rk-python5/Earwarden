@@ -86,4 +86,20 @@ Finally, it shows whether the plan's sound-alike matcher (Double Metaphone with 
 accepts the decoys. The intent rules are in `speech_data.py`, and `tests/spikes` checks them
 against every label.
 
+Two diagnostics follow the summary:
+
+- **Misheard replies:** every reply whose transcript isn't exactly what was said, with the intent
+  it got and its confidence.
+- **A what-if line:** how many approvals would be missed, and how many false approvals made, if
+  "approved" and "a proof" counted as the word "approve". The first run on the Mac heard both in
+  place of "approve".
+
+```sh
+uv run spikes/speech/asr_eval.py --trim
+```
+
+`--trim` cuts the silence around each reply before recognition, keeping a quarter of a second
+either side, the way the real pipeline's voice detector will. Comparing the two runs shows whether
+the fixed 3-second window causes misses, such as a bare "yes" coming back empty.
+
 Write the numbers in [`../RESULTS.md`](../RESULTS.md), section 2.
