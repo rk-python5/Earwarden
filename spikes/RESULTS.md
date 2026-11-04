@@ -68,8 +68,8 @@ Steps: [speech/README.md](speech/README.md).
 | Kokoro time to first audio, median and p95                   | ≤ 200 ms                 | 237 ms median, 384 ms p95 (30 sentences). It grows with the first sentence's length: 164 ms for a two-word sentence, about 370 ms for nine words. | No, but fixable |
 | Kokoro real-time factor                                      | note                     | 0.104, about ten times faster than real time. The model loads in 0.8 s once cached. | —    |
 | Kokoro peak memory                                           | about 0.2 GB             | 1.36 GB MLX peak (on an 11.6 s sentence), 0.78 GB process memory | No   |
-| Parakeet yes/no correct, quiet                               | ≥ 98%                    | 16/19 (84.2%) | No   |
-| Parakeet yes/no correct, noisy                               | ≥ 95%                    | 13/19 (68.4%) | No   |
+| Parakeet yes/no correct, quiet                               | ≥ 98%                    | 16/19 (84.2%); with the silence trimmed, 17/19 (89.5%) | No   |
+| Parakeet yes/no correct, noisy                               | ≥ 95%                    | 13/19 (68.4%); with the silence trimmed, 18/19 (94.7%) | No, nearly |
 | Transcript exact, quiet and noisy                            | note                     | 29/50 (58%) quiet, 20/50 (40%) noisy. Intent correct: 35/50 and 28/50. | —    |
 | False approvals, all 100 replies                             | 0                        | 0 | Yes  |
 | Recognition time per reply, median                           | inside the 260 ms stage  | 90 ms median, 112 ms max | Yes  |
@@ -86,8 +86,34 @@ Notes:
   - "approve lantern" was heard as "Approved Lantern" or "A proof lantern", so the exact-phrase
     rule rejected genuine answers.
 
-  A second run lists every miss and tests cutting the silence around each reply (`--trim`), as
-  the pipeline's voice detector will. Results are pending.
+- **Diagnosis run (4 Nov 2026), with every miss listed:**
+  - **Silence caused the empty answers.** With the full 3-second window, 18 short replies came
+    back empty: yes, yep, nope, wait, later, cancel, deny, status, repeat, details, sure, hmm, and
+    "docs, no". With the silence trimmed, as the voice detector will, only a bare "yes" came back
+    empty, once in each room. Yes/no accuracy rose to 89.5% quiet and 94.7% noisy.
+  - **The recogniser can't hear "approve", but it hears the challenge word.** In the trimmed run,
+    "approve" came out right in only 1 of 20 genuine challenge replies. The rest were "Approved",
+    "A proof", "A true", "A blue", "A broom", "A bro", "A drove" or "A Pro". The challenge word was
+    right in 18 of 20; the misses were "harbor" heard as "Harvard" and "tunnel" as "or none", both
+    in noise.
+  - **What-ifs** (trimmed run; the second worked out by hand from the listed transcripts):
+    - Counting "approved" and "a proof" as "approve" still misses 6 approvals in quiet and 7 in
+      noise.
+    - Letting the challenge word alone decide misses 2 in each room (the two above in noise; "API,
+      yes" and the empty "yes" in quiet). It makes 1 false approval: in noise, the decoy "approve
+      orchid" came out as "Atro orchard". That's only safe if no two challenge words sound alike,
+      which P-08 already requires.
+  - **The plan's matcher failed a decoy:** in the quiet trimmed run, "Approve orchid." was heard
+    correctly, and the Double Metaphone matcher accepted it for "orchard". The strict rule refused
+    it.
+  - **Spoken session names are unreliable:** "docs" was heard as "dogs" (four times) and "API" as
+    "A B I". See P-16.
+  - **Other single words in noise:** "cancel" came out as "Dan said" and "later" as "Data."
+  - **Confidence is still weak after trimming:** the median lowest-word probability was 0.687
+    when right and 0.510 when wrong.
+
+  Next: the same 100 recordings through Parakeet v3 and Whisper large-v3-turbo, to see whether
+  either keeps the lone "yes".
 - **Safety held:** across 100 replies, including the negation traps, nothing that wasn't an
   approval was ever taken as one.
 - **Kokoro's first sound:** a short first chunk fixes it, either by splitting the first sentence at
@@ -184,7 +210,7 @@ Notes:
 | Week-1 test                                 | Pass? | Notes |
 | ------------------------------------------- | ----- | ----- |
 | 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
-| 2. Speech in and out on the M2 with AirPods | Not yet | Speed passes, with Kokoro a little over budget. Recognition fails the accuracy targets with no false approvals; a diagnosis run is pending. |
+| 2. Speech in and out on the M2 with AirPods | Not yet | Speed passes, with Kokoro a little over budget. Recognition: trimming the silence gives 89.5% quiet and 94.7% noisy, short of 98% and 95%, with no false approvals. Matching on the challenge word looks like the fix for challenge phrases. Two more recognisers still to compare. |
 | 3. Head motion                              |       |       |
 | 4. Voiceprint                               |       |       |
 

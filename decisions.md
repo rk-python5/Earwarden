@@ -321,6 +321,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   later". Recognisers also drop short words like "don't".
 - **Proposal:** Approval needs the whole utterance to match a short list exactly. Any negation or
   extra word means no approval: deny, instruction or ask again.
+- **Evidence (Step 0, 4 Nov 2026):** Over 200 recognitions of rehaan's 100 recorded replies, the
+  strict rules never approved anything that wasn't an approval, including "don't do it", "do it
+  later" and "don't approve that". The cost is re-asks: about one reply in ten missed in quiet,
+  after trimming.
 - **Decide by:** before the Phase 1 intent rules.
 
 ### P-08 Challenge-word matching
@@ -336,6 +340,15 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   word was often heard as "Approved" or "A proof", which rejected genuine answers. Both point the
   same way: match the carrier leniently, and pick challenge words that are far apart in sound,
   not just in spelling.
+- **Evidence (diagnosis run, silence trimmed):**
+  - "Approve" came out right in only 1 of 20 genuine challenge replies; the challenge word in 18.
+  - The plan's Double Metaphone matcher accepted a correctly heard "Approve orchid." as "orchard".
+- **Revised proposal:**
+  - Let the challenge word decide: it must end a reply of four words or fewer that contains no
+    negation. Ignore the carrier word; it's only there to give the voiceprint enough speech.
+  - Pick the ~200 words so no two sound alike, because in noise the recogniser turned "orchid"
+    into "orchard".
+  - `asr_eval.py` reports this rule as a what-if.
 - **Proposal:** Require an exact code match, or pick the ~200 words so every pair, and every word
   against common English words, is at least 2 code edits apart.
 - **Decide by:** before Phase 2.
@@ -441,6 +454,20 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   requests (mode, tool, would-be tier) to see how many reach Earshot per hour. Collecting the 500
   real prompts may need sessions in default mode.
 - **Decide by:** before Phase 1.
+
+### P-16 Don't route answers by spoken session name
+
+- **Problem:** The plan lets you address a session by name ("API, yes", "the docs one"), using
+  repo folder names. In Step 0 the recogniser heard "docs" as "dogs" four times and "API" as "A B
+  I". Folder names are often acronyms or ordinary words, and those are exactly what it gets
+  wrong. Answering the wrong session would approve the wrong request.
+- **Proposal:**
+  - An answer always applies to the one open approval. The floor manager already allows only one
+    at a time.
+  - Earshot speaks session names but never parses them to pick a request. If a reply names a
+    session other than the open one, it isn't an approval: ask again.
+  - Briefings can still use names, since they only read things out.
+- **Decide by:** before the Phase 1 intent rules.
 
 ## Open questions
 
