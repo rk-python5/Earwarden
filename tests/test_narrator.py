@@ -122,7 +122,13 @@ def test_redaction_keeps_the_context(text: str, kept: str) -> None:
 
 @pytest.mark.parametrize(
     "text",
-    ["git push origin feature/login", "src/earshot/daemon/server.py", "uv run pytest -x", "a" * 40],
+    [
+        "git push origin feature/login",
+        "src/earshot/daemon/server.py",
+        "uv run pytest -x",
+        "a" * 40,
+        "/private/var/folders/x7/k2j3l4m5n6p7q8r9s0t1u2v3w4/T/earshot-test-Ab3dE5gH/notes.md",
+    ],
 )
 def test_ordinary_text_isnt_redacted(text: str) -> None:
     assert not redact.contains_secret(text)

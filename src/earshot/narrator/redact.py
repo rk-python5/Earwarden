@@ -31,7 +31,8 @@ PATTERNS = [
         r"(?P<s>[^\s&\"']{4,})"
     ),
 ]
-CANDIDATE = re.compile(r"[A-Za-z0-9+/_=-]{32,}")
+# No slash: a long path is not a key, and paths are full of mixed-case and digits.
+CANDIDATE = re.compile(r"[A-Za-z0-9+_=-]{32,}")
 
 
 def _entropy(text: str) -> float:

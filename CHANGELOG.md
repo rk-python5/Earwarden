@@ -54,6 +54,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   - Kokoro speaks; Parakeet transcribes, with Whisper as the second listen when Parakeet is
     unclear (D-017). Talking over Earshot stops it.
   - The voice libraries are a separate, Mac-only install group: `uv sync --group voice`.
+- `earshot service install` and `uninstall` (a LaunchAgent that starts `earshotd` at login and
+  restarts it), `earshot doctor` (hooks, token, daemon, voice libraries, headset, LaunchAgent,
+  audit log), and `earshot test` (one made-up request through the running daemon). Phase 1,
+  milestones 8 and 9.
+- An end-to-end test that replays rehaan's captured Claude Code session through the real hook and
+  daemon.
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)
@@ -65,6 +71,7 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ### Changed
 
+- Secret redaction no longer mistakes a long file path for a key.
 - CI runs as one macOS job instead of two: GitHub's Mac runners kept leaving one of the two
   waiting until its timeout. The Swift build still runs even when a Python check fails.
 

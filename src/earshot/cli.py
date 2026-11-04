@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from earshot import audit, auth, paths
+from earshot import audit, auth, paths, service, wire
 from earshot.connectors.claude_code import settings
 
 DEFAULT_SETTINGS = Path.home() / ".claude" / "settings.json"
@@ -115,6 +115,128 @@ def audit_tail(args: argparse.Namespace) -> int:
     return 0
 
 
+def service_install(args: argparse.Namespace) -> int:
+    where = paths.resolve(args.home)
+    daemon_args = []
+    if args.home:
+        daemon_args += ["--home", str(Path(args.home).expanduser().resolve())]
+    if args.voice:
+        daemon_args.append("--voice")
+    print(service.install(daemon_args, where.state_dir / "earshotd.log"))
+    return 0
+
+
+def service_uninstall(args: argparse.Namespace) -> int:
+    print(service.uninstall())
+    return 0
+
+
+def _check(ok: bool, good: str, bad: str) -> bool:
+    print(f"  {'ok ' if ok else 'NO '} {good if ok else bad}")
+    return ok
+
+
+def doctor(args: argparse.Namespace) -> int:
+    """Check each piece Earshot needs, and say what to do about anything missing."""
+    import importlib.util
+    import socket
+    import stat
+
+    where = paths.resolve(args.home)
+    target = Path(args.settings).expanduser()
+    print("Earshot doctor")
+    results = []
+    text = target.read_text(encoding="utf-8") if target.exists() else ""
+    results.append(
+        _check(
+            settings.MARKER in text,
+            f"hooks are in {target}",
+            f"no hooks in {target}: run earshot init",
+        )
+    )
+    token_ok = where.token.exists() and stat.S_IMODE(where.token.stat().st_mode) == 0o600
+    results.append(_check(token_ok, "the token is private", f"no private token at {where.token}"))
+    reachable = False
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
+            conn.settimeout(1)
+            conn.connect(str(where.socket))
+            reachable = True
+    except OSError:
+        pass
+    results.append(
+        _check(
+            reachable,
+            "earshotd is running",
+            "earshotd isn't running: start it, or earshot service install",
+        )
+    )
+    voice = importlib.util.find_spec("mlx_audio") is not None
+    results.append(
+        _check(
+            voice, "the voice libraries are installed", "no voice libraries: uv sync --group voice"
+        )
+    )
+    if voice:
+        from earshot.voice.mac import MacVoice
+
+        headset = MacVoice(headset=args.headset).headset_ready()
+        results.append(
+            _check(
+                headset,
+                f"the output is your {args.headset}",
+                f"the output isn't your {args.headset}: connect it to the Mac",
+            )
+        )
+    if sys.platform == "darwin":
+        results.append(
+            _check(
+                service.loaded(),
+                "the LaunchAgent is loaded",
+                "no LaunchAgent: earshot service install (optional)",
+            )
+        )
+    problems = audit.verify(where.audit_dir, audit.load_key(where))
+    intact = problems in ([], ["the log is empty"])
+    results.append(_check(intact, "the audit log is intact", "; ".join(problems)))
+    print("The microphone permission shows up the first time Earshot listens.")
+    return 0 if all(results) else 1
+
+
+def test_approval(args: argparse.Namespace) -> int:
+    """One made-up request through the running daemon, the way Claude Code would send it."""
+    import json
+    import os
+    import subprocess
+    import tempfile
+
+    folder = tempfile.mkdtemp(prefix="earshot-test-")
+    payload = {
+        "hook_event_name": "PermissionRequest",
+        "session_id": "earshot-test",
+        "prompt_id": wire.new_request_id(),
+        "cwd": folder,
+        "permission_mode": "default",
+        "tool_name": "Write",
+        "tool_input": {"file_path": os.path.join(folder, "notes.md"), "content": "hello"},  # noqa: PTH118
+    }
+    print("Sending a test request: write notes.md. Answer by voice, or wait for the screen.")
+    script = Path(sys.executable).parent / "earshot-hook"
+    command = [str(script)] + (["--home", args.home] if args.home else [])
+    result = subprocess.run(  # noqa: S603 - our own hook, with fixed arguments
+        command, input=json.dumps(payload).encode(), capture_output=True, check=False
+    )
+    if not result.stdout:
+        print("Result: handed to the screen (or no daemon is running).")
+        return 0
+    decision = json.loads(result.stdout)["hookSpecificOutput"]["decision"]
+    print(
+        f"Result: {decision['behavior']}"
+        + (f": {decision['message']}" if decision.get("message") else "")
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="earshot", description="Answer Claude Code by voice.")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -141,6 +263,25 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
     q.add_argument("-n", "--lines", type=int, default=10, help="how many (default 10)")
     q.set_defaults(run=audit_tail)
+
+    p = commands.add_parser("service", help="start earshotd at login (macOS)")
+    service_commands = p.add_subparsers(dest="service_command", required=True)
+    q = service_commands.add_parser("install", help="install and load the LaunchAgent")
+    q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    q.add_argument("--voice", action="store_true", help="run the daemon with --voice")
+    q.set_defaults(run=service_install)
+    q = service_commands.add_parser("uninstall", help="stop and remove the LaunchAgent")
+    q.set_defaults(run=service_uninstall)
+
+    p = commands.add_parser("doctor", help="check everything Earshot needs")
+    p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.add_argument("--settings", default=str(DEFAULT_SETTINGS), help="the settings file")
+    p.add_argument("--headset", default="AirPods", help="part of the headset's device name")
+    p.set_defaults(run=doctor)
+
+    p = commands.add_parser("test", help="send one made-up request through the running daemon")
+    p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.set_defaults(run=test_approval)
 
     args = parser.parse_args(argv)
     try:

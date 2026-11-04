@@ -75,8 +75,8 @@ rehaan's Mac and AirPods.
 | 5 | Speech out and speech in                   | Mac             | D-022, D-023 | Built; Mac check pending  |
 | 6 | Intent, presence and the decision path     | Cloud           | D-024        | Done                      |
 | 7 | The audit log                              | Cloud           | D-025        | Done                      |
-| 8 | The helper app, the LaunchAgent and doctor | Mac             | (D-016)      | To do                     |
-| 9 | End to end, and the gate                   | Cloud, then Mac | —            | To do                     |
+| 8 | The helper app, the LaunchAgent and doctor | Mac             | D-023        | Built; Mac check pending  |
+| 9 | End to end, and the gate                   | Cloud, then Mac | —            | Built; the gate is next   |
 
 ### 1. Contracts and the hook client (cloud)
 
@@ -260,3 +260,18 @@ rehaan's Mac and AirPods.
   - speech with the real models and AirPods
   - a short hardware checklist
   - the 100 recorded replies (P-14)
+
+## Running the gate (on the Mac)
+
+1. `uv sync --group voice`, then `uv run earshot init --home .tools/earshot`.
+2. `uv run earshotd --home .tools/earshot --voice --pin-voice` (pinned, because you'll be at the
+   keyboard). The first run downloads the models.
+3. `uv run earshot doctor --home .tools/earshot`, then `uv run earshot test --home .tools/earshot`:
+   answer "yes" in the AirPods.
+4. In a scratch repo, start `claude --permission-mode default` and ask it to edit a file. Answer
+   "yes" by voice; then ask for a `git push` and check it's only announced.
+5. `uv run earshot audit verify --home .tools/earshot` and `audit tail`.
+
+When the edit is approved by voice end to end, record the gate in `decisions.md` and release
+0.1.0. `earshot service install --home … --voice` makes the daemon start at login.
+
