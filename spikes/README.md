@@ -5,6 +5,15 @@ a README with the exact steps, and a section in [RESULTS.md](RESULTS.md), the go
 fill in with numbers. The Step 0 gate passes when all four week-1 tests pass and are written up
 there.
 
+Before you start, on the Mac:
+
+1. Install [uv](https://docs.astral.sh/uv/) with `curl -LsSf https://astral.sh/uv/install.sh | sh`
+   (or `brew install uv`), then open a new terminal.
+2. Run `uv sync` once in the repo root.
+
+The motion spike also needs Xcode. Run every command from the repo root unless a README says
+otherwise.
+
 | Spike                     | Plan items covered                                   | Runs on                     |
 | ------------------------- | ---------------------------------------------------- | --------------------------- |
 | [hook_probe](hook_probe/) | Real `PermissionRequest` payload, allow and deny from a script, round-trip time, Q-1 | Any machine with Claude Code |

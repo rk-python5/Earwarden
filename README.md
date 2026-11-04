@@ -25,7 +25,9 @@ are in [spikes/](spikes/), and their results feed the go/no-go note,
 
 ## Development
 
-You need [uv](https://docs.astral.sh/uv/); it fetches Python 3.11 if you don't have it.
+You need [uv](https://docs.astral.sh/uv/); it fetches Python 3.11 if you don't have it. Install it
+with `curl -LsSf https://astral.sh/uv/install.sh | sh` (or `brew install uv`), then open a new
+terminal.
 
 ```sh
 uv sync
