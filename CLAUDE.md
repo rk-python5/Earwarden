@@ -90,7 +90,8 @@ compiles when you work in the Linux container, so check the CI run after changin
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in
   `spikes/RESULTS.md`. Spike scripts declare their dependencies inline (PEP 723) and run with
   `uv run`. Their raw output goes to a git-ignored `out/` folder. Only their stdlib and
-  pure-Python parts (`spikes/hook_probe`, `speech_data.py`, `launchd_mic/agent.py`) are
+  pure-Python parts (`spikes/hook_probe`, `speech_data.py`, `speech/combine.py`,
+  `launchd_mic/agent.py`) are
   type-checked and tested in CI, because the rest need macOS hardware.
 - `tests/`: pytest. Tests for spikes live in `tests/spikes/`.
 

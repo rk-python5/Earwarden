@@ -35,7 +35,6 @@ from __future__ import annotations
 import argparse
 import csv
 import platform
-import re
 import resource
 import statistics
 import sys
@@ -44,33 +43,11 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from speech_data import NEGATIONS, intent, normalize
+from speech_data import challenge_word_intent, intent, normalize, with_carrier_variants
 
 HERE = Path(__file__).resolve().parent
 REPLIES = HERE / "out" / "replies"
 THRESHOLDS = (0.5, 0.7, 0.8, 0.9, 0.95)
-# What the recogniser made of "approve" in the first Mac run; the what-if counts them as "approve".
-CARRIER_VARIANTS = re.compile(r"^(approved|approves|a proof|a prove)\b")
-
-
-# Spellings the recogniser may use for a challenge word.
-SPELLINGS = {"harbour": "harbor"}
-
-
-def with_carrier_variants(text: str) -> str:
-    return CARRIER_VARIANTS.sub("approve", normalize(text))
-
-
-def challenge_word_intent(text: str, challenge: str | None) -> str:
-    """Approve when a short reply ends with the challenge word, ignoring the carrier word."""
-    if challenge is None:
-        return intent(text)
-    words = normalize(text).split()
-    if words and len(words) <= 4 and not NEGATIONS.intersection(words):
-        last = SPELLINGS.get(words[-1], words[-1])
-        if last in (challenge, challenge + "s"):
-            return "approve"
-    return intent(text, challenge)
 
 
 def trim_silence(audio: np.ndarray, rate: int, margin_s: float = 0.25) -> np.ndarray:

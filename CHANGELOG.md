@@ -15,6 +15,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   and deny from a hook work, and Q-1 is answered: Claude Code shows its own dialog while the hook is
   still running, and whichever answers first wins. P-12 is revised to match, and P-15 (auto mode)
   is new.
+- `spikes/speech/combine.py`: works out a two-stage recogniser from two finished runs, a fast one
+  first and a second listen only when it's unclear, judged with Earshot's rules. The challenge-word
+  rule now lives in the tested `speech_data.py`.
 
 ### Changed
 
@@ -23,7 +26,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   asked for again. It also says who decided: the hook, or you on screen.
 - The speech evaluation lists every misheard reply and can cut the silence around replies first
   (`--trim`). It also adds two what-ifs for challenge phrases (lenient "approve", and the challenge
-  word alone), and can compare other recognisers such as Parakeet v3 and Whisper (`--model`).
+  word alone), and can compare other recognisers such as Parakeet v3, Whisper and Moonshine
+  (`--model`).
 
 ## [0.0.1] - 2026-11-03
 

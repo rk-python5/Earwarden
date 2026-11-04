@@ -115,4 +115,28 @@ uv run spikes/speech/asr_eval.py --trim --model mlx-community/whisper-large-v3-t
 Whisper runs without the confidence score, because the patched decode only works for TDT models
 like Parakeet. Each run writes its own CSV to `out/`, named after the model.
 
+Moonshine is a small, English-only recogniser built for short commands:
+
+```sh
+uv run spikes/speech/asr_eval.py --trim --model UsefulSensors/moonshine-base
+```
+
+## 5. Two-stage recognition (seconds, no models)
+
+```sh
+uv run spikes/speech/combine.py parakeet-tdt-0.6b-v2 whisper-large-v3-turbo-asr-fp16
+```
+
+This works out, from two finished runs, what would happen if the first recogniser heard every
+reply and the second got a listen only when the first was unclear (an empty transcript included).
+Both are judged with Earshot's rules. For each setup it reports:
+
+- yes/no accuracy
+- false approvals
+- approvals missed
+- how often the second listen was needed
+- the time per reply, adding both recognisers when both ran
+
+Any two model names from finished `--trim` runs work.
+
 Write the numbers in [`../RESULTS.md`](../RESULTS.md), section 2.

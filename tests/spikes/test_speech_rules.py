@@ -7,7 +7,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "spikes" / "speech"))
 
-from speech_data import CHALLENGE_WORDS, REPLIES, intent, normalize
+from speech_data import (
+    CHALLENGE_WORDS,
+    REPLIES,
+    challenge_word_intent,
+    intent,
+    normalize,
+    with_carrier_variants,
+)
 
 
 def test_fifty_unique_replies_per_condition() -> None:
@@ -52,3 +59,40 @@ def test_normalize() -> None:
 
 def test_challenge_words_are_distinct() -> None:
     assert len(set(CHALLENGE_WORDS)) == len(CHALLENGE_WORDS) == 10
+
+
+@pytest.mark.parametrize(
+    ("heard", "challenge", "expected"),
+    [
+        # Transcripts from rehaan's Mac runs
+        ("A true compass.", "compass", "approve"),
+        ("A proof harbour.", "harbor", "approve"),
+        ("Approved marbles.", "marble", "approve"),
+        ("Approved Harvard.", "harbor", "unclear"),
+        ("Approved or none.", "tunnel", "unclear"),
+        ("Approve orchid.", "orchard", "unclear"),
+        ("Approved cobbler.", "copper", "unclear"),
+        ("A broom lantern.", "harbor", "unclear"),
+        ("Yes.", "compass", "unclear"),
+        ("No.", "compass", "deny"),
+        # A negation or a long reply never approves, even ending in the word
+        ("Don't approve lantern.", "lantern", "unclear"),
+        ("not lantern", "lantern", "unclear"),
+        ("I really do not want to approve this lantern", "lantern", "unclear"),
+        # The known risk: a close-sounding word heard as the challenge word (P-08)
+        ("Atro orchard.", "orchard", "approve"),
+    ],
+)
+def test_challenge_word_rule(heard: str, challenge: str, expected: str) -> None:
+    assert challenge_word_intent(heard, challenge) == expected
+
+
+def test_challenge_word_rule_without_a_challenge_is_the_plain_rule() -> None:
+    for text in ("yes", "don't do it", "Approved.", ""):
+        assert challenge_word_intent(text, None) == intent(text)
+
+
+def test_carrier_variants() -> None:
+    assert with_carrier_variants("Approved Lantern.") == "approve lantern"
+    assert with_carrier_variants("A proof lantern") == "approve lantern"
+    assert with_carrier_variants("Approve or kid?") == "approve or kid"

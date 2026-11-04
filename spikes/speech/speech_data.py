@@ -242,3 +242,31 @@ def intent(text: str, challenge: str | None = None) -> str:
     if any(w in NEGATIONS for w in words):
         return "deny"
     return "unclear"
+
+
+# P-08 (revised after the Mac runs): the recogniser rarely hears "approve" itself, but usually gets
+# the challenge word right. These are the variants it produced for "approve".
+CARRIER_VARIANTS = re.compile(r"^(approved|approves|a proof|a prove)\b")
+# Spellings the recogniser may use for a challenge word.
+SPELLINGS = {"harbour": "harbor"}
+
+
+def with_carrier_variants(text: str) -> str:
+    """Read "approved" and "a proof" at the start of a reply as "approve"."""
+    return CARRIER_VARIANTS.sub("approve", normalize(text))
+
+
+def challenge_word_intent(text: str, challenge: str | None) -> str:
+    """Let the challenge word decide: it must end a reply of four words or fewer, with no negation.
+
+    Without a challenge this is the plain whole-reply rule (P-07). It's only safe if no two
+    challenge words sound alike, because the recogniser can turn one into the other (P-08).
+    """
+    if challenge is None:
+        return intent(text)
+    words = normalize(text).split()
+    if words and len(words) <= 4 and not NEGATIONS.intersection(words):
+        last = SPELLINGS.get(words[-1], words[-1])
+        if last in (challenge, challenge + "s"):
+            return "approve"
+    return intent(text, challenge)
