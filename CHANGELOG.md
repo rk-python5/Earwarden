@@ -22,7 +22,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - The hook probe report credits each tool run to its own request, even when a refused command is
   asked for again. It also says who decided: the hook, or you on screen.
 - The speech evaluation lists every misheard reply and can cut the silence around replies first
-  (`--trim`). It also adds a what-if for counting "approved" and "a proof" as "approve".
+  (`--trim`). It also adds two what-ifs for challenge phrases (lenient "approve", and the challenge
+  word alone), and can compare other recognisers such as Parakeet v3 and Whisper (`--model`).
 
 ## [0.0.1] - 2026-11-03
 

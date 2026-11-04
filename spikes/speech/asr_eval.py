@@ -6,7 +6,8 @@
 
     uv run spikes/speech/asr_eval.py
     uv run spikes/speech/asr_eval.py --trim      # cut the silence around each reply first
-    uv run spikes/speech/asr_eval.py --model mlx-community/parakeet-tdt-0.6b-v2
+    uv run spikes/speech/asr_eval.py --trim --model mlx-community/parakeet-tdt-0.6b-v3
+    uv run spikes/speech/asr_eval.py --trim --model mlx-community/whisper-large-v3-turbo-asr-fp16
 
 The report covers:
 
@@ -14,8 +15,8 @@ The report covers:
 - False approvals: these must be zero.
 - Recognition time and memory.
 - Whether a per-word confidence score separates right from wrong transcripts.
-- Every misheard reply, and a what-if: how many missed approvals come back if "approved" and
-  "a proof" count as the word "approve".
+- Every misheard reply, and two what-ifs for challenge phrases: counting "approved" and "a
+  proof" as "approve", and matching on the challenge word alone (the last word of a short reply).
 
 `--trim` cuts the silence before and after each reply, the way the real pipeline's voice-activity
 detector will, to see whether the 3-second recording window itself causes misses.
@@ -23,8 +24,10 @@ detector will, to see whether the 3-second recording window itself causes misses
 mlx-audio's decoder keeps no probabilities, so this script re-runs the same greedy decode while
 keeping the softmax probability of every token it picks (decisions.md, P-05). It also checks
 whether the plan's sound-alike challenge matching (Double Metaphone with a one-edit allowance)
-would accept the decoy replies (P-08). Reads out/replies/labels.csv from record_replies.py and
-writes out/asr_results.csv (out/asr_results_trim.csv with --trim).
+would accept the decoy replies (P-08). The confidence score needs a TDT model such as Parakeet;
+other models, such as Whisper, are scored without it. Reads out/replies/labels.csv from
+record_replies.py and writes one CSV per model and setting to out/, for example
+out/asr_results-parakeet-tdt-0.6b-v2-trim.csv.
 """
 
 from __future__ import annotations
@@ -41,7 +44,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from speech_data import intent, normalize
+from speech_data import NEGATIONS, intent, normalize
 
 HERE = Path(__file__).resolve().parent
 REPLIES = HERE / "out" / "replies"
@@ -50,8 +53,24 @@ THRESHOLDS = (0.5, 0.7, 0.8, 0.9, 0.95)
 CARRIER_VARIANTS = re.compile(r"^(approved|approves|a proof|a prove)\b")
 
 
+# Spellings the recogniser may use for a challenge word.
+SPELLINGS = {"harbour": "harbor"}
+
+
 def with_carrier_variants(text: str) -> str:
     return CARRIER_VARIANTS.sub("approve", normalize(text))
+
+
+def challenge_word_intent(text: str, challenge: str | None) -> str:
+    """Approve when a short reply ends with the challenge word, ignoring the carrier word."""
+    if challenge is None:
+        return intent(text)
+    words = normalize(text).split()
+    if words and len(words) <= 4 and not NEGATIONS.intersection(words):
+        last = SPELLINGS.get(words[-1], words[-1])
+        if last in (challenge, challenge + "s"):
+            return "approve"
+    return intent(text, challenge)
 
 
 def trim_silence(audio: np.ndarray, rate: int, margin_s: float = 0.25) -> np.ndarray:
@@ -156,7 +175,8 @@ def main() -> None:
     parser.add_argument("--model", default="mlx-community/parakeet-tdt-0.6b-v2")
     parser.add_argument("--trim", action="store_true", help="cut the silence around each reply")
     args = parser.parse_args()
-    results = HERE / "out" / ("asr_results_trim.csv" if args.trim else "asr_results.csv")
+    tag = args.model.rsplit("/", 1)[-1] + ("-trim" if args.trim else "")
+    results = HERE / "out" / f"asr_results-{tag}.csv"
     if sys.platform != "darwin" or platform.machine() != "arm64":
         sys.exit("MLX needs macOS on Apple Silicon.")
     labels_path = REPLIES / "labels.csv"
@@ -170,8 +190,13 @@ def main() -> None:
     start = time.perf_counter()
     model = load_stt(args.model)
     load_s = time.perf_counter() - start
-    if not hasattr(model, "durations"):
-        sys.exit(f"{args.model} isn't a TDT model; the confidence decode needs one.")
+    has_confidence = hasattr(model, "durations")  # the patched decode is for TDT models only
+
+    def transcribe(clip: Any) -> str:
+        if has_confidence:
+            return str(model.generate(clip).text)
+        return str(model.generate(clip, language="en", temperature=0.0).text)
+
     with labels_path.open(newline="", encoding="utf-8") as f:
         labels = list(csv.DictReader(f))
     model.generate(str(REPLIES / labels[0]["file"]))  # warm-up
@@ -184,9 +209,12 @@ def main() -> None:
             audio = trim_silence(audio, rate)
         clip = mx.array(audio)
         start = time.perf_counter()
-        stock_text = model.generate(clip).text
+        stock_text = transcribe(clip)
         latency_ms = (time.perf_counter() - start) * 1000
-        text, word_conf = decode_with_confidence(model, clip)
+        if has_confidence:
+            text, word_conf = decode_with_confidence(model, clip)
+        else:
+            text, word_conf = stock_text, []
         challenge = label["challenge"] or None
         got = intent(text, challenge)
         lenient = intent(with_carrier_variants(text), challenge)
@@ -200,6 +228,7 @@ def main() -> None:
                 "got_intent": got,
                 "false_approval": got == "approve" and label["intent"] != "approve",
                 "lenient_intent": lenient,
+                "word_intent": challenge_word_intent(text, challenge),
                 "min_conf": min(word_conf, default=0.0),
                 "mean_conf": statistics.fmean(word_conf) if word_conf else 0.0,
                 "latency_ms": latency_ms,
@@ -241,6 +270,12 @@ def main() -> None:
             f"  what-if 'approved'/'a proof' count as 'approve': {lenient_missed} missed, "
             f"{lenient_false} false approvals"
         )
+        word_missed = sum(r["intent"] == "approve" and r["word_intent"] != "approve" for r in group)
+        word_false = sum(r["word_intent"] == "approve" and r["intent"] != "approve" for r in group)
+        print(
+            f"  what-if the challenge word alone decides: {word_missed} missed, "
+            f"{word_false} false approvals"
+        )
 
     latencies = [r["latency_ms"] for r in rows]
     print(
@@ -254,8 +289,11 @@ def main() -> None:
 
     right = [r for r in rows if r["exact"]]
     wrong = [r for r in rows if not r["exact"]]
-    print(f"\nConfidence (lowest word probability): {len(right)} right, {len(wrong)} wrong")
-    if right and wrong:
+    if not has_confidence:
+        print("\nConfidence: not available for this model (the patched decode is TDT-only).")
+    else:
+        print(f"\nConfidence (lowest word probability): {len(right)} right, {len(wrong)} wrong")
+    if has_confidence and right and wrong:
         print(
             f"  median when right {statistics.median(r['min_conf'] for r in right):.3f}, "
             f"when wrong {statistics.median(r['min_conf'] for r in wrong):.3f}"

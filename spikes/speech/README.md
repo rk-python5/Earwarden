@@ -90,9 +90,12 @@ Two diagnostics follow the summary:
 
 - **Misheard replies:** every reply whose transcript isn't exactly what was said, with the intent
   it got and its confidence.
-- **A what-if line:** how many approvals would be missed, and how many false approvals made, if
-  "approved" and "a proof" counted as the word "approve". The first run on the Mac heard both in
-  place of "approve".
+- **Two what-if lines for challenge phrases:**
+  - Counting "approved" and "a proof" as the word "approve". The first run on the Mac heard both
+    in place of "approve".
+  - Letting the challenge word alone decide: the last word of a reply of four words or fewer,
+    with no negation in it. The Mac runs showed the recogniser rarely hears "approve" itself, but
+    usually gets the challenge word right.
 
 ```sh
 uv run spikes/speech/asr_eval.py --trim
@@ -101,5 +104,15 @@ uv run spikes/speech/asr_eval.py --trim
 `--trim` cuts the silence around each reply before recognition, keeping a quarter of a second
 either side, the way the real pipeline's voice detector will. Comparing the two runs shows whether
 the fixed 3-second window causes misses, such as a bare "yes" coming back empty.
+
+To compare recognisers on the same recordings, add `--model`:
+
+```sh
+uv run spikes/speech/asr_eval.py --trim --model mlx-community/parakeet-tdt-0.6b-v3
+uv run spikes/speech/asr_eval.py --trim --model mlx-community/whisper-large-v3-turbo-asr-fp16
+```
+
+Whisper runs without the confidence score, because the patched decode only works for TDT models
+like Parakeet. Each run writes its own CSV to `out/`, named after the model.
 
 Write the numbers in [`../RESULTS.md`](../RESULTS.md), section 2.
