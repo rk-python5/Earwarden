@@ -6,6 +6,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+### Added
+
+- The Phase 1 plan (`docs/phase-1-plan.md`): nine milestones in build order, which ones need
+  rehaan's Mac, and the decisions each one needs. It also proposes P-19, a safety stub that keeps
+  risky requests off voice until Phase 2's policy engine exists.
+
 ## [0.0.2] - 2026-11-04
 
 Step 0's results. All four week-1 tests ran on rehaan's Mac and passed, and the Step 0 gate passed

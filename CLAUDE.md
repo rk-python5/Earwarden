@@ -21,7 +21,9 @@ Step 0 (week 1, feasibility) passed its gate on 4 Nov 2026 (D-014). Its results 
 
 Phase 1 (weeks 2–3, the walking skeleton) is next. Its gate: a real Claude Code session on
 rehaan's subscription, approved by voice end to end. Its scope is the plan's Phase 1 list, plus the
-helper app's mic capture and device changes (D-016) and two-stage recognition (D-017).
+helper app's mic capture and device changes (D-016) and two-stage recognition (D-017). The build
+order, milestones and the decisions each one needs are in `docs/phase-1-plan.md`. Mark milestones
+done there as they finish.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build
 Phase 2 components (policy engine, resolvers, challenge words, voiceprint, nod detector and so on)
@@ -91,6 +93,7 @@ compiles when you work in the Linux container, so check the CI run after changin
 - `dev/activate`: sourced per terminal on the Mac. It keeps uv, its Python, caches, spike
   environments and model downloads in the git-ignored `.tools/` (D-013).
 - `docs/design/`: the spec (PDF).
+- `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in

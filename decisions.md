@@ -621,6 +621,26 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Record labelled `log` sessions to build the plan's gesture dataset and classifier.
 - **Status:** Accepted at the Step 0 gate as D-018.
 
+### P-19 A safety stub until the policy engine exists
+
+- **Problem:** Phase 1 speaks requests and accepts "yes" for an answer, but the plan builds the
+  policy engine (tiers, the never-by-voice floor, resolvers) and secret redaction in Phase 2. In
+  between, a spoken "yes" could approve a force push, and a secret in a command could be read
+  aloud or logged. That breaks two invariants: tier 3 is never approvable by voice, and secrets
+  are redacted before anything is spoken or logged.
+- **Proposal:** Until Phase 2's policy engine replaces it:
+  - **Voice approves only an allowlist:**
+    - file edits and writes inside the session's folder, except in `.git/`, `.claude/`,
+      `.earshot/`, `.github/workflows/` and `.envrc`, and except build and test config
+      (`conftest.py`, `package.json`, `Makefile`, `pyproject.toml`, `setup.py`), as P-01 suggests
+    - single test commands (`pytest`, `uv run pytest`, `npm test`), with no chaining, pipes or
+      redirection
+  - **Everything else goes to the screen.** With voice on, Earshot says so briefly ("API needs
+    you; it's on your screen") and doesn't listen.
+  - **Secrets are redacted** by pattern before anything is spoken or logged. Phase 2 adds entropy
+    detection.
+- **Decide by:** before Phase 1 (milestone 1 of `docs/phase-1-plan.md`).
+
 ## Open questions
 
 From the plan's open-questions list.
