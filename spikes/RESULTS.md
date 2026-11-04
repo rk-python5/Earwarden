@@ -20,7 +20,7 @@ The plan's four week-1 tests map to the sections below:
 | Mac (chip, memory)               | MacBook Air, M2, 16 GB (from the plan) |
 | macOS version                    | 27.0.1 |
 | Claude Code version              | 2.1.318 |
-| AirPods model and firmware       | pending (shows as "femida's AirPods - Find My", with separate input and output devices) |
+| AirPods model and firmware       | AirPods 4 (ANC), model A3055, firmware 9A348. They show up as "femida's AirPods - Find My", with separate input and output devices. |
 | Earshot version / commit         | 0.0.2.dev0, commit c281407 (hook probe) |
 
 ## 1. Hook probe
@@ -112,10 +112,10 @@ Steps: [launchd_mic/README.md](launchd_mic/README.md). This feeds P-13.
 
 | Check                                                    | Target              | Result | Pass |
 | -------------------------------------------------------- | ------------------- | ------ | ---- |
-| Prompt shown when started by launchd? Name it shows      | a prompt, clear name | pending: did macOS show a popup, and with what name? | |
+| Prompt shown when started by launchd? Name it shows      | a prompt, clear name | A popup appeared within a second of the first launchd run and was allowed. It's named after the Python program, not "Earshot". | Partly: a prompt, but not a clear name |
 | Verdict under launchd after granting                     | audio came through  | Audio came through: Python 3.11.18 started by launchd (parent pid 1), recording the AirPods at 24 kHz | Yes |
 | Verdict from Terminal                                    | audio came through  | Audio came through | —    |
-| After switching the interpreter: asked again? verdict    | note                | Audio came through with Python 3.12.16 under launchd; whether macOS asked again is pending | —    |
+| After switching the interpreter: asked again? verdict    | note                | Audio came through with Python 3.12.16 under launchd. Each interpreter got its own grant: Privacy & Security → Microphone lists both Python versions. | —    |
 
 Notes:
 
@@ -124,6 +124,9 @@ Notes:
   a real login in Phase 1.
 - **Which program macOS checked:** the interpreter it would have checked lives inside the repo
   (`.tools/python/cpython-3.11.18-…/bin/python3.11`, then `cpython-3.12.16`), because of D-013.
+- **What this means:** macOS ties the mic grant to the exact Python program. Every Python update
+  (uv's managed Python changes even on patch releases) would bring a new popup named after Python,
+  probably at login when nobody's watching. This is the case for P-13.
 
 ## 5. Head motion
 

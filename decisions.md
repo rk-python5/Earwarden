@@ -397,8 +397,11 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   models and the logic. Step 0 tests launchd mic access (`spikes/launchd_mic`).
 - **Evidence so far (Step 0, 4 Nov 2026, `launchd_mic`):**
   - Python started by launchd recorded real audio from the AirPods, with Python 3.11.18 and again
-    after switching to Python 3.12.16. So the first problem didn't show up in this run.
-  - Still pending: whether macOS showed a permission popup and what it said.
+    after switching to Python 3.12.16.
+  - macOS asked within a second, with a popup named after the Python program. It keeps a separate
+    grant per interpreter: Privacy & Security → Microphone lists both Python versions. So the first
+    problem is real. Every Python update means a new popup, named after Python rather than Earshot,
+    most likely at login. A signed helper app would be asked once, under its own name.
   - Caveat: the runs were started from Terminal, and a login-started agent may differ.
 - **Decide by:** Step 0 gate.
 
