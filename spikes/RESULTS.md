@@ -222,15 +222,23 @@ Steps: [motion/README.md](motion/README.md).
 
 | Check                                                      | Target                         | Result | Pass |
 | ---------------------------------------------------------- | ------------------------------ | ------ | ---- |
-| Motion available from a Mac CLI; prompt shown and its name | works                          |        |      |
-| Axes: nod and shake (`calibrate`)                          | note                           |        | —    |
-| Deliberate nods and shakes detected (`count --minutes 2`)  | all of them                    |        |      |
-| Threshold used                                             | note                           |        | —    |
-| False nods per hour of normal work, raw                    | note                           |        | —    |
-| False nods per hour inside answer windows (estimate)       | ≤ 1                            |        |      |
-| Motion sample rate                                         | note                           |        | —    |
+| Motion available from a Mac CLI; prompt shown and its name | works                          | Only as its own app. Run from Terminal, macOS stopped the tool with `abort` as soon as it asked for motion. Built and opened as a signed app (`run.sh`), it got a Motion & Fitness prompt, was allowed, and worked. | Yes, as an app |
+| Axes: nod and shake (`calibrate`)                          | note                           | Inconclusive. The motion stream was still connecting during the nod window, so it recorded nothing; shakes looked strongest on z. Calibration now waits for motion; a re-run is pending. | —    |
+| Deliberate nods and shakes detected (`count --minutes 2`)  | all of them                    | Detected, but over-counted: 18 nods and 15 shakes in 2 minutes of deliberate gestures, often several per gesture and across axes (a nod also firing a shake) | Partly |
+| Threshold used                                             | note                           | The plan's v1 detector: two opposite swings over 1.0 rad/s within 1.2 s | —    |
+| False nods per hour of normal work, raw                    | note                           | 49 nods and 79 shakes in 61 minutes, none made on purpose (48 and 78 per hour) | —    |
+| False nods per hour inside answer windows (estimate)       | ≤ 1                            | 0.80 at 10 tier-1 prompts an hour, 2.41 at 30. Per prompt, about 8% of 6-second answer windows would contain a nod you didn't make. | Only at 10 prompts an hour |
+| Motion sample rate                                         | note                           | 50 Hz, steady for the hour, with one brief disconnect and reconnect | —    |
 
 Notes:
+
+- **It has to be an app.** Head motion only worked once the spike ran as its own signed app with a
+  motion usage string, opened through Launch Services. That's more evidence for P-13's helper app.
+- **False nods come in bursts:** for example, five within 2 s at 8:01:45, likely stretching,
+  drinking or laughing. A trained classifier (the plan's gesture workstream) or stricter rules are
+  needed before a nod approves anything. See P-18.
+- **Next:** re-run `./run.sh calibrate` with the fix to confirm the axes. Labelled `log` sessions
+  will seed the gesture dataset later.
 
 ## 6. Voiceprint
 
@@ -253,7 +261,7 @@ Notes:
 | ------------------------------------------- | ----- | ----- |
 | 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
 | 2. Speech in and out on the M2 with AirPods | Yes, with changes (P-17) | Parakeet v2 with a Whisper second listen gets yes/no 100% in quiet and noise, missing nothing, in 70 ms median. Still open: Kokoro's first audio (237 ms against 200), the 1.2 s second listens, and memory above 3 GB until the models are quantised. |
-| 3. Head motion                              |       |       |
+| 3. Head motion                              | Yes, with changes (P-18) | Motion works from a signed app at 50 Hz. The v1 detector gives 48 false nods an hour, so nods shouldn't approve until a stricter detector is proven. |
 | 4. Voiceprint                               |       |       |
 
 Decided at the gate, from the numbers above:

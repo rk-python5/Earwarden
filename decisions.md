@@ -434,6 +434,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     problem is real. Every Python update means a new popup, named after Python rather than Earshot,
     most likely at login. A signed helper app would be asked once, under its own name.
   - Caveat: the runs were started from Terminal, and a login-started agent may differ.
+  - Head motion (Step 0, 4 Nov): run from Terminal, the motion spike was stopped by macOS with
+    `abort` as soon as it asked for motion. It worked only as its own signed app, with a motion
+    usage string, opened through Launch Services, which then got its own Motion & Fitness prompt.
+    So the helper must be a real app bundle, not a bare command-line tool.
 - **Decide by:** Step 0 gate.
 
 ### P-14 Audio integration tests on a self-hosted runner
@@ -494,6 +498,24 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Memory: both models unquantised are about 3 GB of weights alone, before Kokoro. Try 8-bit
     Parakeet and 4-bit Whisper, or load Whisper only when needed.
 - **Decide by:** Step 0 gate.
+
+### P-18 Nods don't approve until a stricter detector is proven
+
+- **Problem:** On rehaan's AirPods 4, the plan's v1 detector (two opposite swings over 1.0 rad/s
+  within 1.2 s) reported 49 nods and 79 shakes in an hour of normal work, none of them deliberate.
+  - Inside 6-second answer windows that's 0.8 false nods an hour at 10 tier-1 prompts an hour,
+    which meets the plan's target of at most 1. But about 8% of answer windows would contain a nod
+    you didn't make, and that nod would approve the request.
+  - Deliberate gestures also fired several times each, and across axes.
+- **Proposal:**
+  - In v1.0 a nod never approves on its own. Either ship with nods off (`nods = false`), or require
+    a stricter pattern: a double nod within 2 s, with pitch clearly dominating yaw and roll, after
+    about a second of stillness. Re-measure with the hour-long count, aiming for under 1% of
+    windows.
+  - A shake never denies on its own; it hands the prompt to the screen, so a false shake costs
+    nothing.
+  - Record labelled `log` sessions to build the plan's gesture dataset and classifier.
+- **Decide by:** before Phase 2 (where the nod detector is built).
 
 ## Open questions
 
