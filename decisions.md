@@ -260,6 +260,9 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - "quickstart" in one of the plan-style summaries
 
   Spelled letter by letter, all of them come back.
+
+  On the Mac (4 Nov), turning the fallback off made sentence 01 half a second shorter, because
+  "quickstart" was dropped.
 - **Proposal:** The checker runs the pronunciation step and rejects any sentence with a word that
   gets no phonemes, and the normaliser spells such words letter by letter. Step 0 measures this
   (`spikes/speech`).
@@ -272,6 +275,9 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   installs `espeakng-loader`, which bundles espeak-ng itself. Either breaks the plan's "never bundle
   espeak-ng". `misaki.en` also downloads the spaCy model at first use, which is a network call at
   runtime.
+- **Also seen on the Mac (4 Nov):** `misaki[en]` pulled PyTorch into the voice's environment (a
+  warning from `torch` at start-up). The leaner front-end avoids that, which matters for the 3 GB
+  memory target.
 - **Proposal:**
   - Call `misaki.en.G2P` directly and feed its phonemes to the Kokoro model; never import
     `misaki.espeak`.
@@ -286,6 +292,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   timings but no probabilities.
 - **Proposal:** Keep the softmax probability of each chosen token in a patched decode step. Step 0
   measures whether it separates right from wrong transcripts (`spikes/speech`).
+- **Evidence (first Mac run, 4 Nov):** The patched decode works and matches mlx-audio's text on
+  all 100 replies, but the score separates poorly. The median lowest-word probability is 0.597
+  when right and 0.375 when wrong, and a 0.70 threshold catches 94% of errors while re-asking 65%
+  of correct answers. On its own it's too weak a gate. A diagnosis run is pending.
 - **Decide by:** Step 0 gate.
 
 ### P-06 Earshot must not hear itself approve
@@ -321,6 +331,11 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   words too. In a 20-word candidate list, five pairs were one code edit apart: meadow/summit,
   falcon/violin, velvet/walnut, walnut/violin, thistle/saddle. The Step 0 recordings use ten words
   that are pairwise at least two edits apart, plus decoys.
+- **Evidence (first Mac run, 4 Nov):** No decoy passed. But in noise, "approve orchid" came out as
+  "Uproom orchard": the recogniser turned the decoy into the real challenge word. The carrier
+  word was often heard as "Approved" or "A proof", which rejected genuine answers. Both point the
+  same way: match the carrier leniently, and pick challenge words that are far apart in sound,
+  not just in spelling.
 - **Proposal:** Require an exact code match, or pick the ~200 words so every pair, and every word
   against common English words, is at least 2 code edits apart.
 - **Decide by:** before Phase 2.

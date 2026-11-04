@@ -65,20 +65,40 @@ Steps: [speech/README.md](speech/README.md).
 
 | Check                                                        | Target                   | Result | Pass |
 | ------------------------------------------------------------ | ------------------------ | ------ | ---- |
-| Kokoro time to first audio, median and p95                   | ≤ 200 ms                 |        |      |
-| Kokoro real-time factor                                      | note                     |        | —    |
-| Kokoro peak memory                                           | about 0.2 GB             |        |      |
-| Parakeet yes/no correct, quiet                               | ≥ 98%                    |        |      |
-| Parakeet yes/no correct, noisy                               | ≥ 95%                    |        |      |
-| Transcript exact, quiet and noisy                            | note                     |        | —    |
-| False approvals, all 100 replies                             | 0                        |        |      |
-| Recognition time per reply, median                           | inside the 260 ms stage  |        |      |
-| Parakeet peak memory                                         | about 1.3 GB             |        |      |
-| Confidence threshold: % of wrong caught, % of right re-asked | pick a threshold         |        | —    |
-| Plan's Double Metaphone matcher on the decoys                | rejects them             |        |      |
-| Words skipped without espeak-ng (`g2p_coverage.py`)          | none, after normalising  | 476 of the top 1,000 PyPI names (47.6%) and 48 of 87 identifiers have no phonemes; all come back when spelled letter by letter (measured 3 Nov 2026) | No: needs P-03 |
+| Kokoro time to first audio, median and p95                   | ≤ 200 ms                 | 237 ms median, 384 ms p95 (30 sentences). It grows with the first sentence's length: 164 ms for a two-word sentence, about 370 ms for nine words. | No, but fixable |
+| Kokoro real-time factor                                      | note                     | 0.104, about ten times faster than real time. The model loads in 0.8 s once cached. | —    |
+| Kokoro peak memory                                           | about 0.2 GB             | 1.36 GB MLX peak (on an 11.6 s sentence), 0.78 GB process memory | No   |
+| Parakeet yes/no correct, quiet                               | ≥ 98%                    | 16/19 (84.2%) | No   |
+| Parakeet yes/no correct, noisy                               | ≥ 95%                    | 13/19 (68.4%) | No   |
+| Transcript exact, quiet and noisy                            | note                     | 29/50 (58%) quiet, 20/50 (40%) noisy. Intent correct: 35/50 and 28/50. | —    |
+| False approvals, all 100 replies                             | 0                        | 0 | Yes  |
+| Recognition time per reply, median                           | inside the 260 ms stage  | 90 ms median, 112 ms max | Yes  |
+| Parakeet peak memory                                         | about 1.3 GB             | 2.60 GB MLX peak, 1.03 GB process memory, with the bf16 model (the plan assumed 8-bit) | No   |
+| Confidence threshold: % of wrong caught, % of right re-asked | pick a threshold         | Weak separation: median lowest-word probability 0.597 when right, 0.375 when wrong. A 0.70 threshold catches 94% of wrong transcripts but re-asks 65% of right ones. | —    |
+| Plan's Double Metaphone matcher on the decoys                | rejects them             | Rejected all 8, but mostly because the recogniser had already garbled the phrase. In noise, "approve orchid" came out as "Uproom orchard": the decoy word was heard as the real challenge word. | Yes, with a caveat |
+| Words skipped without espeak-ng (`g2p_coverage.py`)          | none, after normalising  | 476 of the top 1,000 PyPI names (47.6%) and 48 of 87 identifiers have no phonemes; all come back when spelled letter by letter (measured 3 Nov 2026). On the Mac, turning the fallback off made sentence 01 0.5 s shorter (5.7 → 5.2 s): "quickstart" was dropped. | No: needs P-03 |
 
 Notes:
+
+- **First recognition run (4 Nov 2026), and why it misses so much.** The decoy lines show two
+  causes:
+  - A bare "yes" came back as an empty transcript, in both rooms.
+  - "approve lantern" was heard as "Approved Lantern" or "A proof lantern", so the exact-phrase
+    rule rejected genuine answers.
+
+  A second run lists every miss and tests cutting the silence around each reply (`--trim`), as
+  the pipeline's voice detector will. Results are pending.
+- **Safety held:** across 100 replies, including the negation traps, nothing that wasn't an
+  approval was ever taken as one.
+- **Kokoro's first sound:** a short first chunk fixes it, either by splitting the first sentence at
+  a comma or by speaking a short lead-in. So does synthesising while the chime plays.
+- **Memory is at risk.** The two MLX peaks add up to about 4 GB against the plan's 3 GB target.
+  For Phase 1 to try:
+  - the 8-bit Parakeet
+  - an MLX cache limit
+  - P-04's leaner text front-end. `misaki[en]` also pulled PyTorch into the voice's environment,
+    as the warning at start-up shows.
+- **Downloads:** the voice model was 355 MB. Its first load took 60 s including the download.
 
 ## 3. AirPods audio I/O
 
@@ -164,7 +184,7 @@ Notes:
 | Week-1 test                                 | Pass? | Notes |
 | ------------------------------------------- | ----- | ----- |
 | 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
-| 2. Speech in and out on the M2 with AirPods | In progress | AirPods I/O and the launchd mic are done; the speech spike (Kokoro, Parakeet, 100 replies) is next |
+| 2. Speech in and out on the M2 with AirPods | Not yet | Speed passes, with Kokoro a little over budget. Recognition fails the accuracy targets with no false approvals; a diagnosis run is pending. |
 | 3. Head motion                              |       |       |
 | 4. Voiceprint                               |       |       |
 
