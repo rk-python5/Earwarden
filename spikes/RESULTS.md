@@ -18,8 +18,8 @@ The plan's four week-1 tests map to the sections below:
 | -------------------------------- | ----- |
 | Date                             | 2026-11-04 (hook probe) |
 | Mac (chip, memory)               | MacBook Air, M2, 16 GB (from the plan) |
-| macOS version                    | pending |
-| Claude Code version              | pending |
+| macOS version                    | 27.0.1 |
+| Claude Code version              | 2.1.318 |
 | AirPods model and firmware       | not used yet |
 | Earshot version / commit         | 0.0.2.dev0, commit c281407 (hook probe) |
 
@@ -36,7 +36,7 @@ Steps: [hook_probe/README.md](hook_probe/README.md).
 | Late hook decision vs. an on-screen answer (run 5)       | answer                 | The on-screen answer wins. Retry: approved on screen at 2.5 s, and the hook's allow at 20 s was ignored. First attempt: No on screen ended the hook with SIGTERM before it could answer. | —    |
 | How Esc ends a waiting hook (run 6)                      | answer                 | SIGTERM, and the tool doesn't run. | —    |
 | `permission_prompt` notification during a hold (run 7)   | answer                 | Yes: it arrives 6.0 s after the request, even while the hook is still running (seen 3 times). Run 7 itself wasn't needed. | —    |
-| Hook process start, median and p95 (`bench`)             | well under 80 ms       | pending | |
+| Hook process start, median and p95 (`bench`)             | well under 80 ms       | 19.7 ms median, 24.6 ms p95 (18.1 ms fastest, 30 runs). That leaves about 55 ms of the plan's 80 ms for the socket round trip. | Yes |
 | `PreToolUse` → `PermissionRequest` gap, median (`report`) | note                  | 39 ms median, 37–62 ms over 7 requests. Includes Claude Code's own permission check, starting the hook process and Python start-up. | —    |
 | Decision → `PostToolUse` gap, median (`report`)          | note                   | 59 ms (run 2, the one immediate allow) | —    |
 | Payload has the fields the plan's ApprovalRequest needs  | yes                    | Yes. `PermissionRequest` carries `session_id`, `cwd`, `permission_mode`, `tool_name` and `tool_input`. It also has `permission_suggestions`, `prompt_id`, `effort`, `scratchpad_dir` and `transcript_path`, but no `tool_use_id`. | Yes |
@@ -55,6 +55,8 @@ Notes:
   - `Notification` sends `idle_prompt` and `permission_prompt`.
   - `SessionStart` gives `session_id`, `cwd`, `model` and `source`.
   - `SessionEnd` gives a `reason`.
+- Starting Python with `-I -S` (no site packages) didn't help: 22.0 ms median against 19.7 ms.
+  The real hook doesn't need it.
 - The raw log and sample payloads stay on the Mac, in `spikes/hook_probe/out/`.
 
 ## 2. Speech
@@ -141,7 +143,7 @@ Notes:
 
 | Week-1 test                                 | Pass? | Notes |
 | ------------------------------------------- | ----- | ----- |
-| 1. Claude Code hook round trip              | Yes, pending the `bench` number | Q-1 answered: the dialog shows while the hook runs |
+| 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
 | 2. Speech in and out on the M2 with AirPods |       |       |
 | 3. Head motion                              |       |       |
 | 4. Voiceprint                               |       |       |
