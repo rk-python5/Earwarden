@@ -347,7 +347,8 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Let the challenge word decide: it must end a reply of four words or fewer that contains no
     negation. Ignore the carrier word; it's only there to give the voiceprint enough speech.
   - Pick the ~200 words so no two sound alike, because in noise the recogniser turned "orchid"
-    into "orchard".
+    into "orchard". In the recogniser comparison, every model did this at least once. Parakeet v3
+    even produced the exact phrase "Approve orchard.", so close pairs are unsafe under any rule.
   - `asr_eval.py` reports this rule as a what-if.
 - **Proposal:** Require an exact code match, or pick the ~200 words so every pair, and every word
   against common English words, is at least 2 code edits apart.

@@ -112,8 +112,25 @@ Notes:
   - **Confidence is still weak after trimming:** the median lowest-word probability was 0.687
     when right and 0.510 when wrong.
 
-  Next: the same 100 recordings through Parakeet v3 and Whisper large-v3-turbo, to see whether
-  either keeps the lone "yes".
+- **Recogniser comparison (4 Nov 2026):** the same 100 recordings, silence trimmed. "Word rule" is
+  the challenge-word-alone what-if (P-08, revised).
+
+  | Recogniser | Yes/no quiet | Yes/no noisy | False approvals, strict rules | Word rule: missed quiet / noisy, false approvals | Median time per reply | MLX peak |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Parakeet TDT 0.6B v2 | 17/19 (89.5%) | 18/19 (94.7%) | 0 | 2 / 2, 1 | 68 ms | 2.60 GB |
+  | Parakeet TDT 0.6B v3 | 15/19 (78.9%) | 15/19 (78.9%) | **1** | 4 / 5, 1 | 68 ms | 2.64 GB |
+  | Whisper large-v3-turbo | **19/19 (100%)** | 17/19 (89.5%) | 0 | 0 / 4, 1 | **1,135 ms** | 2.14 GB |
+
+  - **Parakeet v3 is ruled out.** It sometimes decided short English answers were Russian
+    ("Штоп." for "stop", "Я." for "yeah", "Докс ну." for "docs, no"). It also heard the decoy
+    "approve orchid" as "Approve orchard.", a false approval even under the strict rules.
+  - **Whisper is the most accurate in quiet but about four times over the recognition budget.**
+    It always encodes a 30-second window, however short the clip. It's also weaker in noise: "do
+    it" became "Blink." and "status" became "Stryker.".
+  - **Every model false-approved the same decoy under the word rule:** in noise, "approve orchid"
+    came out ending in "orchard". Close-sounding words must stay out of the challenge list (P-08).
+  - **Next:** Moonshine, a small English-only recogniser for short commands, and a two-stage
+    what-if: a fast recogniser first, and a second listen only when the first is unclear.
 - **Safety held:** across 100 replies, including the negation traps, nothing that wasn't an
   approval was ever taken as one.
 - **Kokoro's first sound:** a short first chunk fixes it, either by splitting the first sentence at
@@ -210,7 +227,7 @@ Notes:
 | Week-1 test                                 | Pass? | Notes |
 | ------------------------------------------- | ----- | ----- |
 | 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
-| 2. Speech in and out on the M2 with AirPods | Not yet | Speed passes, with Kokoro a little over budget. Recognition: trimming the silence gives 89.5% quiet and 94.7% noisy, short of 98% and 95%, with no false approvals. Matching on the challenge word looks like the fix for challenge phrases. Two more recognisers still to compare. |
+| 2. Speech in and out on the M2 with AirPods | Not yet | Speed passes, with Kokoro a little over budget. No single recogniser meets both accuracy targets at the plan's speed: Parakeet v2 gives 89.5% quiet and 94.7% noisy in 68 ms; Whisper gives 100% and 89.5% but takes 1.1 s; v3 is ruled out. Moonshine and a two-stage setup are still to test. |
 | 3. Head motion                              |       |       |
 | 4. Voiceprint                               |       |       |
 
