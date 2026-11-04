@@ -42,10 +42,10 @@ Not in Phase 1, which waits for Phase 2 or later:
 - the floor manager's modes and briefings, and push-to-talk
 - the summarizer model
 
-## A safety stub until Phase 2 (P-19)
+## A safety stub until Phase 2 (D-019)
 
 Phase 1 speaks requests and accepts "yes", but the rules that keep tier 3 away from voice only
-arrive with Phase 2's policy engine. P-19 proposes a stub until then:
+arrive with Phase 2's policy engine. Until then, a stub applies (D-019, from P-19):
 
 - **Voice approves only an allowlist:**
   - file edits and writes inside the session's folder, except in `.git/`, `.claude/`, `.earshot/`,
@@ -62,13 +62,13 @@ arrive with Phase 2's policy engine. P-19 proposes a stub until then:
 In build order. "Cloud" means Claude builds and tests it in a cloud session. "Mac" means it needs
 rehaan's Mac and AirPods.
 
-| #   | Milestone                                  | Where           | Decide first | Status |
+| #   | Milestone                                  | Where           | Rests on     | Status |
 | --- | ------------------------------------------ | --------------- | ------------ | ------ |
-| 1   | Contracts and the hook client              | Cloud           | P-12, P-19   | To do  |
-| 2   | The daemon core                            | Cloud           | P-12         | To do  |
-| 3   | Install, uninstall and observe mode        | Cloud, then Mac | P-15         | To do  |
-| 4   | Narrator v0 and redaction                  | Cloud           | P-03, P-04   | To do  |
-| 5   | Speech out and speech in                   | Mac             | P-04, P-14   | To do  |
+| 1   | Contracts and the hook client              | Cloud           | D-019, D-020 | To do  |
+| 2   | The daemon core                            | Cloud           | D-020        | To do  |
+| 3   | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | To do  |
+| 4   | Narrator v0 and redaction                  | Cloud           | P-03, D-022  | To do  |
+| 5   | Speech out and speech in                   | Mac             | D-022, P-14  | To do  |
 | 6   | Intent, presence and the decision path     | Cloud           | P-07, P-16   | To do  |
 | 7   | The audit log                              | Cloud           | P-10         | To do  |
 | 8   | The helper app, the LaunchAgent and doctor | Mac             | (D-016)      | To do  |
@@ -83,7 +83,7 @@ rehaan's Mac and AirPods.
   - It reads Claude Code's JSON and sends an ApprovalRequest over the socket with the token.
   - It waits up to the hand-off limit, then prints one decision object or nothing, and always
     exits 0.
-  - `--event` sends events without waiting. P-12 adds `PostToolUse` to them.
+  - `--event` sends events without waiting. D-020 adds `PostToolUse` to them.
 - Tests: every fail-safe path, run as a real subprocess:
   - no daemon, a missing token, a wrong token
   - malformed or oversized input
@@ -101,8 +101,8 @@ rehaan's Mac and AirPods.
   0600, checks a random token kept in a 0600 file, and never opens a network port.
 - A registry of pending requests: a decision must match a waiting hook's id.
 - Sessions: registered by SessionStart, updated by Stop, removed by SessionEnd. Any request from
-  an unknown session registers it on the spot (P-12).
-- Lifecycle (P-12): a `PostToolUse` for a pending request means you approved it on screen, and a
+  an unknown session registers it on the spot (D-020).
+- Lifecycle (D-020): a `PostToolUse` for a pending request means you approved it on screen, and a
   closed hook socket means you pressed No or Esc. Either cancels the voice prompt.
 - At this stage every request goes to the screen. The voice path plugs in at milestone 6.
 - **Done when:** tests cover the protocol, token rejection, three sessions at once, both kinds of
@@ -113,7 +113,7 @@ rehaan's Mac and AirPods.
 - `earshot init` backs up Claude Code's settings and adds Earshot's hooks next to any you already
   have. It also creates the config and the token. `earshot uninstall` removes only Earshot's
   entries.
-- Observe mode (P-15): for each request, the daemon logs the permission mode, the tool, and the
+- Observe mode (D-021): for each request, the daemon logs the permission mode, the tool, and the
   tier the stub would give it, then hands the request to the screen. It never answers.
 - **Mac:** run observe mode in the background through a week of normal work, while milestones 4
   to 7 are built. It counts how many prompts reach Earshot per hour under auto mode, and supplies
@@ -127,9 +127,9 @@ rehaan's Mac and AirPods.
   network call, MCP tool), plus a generic fallback.
 - The spoken-form normaliser, from the plan's table: `feature/login-v2` becomes "feature slash
   login v2", and so on. The 25-word length rule applies.
-- Secret redaction by pattern, before anything is spoken or logged (P-19). Phase 2 adds entropy
+- Secret redaction by pattern, before anything is spoken or logged (D-019). Phase 2 adds entropy
   detection and the fidelity checker.
-- Pronounceability (P-03): every word must get phonemes from Kokoro's front-end (P-04), or be
+- Pronounceability (P-03): every word must get phonemes from Kokoro's front-end (D-022), or be
   spelled out letter by letter. misaki runs on any OS, so CI checks it.
 - **Done when:** there are golden tests for each family, the plan's normaliser examples pass,
   and no word is silent on the Step 0 identifier lists.
@@ -137,7 +137,7 @@ rehaan's Mac and AirPods.
 ### 5. Speech out and speech in (Mac)
 
 - **Out:**
-  - Kokoro through the P-04 front-end, streamed sentence by sentence.
+  - Kokoro through the D-022 front-end, streamed sentence by sentence.
   - Chimes synthesised in code.
   - Before every utterance, a check that the AirPods are the output.
   - Work on the 237 ms first audio.
@@ -167,7 +167,7 @@ rehaan's Mac and AirPods.
 - A minimal floor: one approval open at a time, and the rest queued ("two more waiting"). Modes
   and briefings wait for Phase 4.
 - While you're away, Earshot holds and re-announces a prompt instead of handing off at 90 s
-  (P-12).
+  (D-020).
 - **Done when:** unit tests cover every intent label and the presence rules, with the system
   calls faked.
 
@@ -206,17 +206,17 @@ rehaan's Mac and AirPods.
 
 ## Decisions Phase 1 needs
 
-| Needed before | Proposal                                           | Recommendation |
-| ------------- | -------------------------------------------------- | -------------- |
-| Milestone 1   | P-12 lifecycle while the hook waits                | Accept         |
-| Milestone 1   | P-19 the safety stub                               | Accept         |
-| Milestone 3   | P-15 auto mode and observe mode                    | Accept         |
-| Milestone 4   | P-03 check that summaries can be spoken            | Accept         |
-| Milestone 4   | P-04 own the Kokoro front-end                      | Accept         |
-| Milestone 5   | P-14 recorded-audio tests on a self-hosted runner  | Accept         |
-| Milestone 6   | P-07 approve only on an exact match                | Accept         |
-| Milestone 6   | P-16 don't route answers by session name           | Accept         |
-| Milestone 7   | P-10 a keyed, anchored audit chain                 | Accept         |
+| Needed before | Proposal                                          | Status                    |
+| ------------- | ------------------------------------------------- | ------------------------- |
+| Milestone 1   | P-12 lifecycle while the hook waits               | Accepted as D-020         |
+| Milestone 1   | P-19 the safety stub                              | Accepted as D-019         |
+| Milestone 3   | P-15 auto mode and observe mode                   | Accepted as D-021         |
+| Milestone 4   | P-03 check that summaries can be spoken           | Open; recommend accepting |
+| Milestone 4   | P-04 own the Kokoro front-end                     | Accepted as D-022         |
+| Milestone 5   | P-14 recorded-audio tests on a self-hosted runner | Open; recommend accepting |
+| Milestone 6   | P-07 approve only on an exact match               | Open; recommend accepting |
+| Milestone 6   | P-16 don't route answers by session name          | Open; recommend accepting |
+| Milestone 7   | P-10 a keyed, anchored audit chain                | Open; recommend accepting |
 
 ## Where things live during development
 
@@ -226,7 +226,7 @@ rehaan's Mac and AirPods.
   `~/.earshot/` apply to real installs.
 - Hooks go into a scratch project's `.claude/settings.local.json`, not your global settings.
   Observe mode is the one exception: it needs the global settings to see your normal sessions, so
-  it's opt-in (P-15), with a backup that `earshot uninstall` restores.
+  it's opt-in (D-021), with a backup that `earshot uninstall` restores.
 
 ## Testing
 

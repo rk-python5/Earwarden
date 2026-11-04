@@ -36,6 +36,10 @@ How this file works:
 | D-016 | A signed Swift helper owns the macOS plumbing (P-13)      | Accepted |
 | D-017 | Two-stage recognition: Parakeet, then Whisper (P-17)      | Accepted |
 | D-018 | Nods don't approve on their own (P-18)                    | Accepted |
+| D-019 | A safety stub until the policy engine exists (P-19)       | Accepted |
+| D-020 | Lifecycle while the hook waits (P-12)                     | Accepted |
+| D-021 | Auto mode is a first filter; observe mode first (P-15)    | Accepted |
+| D-022 | Earshot owns Kokoro's text front-end (P-04)               | Accepted |
 
 ## Decisions
 
@@ -304,6 +308,75 @@ How this file works:
 - **Consequences:** Phase 2's nod detector is the stricter pattern; until it's proven, tier 1 relies
   on voice.
 
+### D-019 A safety stub until the policy engine exists
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, before Phase 1 (accepts P-19)
+- **Decision:** Until Phase 2's policy engine replaces it:
+  - **Voice approves only an allowlist:**
+    - file edits and writes inside the session's folder, except in `.git/`, `.claude/`,
+      `.earshot/`, `.github/workflows/` and `.envrc`, and except build and test config
+      (`conftest.py`, `package.json`, `Makefile`, `pyproject.toml`, `setup.py`)
+    - single test commands (`pytest`, `uv run pytest`, `npm test`), with no chaining, pipes or
+      redirection
+  - **Everything else goes to the screen.** With voice on, Earshot says so briefly and doesn't
+    listen.
+  - **Secrets are redacted** by pattern before anything is spoken or logged.
+- **Why:** Phase 1 speaks requests and accepts "yes" before the policy engine exists. Without the
+  stub, a spoken "yes" could approve a force push, and a secret could be spoken or logged.
+- **Consequences:** Both invariants hold from Phase 1's first voice approval: tier 3 is never
+  approvable by voice, and secrets are redacted. Phase 2's policy engine replaces the stub, and it
+  must never be looser.
+
+### D-020 Lifecycle while the hook waits
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, before Phase 1 (accepts P-12)
+- **Decision:**
+  - Earshot also installs a `PostToolUse` hook. When the requested tool runs, the daemon cancels
+    the voice prompt and the waiting hook exits silently. `PermissionRequest` has no
+    `tool_use_id`, so the match is on session, tool name and input.
+  - A closed hook socket (Claude Code's SIGTERM after No or Esc) cancels the approval.
+  - While you're away, a voice prompt holds for close to the hook timeout and is re-announced,
+    instead of handing off at 90 s. Milestone 6 sets the exact timings.
+  - A request from an unknown session registers it.
+  - In sessions that can't show a prompt, "no output" means deny, and the audit log records that.
+- **Why:** Step 0 answered Q-1: Claude Code's dialog stays on screen while the hook runs, and
+  whichever answers first wins. So the session never freezes, but Earshot could keep speaking
+  about a request you'd already answered at the keyboard.
+- **Consequences:** Claude Code's `permission_prompt` notification still arrives about 6 s in,
+  even while Earshot is asking by voice, and any desktop-notification hook fires with it.
+
+### D-021 Auto mode is a first filter; observe mode first
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, before Phase 1 (accepts P-15)
+- **Decision:**
+  - Earshot supports auto mode as a first filter: it answers whatever auto mode passes up, and
+    doesn't treat auto mode as a misconfiguration.
+  - In Phase 1 (milestone 3), Earshot runs in observe mode through a week of rehaan's normal work.
+    It logs each request's permission mode, tool and the tier the stub (D-019) would give it, and
+    never answers. For that week its hooks go into the global Claude Code settings, backed up
+    first; `earshot uninstall` restores them.
+- **Why:** In Step 0, auto mode approved all seven `touch` commands itself, and none reached the
+  hook. Prompts that reach Earshot under auto mode are rarer and lean toward tiers 2 and 3, while
+  the plan's targets assume default-mode prompting.
+- **Consequences:** The week's counts show how many prompts reach Earshot per hour, and its
+  payloads become test fixtures. Collecting EarshotBench's 500 real prompts may need sessions in
+  default mode.
+
+### D-022 Earshot owns Kokoro's text front-end
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** rehaan, before Phase 1 (accepts P-04)
+- **Decision:**
+  - Earshot calls `misaki.en.G2P` directly and feeds its phonemes to the Kokoro model. It never
+    imports `misaki.espeak`.
+  - It depends on `misaki` without the `[en]` extra, plus `spacy` and `num2words`.
+  - `earshot init` downloads spaCy's English model ahead of time, so nothing downloads while
+    Earshot runs.
+- **Why:** mlx-audio's English Kokoro pipeline always imports `misaki.espeak`, which imports
+  `phonemizer` (GPLv3+). `misaki[en]` also installs `espeakng-loader`, which bundles espeak-ng
+  itself, and on rehaan's Mac it pulled in PyTorch.
+- **Consequences:** With no espeak fallback, a word the front-end can't pronounce is silent. P-03
+  (spell such words out) is due before milestone 4.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -378,7 +451,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     `misaki.espeak`.
   - Depend on `misaki` without the `[en]` extra, plus `spacy` and `num2words`.
   - `earshot init` installs the spaCy model ahead of time.
-- **Decide by:** before Phase 1.
+- **Status:** Accepted before Phase 1 as D-022.
 
 ### P-05 Per-word recognition confidence
 
@@ -510,7 +583,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - The audit log records that in sessions that can't show a prompt, "no output" means deny.
   - Expect the `permission_prompt` notification 6 s in, even while Earshot is asking by voice. Any
     desktop-notification hook you have will fire too.
-- **Decide by:** before Phase 1.
+- **Status:** Accepted before Phase 1 as D-020.
 
 ### P-13 A signed Swift helper owns the macOS plumbing
 
@@ -561,7 +634,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   Earshot answers whatever auto mode passes up. In Phase 1, log a week of your normal sessions'
   requests (mode, tool, would-be tier) to see how many reach Earshot per hour. Collecting the 500
   real prompts may need sessions in default mode.
-- **Decide by:** before Phase 1.
+- **Status:** Accepted before Phase 1 as D-021.
 
 ### P-16 Don't route answers by spoken session name
 
@@ -639,7 +712,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     you; it's on your screen") and doesn't listen.
   - **Secrets are redacted** by pattern before anything is spoken or logged. Phase 2 adds entropy
     detection.
-- **Decide by:** before Phase 1 (milestone 1 of `docs/phase-1-plan.md`).
+- **Status:** Accepted before Phase 1 as D-019.
 
 ## Open questions
 

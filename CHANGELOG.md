@@ -9,8 +9,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 ### Added
 
 - The Phase 1 plan (`docs/phase-1-plan.md`): nine milestones in build order, which ones need
-  rehaan's Mac, and the decisions each one needs. It also proposes P-19, a safety stub that keeps
-  risky requests off voice until Phase 2's policy engine exists.
+  rehaan's Mac, and the decisions each one needs.
+- Decided before Phase 1:
+  - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
+  - how Earshot behaves while a hook waits (D-020)
+  - auto mode as a first filter, with a week of observe mode (D-021)
+  - Earshot's own Kokoro text front-end, clear of GPL code (D-022)
 
 ## [0.0.2] - 2026-11-04
 
