@@ -34,9 +34,11 @@ denied it by mistake, allow it in System Settings → Privacy & Security → Mot
 
 ## 1. Calibrate (1 minute)
 
-`calibrate` asks you to nod five times, then shake your head five times. It reports which
-rotation axis carries each gesture. If they aren't `x` for nods and `z` for shakes, pass
-`--pitch-axis` and `--yaw-axis` to the other commands. Then try some deliberate nods and shakes:
+`calibrate` first waits for motion to arrive from the AirPods. The stream can take a few seconds to
+settle, and it gives up after 30 s. Once it prints "Motion is flowing", nod five times, then shake
+your head five times when it asks. It reports each axis's typical speed in rad/s and which axis
+carries each gesture. If they aren't `x` for nods and `z` for shakes, pass `--pitch-axis` and
+`--yaw-axis` to the other commands. Then try some deliberate nods and shakes:
 
 ```sh
 ./run.sh count --minutes 2      # nod and shake a few times; all detected?
