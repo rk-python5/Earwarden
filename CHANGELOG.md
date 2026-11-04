@@ -21,6 +21,10 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - Head-motion results (`spikes/RESULTS.md`, section 5): motion works from a signed app at 50 Hz,
   with nods on x and shakes on z, but the plan's v1 detector gives about 48 false nods an hour
   (P-18).
+- Voiceprint results (`spikes/RESULTS.md`, section 6): rehaan's voice and a friend's separate by
+  +0.112 with the silence trimmed, and ECAPA in ONNX matches PyTorch at every length. The
+  onnxruntime process peaks at 206 MB, about twice the estimate. All four week-1 tests now have
+  results.
 - `spikes/motion/run.sh` builds the head-motion spike as a small signed app and opens it as its own
   app. Started from Terminal, macOS stopped it with `abort`, because the program counted as
   Terminal's and Terminal declares no use of motion data. CI now builds and checks the app.

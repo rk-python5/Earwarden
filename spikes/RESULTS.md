@@ -253,14 +253,44 @@ Steps: [voiceprint/README.md](voiceprint/README.md).
 
 | Check                                                         | Target                 | Result | Pass |
 | ------------------------------------------------------------- | ---------------------- | ------ | ---- |
-| Your held-out phrases: lowest score                           | note                   |        | —    |
-| Friend's phrases: highest score                               | note                   |        | —    |
-| Gap (your lowest minus their highest)                         | > 0                    |        |      |
-| ONNX vs PyTorch, lowest cosine across all lengths             | ≥ 0.999                |        |      |
-| Exporter that worked (dynamo or legacy)                       | note                   |        | —    |
-| onnxruntime-only process: ms per embedding and peak memory    | about 100 MB           |        |      |
+| Your held-out phrases: lowest score                           | note                   | 0.553 with the silence trimmed (median 0.625); 0.551 untrimmed (median 0.661) | —    |
+| Friend's phrases: highest score                               | note                   | 0.440 trimmed (median 0.334); 0.527 untrimmed (median 0.336) | —    |
+| Gap (your lowest minus their highest)                         | > 0                    | **+0.112 trimmed**, both over all ten of your friend's phrases and over the five outside your profile. Untrimmed: +0.024 over all ten, +0.136 over those five. | Yes  |
+| ONNX vs PyTorch, lowest cosine across all lengths             | ≥ 0.999                | 1.000000 on all 20 recordings, cut to 23 lengths from 0.5 to 3 s. Largest element difference 2.8e-4. | Yes  |
+| Exporter that worked (dynamo or legacy)                       | note                   | dynamo (torch 2.11), on the first try. 83.8 MB with its float32 weights. | —    |
+| onnxruntime-only process: ms per embedding and peak memory    | about 100 MB           | 40 ms per embedding and 206 MB peak (33 MB of it Python and numpy), trimmed; 45 ms and 228 MB untrimmed. PyTorch took 24–27 ms per phrase. | No: about twice the estimate |
 
 Notes:
+
+- **Setup:** ten challenge phrases each ("approve orchard" and so on), recorded on 4 Nov through
+  the same AirPods 4 in headset mode. The profile is your first five phrases in alphabetical order
+  (compass, copper, glacier, harbor, juniper). Your other five, and all ten of your friend's, are
+  scored against it.
+- **The trimmed numbers are the ones that count.** Each recording is 3 s, and the phrase lasts about
+  one. Untrimmed, silence and room noise, the same for both of you, made up most of what was scored
+  and pulled the voices together. Cutting the silence, as Earshot's voice detector will, dropped
+  your friend's highest from 0.527 to 0.440, while your lowest stayed at 0.55. At least one
+  recording stayed 3.0 s long after trimming, probably because the Enter key's click counted as
+  sound. A real voice detector should do better.
+- **The same words help an impostor a little.** Untrimmed, your friend's highest score (0.527) was
+  on "harbor", one of your profile's own phrases. Their median was 0.365 on the profile's phrases
+  and 0.308 on the rest.
+- **The setup was harsh, and the sample is small.**
+  - There was one friend.
+  - The profile came from five phrases; the plan enrolls 12, about 45 s.
+  - Your friend wore your AirPods, so their voice reached the mic as cleanly as yours. A bystander
+    would be further away.
+
+  A positive gap says the approach can work, not where the threshold goes. Phase 2's calibration
+  sets that: 5–10 friends over 3 days, a DET curve, and the threshold at no more than 2% of
+  impostors accepted. Q-5 asks which friends.
+- **Memory is about twice the estimate.** The float32 weights alone are 84 MB. Phase 2 should try
+  int8 quantisation (about 21 MB of weights), re-checked with the same parity and gap tests. The
+  plan's footprint target is at most 3 GB resident for the whole service. The speech models already
+  exceed that until they're quantised (P-17), so this adds to the same work.
+- **Speed fits.** 40 ms per embedding on the ONNX path is well inside the plan's 260 ms for
+  recognition, intent, voiceprint and the reply to the hook.
+- **Still Phase 2:** computing ECAPA's filterbank features without PyTorch.
 
 ## Go/no-go
 
@@ -269,7 +299,7 @@ Notes:
 | 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
 | 2. Speech in and out on the M2 with AirPods | Yes, with changes (P-17) | Parakeet v2 with a Whisper second listen gets yes/no 100% in quiet and noise, missing nothing, in 70 ms median. Still open: Kokoro's first audio (237 ms against 200), the 1.2 s second listens, and memory above 3 GB until the models are quantised. |
 | 3. Head motion                              | Yes, with changes (P-18) | Motion works from a signed app at 50 Hz, with nods on x and shakes on z. The v1 detector gives 48 false nods an hour, so nods shouldn't approve until a stricter detector is proven. |
-| 4. Voiceprint                               |       |       |
+| 4. Voiceprint                               | Yes   | Your voice and a friend's separated by +0.112 with the silence trimmed (+0.024 untrimmed), on a small, harsh sample. ONNX matches PyTorch at every length (1.000000), so the speaker model runs without PyTorch; its filterbank features still need porting. Its memory, 206 MB, is about twice the estimate, so quantise it in Phase 2. |
 
 Decided at the gate, from the numbers above:
 
