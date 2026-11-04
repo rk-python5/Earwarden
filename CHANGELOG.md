@@ -40,6 +40,10 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   folder"). Secrets are redacted before anything is spoken or logged, and a request holding one
   never goes to voice. Sentences over 25 words aren't spoken, and words the voice can't
   pronounce are spelled out (D-024).
+- The audit log (Phase 1, milestone 7): every decision the daemon resolves becomes one JSON line
+  in a hash chain keyed with HMAC-SHA256 (the key in the Keychain on a real install), with
+  secrets redacted. `earshot audit verify` catches edited, deleted and reordered lines, and
+  `earshot audit tail` shows the latest decisions.
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)

@@ -31,8 +31,9 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from earshot import auth, contracts, paths, stub, wire
+from earshot import audit, auth, contracts, paths, stub, wire
 from earshot.daemon.state import Pending, PendingRequests, Resolved, Sessions
+from earshot.narrator import redact
 
 log = logging.getLogger("earshot.daemon")
 
@@ -107,11 +108,13 @@ class Daemon:
         decider: Decider = hand_off,
         max_wait_s: float = MAX_WAIT_S,
         observe: bool = False,
+        audit_log: audit.AuditLog | None = None,
     ) -> None:
         self.where = where
         self.decider = decider
         self.max_wait_s = max_wait_s
         self.observe = observe
+        self.audit_log = audit_log
         self.sessions = Sessions()
         self.pending = PendingRequests()
         self.resolved: collections.deque[Resolved] = collections.deque(maxlen=HISTORY)
@@ -274,6 +277,33 @@ class Daemon:
             Resolved(request.id, request.session_id, request.tool_name, outcome, reason, seconds)
         )
         log.info("request %s: %s (%s) after %.1f s", request.id, outcome, reason, seconds)
+        self._audit(pending, outcome, reason)
+
+    def _audit(self, pending: Pending, outcome: str, reason: str) -> None:
+        """One keyed, chained line per decision (D-025). Secrets are redacted first."""
+        if self.audit_log is None:
+            return
+        request = pending.request
+        verdict = stub.judge(request.tool_name, request.tool_input, request.cwd)
+        notes = pending.notes
+        try:
+            self.audit_log.append(
+                id=request.id,
+                session=pending.session.name,
+                tool=request.tool_name,
+                input_sha256=pending.input_sha256,
+                input_redacted=redact.redact(json.dumps(request.tool_input))[:2000],
+                tier=notes.get("tier", 1 if verdict.voice_ok else 3),
+                rules=notes.get("rules", [f"stub: {verdict.reason}"]),
+                spoken=notes.get("spoken"),
+                transcript=notes.get("transcript"),
+                recognizer=notes.get("recognizer"),
+                outcome=outcome,
+                reason=reason,
+                timings_ms=notes.get("timings_ms", {}),
+            )
+        except Exception:
+            log.exception("couldn't write the audit log for %s", request.id)
 
     def _observe(self, request: contracts.ApprovalRequest, session_name: str) -> None:
         """Observe mode (D-021): one line per prompt, with no command text or file contents."""
@@ -311,12 +341,17 @@ class Daemon:
         return answer
 
 
-def run_forever(where: paths.Paths, observe: bool = False) -> None:
+def run_forever(where: paths.Paths, observe: bool = False, decider: Decider = hand_off) -> None:
     """Run the daemon in this process until SIGTERM or SIGINT."""
     import signal
 
     async def main() -> None:
-        daemon = Daemon(where, observe=observe)
+        daemon = Daemon(
+            where,
+            decider=decider,
+            observe=observe,
+            audit_log=audit.AuditLog(where.audit_dir, audit.load_key(where)),
+        )
         loop = asyncio.get_running_loop()
         for signum in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(signum, daemon.stop)

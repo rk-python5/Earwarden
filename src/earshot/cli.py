@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from earshot import auth, paths
+from earshot import audit, auth, paths
 from earshot.connectors.claude_code import settings
 
 DEFAULT_SETTINGS = Path.home() / ".claude" / "settings.json"
@@ -93,6 +93,28 @@ def observe(args: argparse.Namespace) -> int:
     return 0
 
 
+def audit_verify(args: argparse.Namespace) -> int:
+    where = paths.resolve(args.home)
+    problems = audit.verify(where.audit_dir, audit.load_key(where))
+    if problems:
+        print("The audit log has problems:\n" + "\n".join(f"  {p}" for p in problems))
+        return 1
+    print(f"The audit log in {where.audit_dir} is intact.")
+    return 0
+
+
+def audit_tail(args: argparse.Namespace) -> int:
+    where = paths.resolve(args.home)
+    log = audit.AuditLog(where.audit_dir, audit.load_key(where))
+    for record in list(log.records())[-args.lines :]:
+        said = f' said "{record.get("transcript")}"' if record.get("transcript") else ""
+        print(
+            f"{record.get('ts', '?')}  {record.get('session', '?')}: {record.get('tool', '?')} "
+            f"-> {record.get('outcome', '?')} ({record.get('reason', '')}){said}"
+        )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="earshot", description="Answer Claude Code by voice.")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -109,6 +131,16 @@ def main(argv: list[str] | None = None) -> int:
     p = commands.add_parser("observe", help="summarise the prompts observe mode has logged")
     p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
     p.set_defaults(run=observe)
+
+    p = commands.add_parser("audit", help="check or read the audit log")
+    audit_commands = p.add_subparsers(dest="audit_command", required=True)
+    q = audit_commands.add_parser("verify", help="check the chain for edits and deletions")
+    q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    q.set_defaults(run=audit_verify)
+    q = audit_commands.add_parser("tail", help="show the latest decisions")
+    q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    q.add_argument("-n", "--lines", type=int, default=10, help="how many (default 10)")
+    q.set_defaults(run=audit_tail)
 
     args = parser.parse_args(argv)
     try:

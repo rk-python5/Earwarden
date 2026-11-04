@@ -74,7 +74,7 @@ rehaan's Mac and AirPods.
 | 4 | Narrator v0 and redaction                  | Cloud           | D-022, D-024 | Done                      |
 | 5 | Speech out and speech in                   | Mac             | D-022, P-14  | To do                     |
 | 6 | Intent, presence and the decision path     | Cloud           | P-07, P-16   | To do                     |
-| 7 | The audit log                              | Cloud           | P-10         | To do                     |
+| 7 | The audit log                              | Cloud           | D-025        | Done                      |
 | 8 | The helper app, the LaunchAgent and doctor | Mac             | (D-016)      | To do                     |
 | 9 | End to end, and the gate                   | Cloud, then Mac | —            | To do                     |
 

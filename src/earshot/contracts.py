@@ -147,6 +147,7 @@ class AuditRecord(Contract):
     voiceprint: float | None = None
     gesture: Literal["nod", "shake"] | None = None
     outcome: Literal["allow", "deny", "handoff", "cancelled"]
+    reason: ShortText | None = None  # how it ended: decided, tool_ran, hook_closed, timeout...
     timings_ms: dict[str, int] = Field(default_factory=dict)
     prev_hash: Sha256
     hash: Sha256

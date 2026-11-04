@@ -6,6 +6,7 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
+from typing import Any
 
 from earshot import contracts
 
@@ -75,6 +76,8 @@ class Pending:
     received: float = field(default_factory=time.monotonic)
     cancel_reason: str | None = None
     cancelled: asyncio.Event = field(default_factory=asyncio.Event)
+    # What the decider did, for the audit log: tier, rules, spoken, transcript, timings_ms...
+    notes: dict[str, Any] = field(default_factory=dict)
 
     def cancel(self, reason: str) -> None:
         """Answered elsewhere, or no longer answerable: stop asking, and hand off."""

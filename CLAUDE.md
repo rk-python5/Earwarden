@@ -103,6 +103,7 @@ compiles when you work in the Linux container, so check the CI run after changin
     imports.
   - `cli.py`: the `earshot` command (`init`, `uninstall`, `observe`). `stub.py`: the safety
     stub (D-019) that limits what voice may approve until Phase 2.
+  - `audit.py`: the keyed, hash-chained audit log (D-025) behind `earshot audit verify`.
   - `narrator/`: the template narrator, spoken forms, and secret redaction.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
     settings file, with a byte-for-byte backup.

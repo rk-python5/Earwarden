@@ -369,6 +369,7 @@ def test_events_are_passed_on_and_nothing_is_printed(
     stub = daemon(lambda m: None)  # events get no reply
     payload = fixture(name)
     assert run_hook(home, payload, "--event").stdout == b""
+    assert stub.got_message.wait(timeout=5)  # the hook doesn't wait for the daemon to read it
     [message] = stub.received
     event = contracts.Event.model_validate_json(json.dumps(message))
     assert event.token == TOKEN
