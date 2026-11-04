@@ -19,7 +19,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   first and a second listen only when it's unclear, judged with Earshot's rules. The challenge-word
   rule now lives in the tested `speech_data.py`.
 - Head-motion results (`spikes/RESULTS.md`, section 5): motion works from a signed app at 50 Hz,
-  but the plan's v1 detector gives about 48 false nods an hour (P-18).
+  with nods on x and shakes on z, but the plan's v1 detector gives about 48 false nods an hour
+  (P-18).
 - `spikes/motion/run.sh` builds the head-motion spike as a small signed app and opens it as its own
   app. Started from Terminal, macOS stopped it with `abort`, because the program counted as
   Terminal's and Terminal declares no use of motion data. CI now builds and checks the app.

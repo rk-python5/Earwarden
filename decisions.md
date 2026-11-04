@@ -438,6 +438,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     `abort` as soon as it asked for motion. It worked only as its own signed app, with a motion
     usage string, opened through Launch Services, which then got its own Motion & Fitness prompt.
     So the helper must be a real app bundle, not a bare command-line tool.
+  - Rebuilding the motion spike reset its permission to "not determined": its ad hoc signature
+    changes with its code, so macOS treats each build as a new app. The helper needs a signing
+    identity that stays the same across updates (an Apple Development or Developer ID
+    certificate), or every update asks again.
 - **Decide by:** Step 0 gate.
 
 ### P-14 Audio integration tests on a self-hosted runner
@@ -507,6 +511,9 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     which meets the plan's target of at most 1. But about 8% of answer windows would contain a nod
     you didn't make, and that nod would approve the request.
   - Deliberate gestures also fired several times each, and across axes.
+  - Calibration (4 Nov): nodding moved x at 0.86 rad/s, with y and z under 0.1. Shaking moved z at
+    2.39 but x at 0.57, two-thirds of a nod's speed, so a shake can also count as a nod. Requiring
+    pitch to dominate, as below, is what separates the two.
 - **Proposal:**
   - In v1.0 a nod never approves on its own. Either ship with nods off (`nods = false`), or require
     a stricter pattern: a double nod within 2 s, with pitch clearly dominating yaw and roll, after
