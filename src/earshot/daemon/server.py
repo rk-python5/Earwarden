@@ -31,7 +31,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from earshot import auth, contracts, paths, wire
+from earshot import auth, contracts, paths, stub, wire
 from earshot.daemon.state import Pending, PendingRequests, Resolved, Sessions
 
 log = logging.getLogger("earshot.daemon")
@@ -106,10 +106,12 @@ class Daemon:
         where: paths.Paths,
         decider: Decider = hand_off,
         max_wait_s: float = MAX_WAIT_S,
+        observe: bool = False,
     ) -> None:
         self.where = where
         self.decider = decider
         self.max_wait_s = max_wait_s
+        self.observe = observe
         self.sessions = Sessions()
         self.pending = PendingRequests()
         self.resolved: collections.deque[Resolved] = collections.deque(maxlen=HISTORY)
@@ -234,6 +236,8 @@ class Daemon:
             pending.cancel("shutdown")  # arrived as the daemon stops: straight to the screen
         self.pending.add(pending)
         log.info("request %s: %s in %s", request.id, request.tool_name, session.name)
+        if self.observe:
+            self._observe(request, session.name)
 
         decide = asyncio.ensure_future(self._decide(pending))
         hook_gone = asyncio.ensure_future(reader.read(1))  # returns at EOF: No or Esc
@@ -271,6 +275,27 @@ class Daemon:
         )
         log.info("request %s: %s (%s) after %.1f s", request.id, outcome, reason, seconds)
 
+    def _observe(self, request: contracts.ApprovalRequest, session_name: str) -> None:
+        """Observe mode (D-021): one line per prompt, with no command text or file contents."""
+        verdict = stub.judge(request.tool_name, request.tool_input, request.cwd)
+        record = {
+            "ts": wire.utc_timestamp(),
+            "session": session_name,
+            "permission_mode": request.permission_mode,
+            "tool": request.tool_name,
+            "voice_ok": verdict.voice_ok,
+            "reason": verdict.reason,
+        }
+        line = (json.dumps(record) + "\n").encode()
+        try:
+            fd = os.open(self.where.observe_log, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+            try:
+                os.write(fd, line)
+            finally:
+                os.close(fd)
+        except OSError:
+            log.exception("couldn't write the observe log")
+
     async def _decide(self, pending: Pending) -> contracts.Decision:
         """The decider's answer, or a hand-off if it fails or answers the wrong request."""
         try:
@@ -286,12 +311,12 @@ class Daemon:
         return answer
 
 
-def run_forever(where: paths.Paths) -> None:
+def run_forever(where: paths.Paths, observe: bool = False) -> None:
     """Run the daemon in this process until SIGTERM or SIGINT."""
     import signal
 
     async def main() -> None:
-        daemon = Daemon(where)
+        daemon = Daemon(where, observe=observe)
         loop = asyncio.get_running_loop()
         for signum in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(signum, daemon.stop)

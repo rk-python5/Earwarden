@@ -33,8 +33,10 @@ async def never(pending: Pending) -> contracts.Decision:
 
 
 class RunningDaemon:
-    def __init__(self, home: Path, decider: Decider, max_wait_s: float) -> None:
-        self.daemon = Daemon(paths.resolve(str(home)), decider, max_wait_s)
+    def __init__(
+        self, home: Path, decider: Decider, max_wait_s: float, observe: bool = False
+    ) -> None:
+        self.daemon = Daemon(paths.resolve(str(home)), decider, max_wait_s, observe)
         self.error: BaseException | None = None
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()

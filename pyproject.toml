@@ -22,6 +22,7 @@ dependencies = [
 [project.scripts]
 earshot-hook = "earshot.connectors.claude_code.hook:main"
 earshotd = "earshot.daemon.cli:main"
+earshot = "earshot.cli:main"
 
 [project.urls]
 Repository = "https://github.com/rk-python5/Earshot"

@@ -28,8 +28,10 @@ StartDaemon = Callable[..., RunningDaemon]
 def start_daemon(home: Path) -> Iterator[StartDaemon]:
     running: list[RunningDaemon] = []
 
-    def start(decider: Decider = hand_off, max_wait_s: float = MAX_WAIT_S) -> RunningDaemon:
-        daemon = RunningDaemon(home, decider, max_wait_s)
+    def start(
+        decider: Decider = hand_off, max_wait_s: float = MAX_WAIT_S, observe: bool = False
+    ) -> RunningDaemon:
+        daemon = RunningDaemon(home, decider, max_wait_s, observe)
         running.append(daemon)
         return daemon
 

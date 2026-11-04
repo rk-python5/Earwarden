@@ -66,7 +66,7 @@ rehaan's Mac and AirPods.
 | - | ------------------------------------------ | --------------- | ------------ | ------------------------- |
 | 1 | Contracts and the hook client              | Cloud           | D-019, D-020 | Done                      |
 | 2 | The daemon core                            | Cloud           | D-020        | Done                      |
-| 3 | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | To do                     |
+| 3 | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | Built; observe week next  |
 | 4 | Narrator v0 and redaction                  | Cloud           | P-03, D-022  | To do                     |
 | 5 | Speech out and speech in                   | Mac             | D-022, P-14  | To do                     |
 | 6 | Intent, presence and the decision path     | Cloud           | P-07, P-16   | To do                     |
@@ -133,6 +133,11 @@ rehaan's Mac and AirPods.
   real payloads for the tests.
 - **Done when:** an init-then-uninstall round trip leaves the settings file byte-for-byte as it
   was, tested with temporary home folders, and the week's counts are written up.
+- **Built (4 Nov):** `earshot init`, `earshot uninstall`, `earshot observe` (the week's summary),
+  `earshotd --observe`, and the safety stub (`stub.py`, D-019) whose verdict observe mode logs.
+  The log holds the time, session, permission mode, tool and verdict, never command text or file
+  contents. The commands use argparse for now rather than the spec's Typer and Rich, to keep
+  dependencies down until the CLI grows.
 
 ### 4. Narrator v0 and redaction (cloud)
 

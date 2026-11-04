@@ -27,6 +27,14 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     you approve it on screen and the tool runs, when you press No or Esc, when its session
     ends, when the daemon stops, or at the wait limit (D-020).
   - It replaces a socket left behind by a crash, and refuses to start twice.
+- `earshot init`, `earshot uninstall` and observe mode (Phase 1, milestone 3):
+  - `init` adds Earshot's hooks to a Claude Code settings file next to your own, keeping a
+    byte-for-byte backup; `uninstall` removes only Earshot's and restores the backup when
+    nothing else changed.
+  - `earshotd --observe` logs each permission prompt (time, session, mode, tool, and whether the
+    safety stub would let voice approve it) and never answers. `earshot observe` summarises the
+    log.
+  - The safety stub (D-019) decides what voice may approve until Phase 2's policy engine.
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)
