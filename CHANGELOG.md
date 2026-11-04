@@ -11,6 +11,10 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - `dev/activate`, sourced once per terminal on the Mac. It keeps uv, the Python it downloads, every
   library, the spike scripts' environments and model downloads inside the repo, under the
   git-ignored `.tools/` (D-013).
+- First Step 0 results, from the hook probe on rehaan's Mac (`spikes/RESULTS.md`, section 1). Allow
+  and deny from a hook work, and Q-1 is answered: Claude Code shows its own dialog while the hook is
+  still running, and whichever answers first wins. P-12 is revised to match, and P-15 (auto mode)
+  is new.
 
 ### Changed
 

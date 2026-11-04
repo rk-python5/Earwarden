@@ -357,17 +357,26 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
 
 ### P-12 Lifecycle while the hook waits
 
-- **Problem:** Presence is checked once, before speaking. If the dialog waits for the hook (Q-1),
-  a user who comes back mid-wait sees a frozen session for up to 90 s. A hook that Claude Code kills
-  (Esc, timeout, session end) leaves the daemon asking about a request that no longer exists, and
-  the next answer can land on the wrong one.
+- **Problem (revised 4 Nov 2026 after Q-1):** Step 0 showed that Claude Code's dialog is on
+  screen the whole time the hook runs, and whichever answers first wins. So the session never
+  freezes. Instead, Earshot can go on speaking and listening about a request you've already
+  answered at the keyboard:
+  - Approving on screen lets the tool run, but the hook keeps waiting, and nothing tells it.
+  - No or Esc end the hook with SIGTERM.
+
+  Also, the plan's hook list has no `PostToolUse`, although its briefings rely on `PostToolUse`
+  events.
 - **Proposal:**
-  - Keyboard activity during a wait hands off at once.
-  - A closed hook socket cancels its approval.
-  - While the user is away, hold for close to the hook timeout and re-announce, instead of handing
-    off at 90 s.
+  - Install a `PostToolUse` hook too. When the requested tool runs, the daemon cancels the voice
+    prompt and the waiting hook exits silently. `PermissionRequest` has no `tool_use_id`, so match
+    on session, tool name and input.
+  - A closed hook socket (SIGTERM after No or Esc) cancels the approval.
+  - Since the dialog is always there, a waiting voice prompt costs nothing: while you're away, hold
+    for close to the hook timeout and re-announce, instead of handing off at 90 s.
   - Register unknown sessions lazily from any request.
   - The audit log records that in sessions that can't show a prompt, "no output" means deny.
+  - Expect the `permission_prompt` notification 6 s in, even while Earshot is asking by voice. Any
+    desktop-notification hook you have will fire too.
 - **Decide by:** before Phase 1.
 
 ### P-13 A signed Swift helper owns the macOS plumbing
@@ -391,13 +400,27 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   the unit, property and end-to-end layers.
 - **Decide by:** before the Phase 1 integration tests.
 
+### P-15 Auto mode means fewer, riskier prompts
+
+- **Problem:** rehaan's Claude Code sessions start in auto mode. In Step 0's first hook-probe round,
+  auto mode approved all seven `touch` commands by itself. No `PermissionRequest` reached the hook
+  (21 payloads, all `permission_mode: auto`). Earshot only hears what Claude Code would have asked
+  you. Under auto mode that's just what auto mode won't approve by itself, so prompts are rarer and
+  lean toward tiers 2 and 3. The plan's targets, its tier mix and EarshotBench's "real dev" split
+  (500 of your own prompts) all assume default-mode prompting.
+- **Proposal:** Support auto mode as a first filter rather than treating it as a misconfiguration:
+  Earshot answers whatever auto mode passes up. In Phase 1, log a week of your normal sessions'
+  requests (mode, tool, would-be tier) to see how many reach Earshot per hour. Collecting the 500
+  real prompts may need sessions in default mode.
+- **Decide by:** before Phase 1.
+
 ## Open questions
 
 From the plan's open-questions list.
 
 | ID  | Question                                                                       | Answered by                    | Status                                                         |
 | --- | ------------------------------------------------------------------------------ | ------------------------------ | -------------------------------------------------------------- |
-| Q-1 | Does Claude Code show its dialog while a `PermissionRequest` hook is still running? | Step 0 hook spike          | Open. The hooks docs say the hook "runs when Claude Code is about to ask you for permission", which suggests the dialog waits for it. |
+| Q-1 | Does Claude Code show its dialog while a `PermissionRequest` hook is still running? | Step 0 hook spike          | **Answered 4 Nov 2026 (hook probe, rehaan's Mac): yes.** The dialog appears while the hook runs, and whichever answers first wins. Approving on screen lets the tool run while the hook keeps waiting; No or Esc end the hook with SIGTERM. So presence routing isn't needed to keep the session from freezing; it only decides whether Earshot speaks at all. See P-12 and `spikes/RESULTS.md`. |
 | Q-2 | How long does the AirPods mic take to switch on with the M2?                   | Step 0 audio spike             | Open                                                           |
 | Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free, and D-008 adopts it. Whether the name is clear enough is still open. |
 | Q-4 | Which small model clears EarshotBench in under 300 ms?                         | Phase 3                        | Open                                                           |
