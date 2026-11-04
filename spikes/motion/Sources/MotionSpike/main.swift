@@ -116,8 +116,9 @@ final class Session {
     var samples = 0
     var nods = 0
     var shakes = 0
-    var phase = "nod"
+    var phase = "waiting"  // calibrate: "waiting" until motion flows, then "nod", then "shake"
     var energy: [String: [Double]] = ["nod": [0, 0, 0], "shake": [0, 0, 0]]
+    var energySamples: [String: Int] = ["nod": 0, "shake": 0]
 
     init(options: Options) {
         self.options = options
@@ -139,9 +140,11 @@ final class Session {
                 time, rate.x, rate.y, rate.z, a.pitch, a.roll, a.yaw
             ))
         case "calibrate":
+            guard phase != "waiting" else { return }
             energy[phase]?[0] += rate.x * rate.x
             energy[phase]?[1] += rate.y * rate.y
             energy[phase]?[2] += rate.z * rate.z
+            energySamples[phase, default: 0] += 1
         default:
             let clock = Date().formatted(date: .omitted, time: .standard)
             if nod.feed(component(rate, options.pitchAxis), at: time) {
@@ -215,22 +218,48 @@ interrupt.resume()
 
 switch options.mode {
 case "calibrate":
-    print("Nod five times now (8 s)…")
-    DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
-        session.queue.addOperation { session.phase = "shake" }
-        print("Now shake your head five times (8 s)…")
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 16) {
-        manager.stopDeviceMotionUpdates()
-        session.queue.addOperation {
-            for gesture in ["nod", "shake"] {
-                let e = session.energy[gesture] ?? [0, 0, 0]
-                let axis = ["x", "y", "z"][e.firstIndex(of: e.max() ?? 0) ?? 0]
-                print(String(format: "%@: energy x %.1f  y %.1f  z %.1f  → strongest axis %@",
-                             gesture, e[0], e[1], e[2], axis))
+    // The AirPods' motion stream can take a few seconds to settle (it connects and disconnects at
+    // first), so the countdown starts only once samples arrive.
+    print("Waiting for head motion from the AirPods…")
+    func startCalibration() {
+        print("Motion is flowing. Nod five times now (8 s)…")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+            session.queue.addOperation { session.phase = "shake" }
+            print("Now shake your head five times (8 s)…")
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 16) {
+            manager.stopDeviceMotionUpdates()
+            session.queue.addOperation {
+                for gesture in ["nod", "shake"] {
+                    let sums = session.energy[gesture] ?? [0, 0, 0]
+                    let count = Double(max(session.energySamples[gesture] ?? 0, 1))
+                    let rms = sums.map { ($0 / count).squareRoot() }
+                    let axis = ["x", "y", "z"][rms.firstIndex(of: rms.max() ?? 0) ?? 0]
+                    print(String(
+                        format: "%@: typical speed x %.2f  y %.2f  z %.2f rad/s → strongest axis %@",
+                        gesture, rms[0], rms[1], rms[2], axis
+                    ))
+                }
+                print("Use --pitch-axis for the nod axis and --yaw-axis for the shake axis.")
+                exit(0)
             }
-            print("Use --pitch-axis for the nod axis and --yaw-axis for the shake axis.")
-            exit(0)
+        }
+    }
+    _ = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
+        session.queue.addOperation {
+            guard session.phase == "waiting", session.samples > 0 else { return }
+            session.phase = "nod"
+            DispatchQueue.main.async {
+                timer.invalidate()
+                startCalibration()
+            }
+        }
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+        session.queue.addOperation {
+            guard session.phase == "waiting" else { return }
+            print("No head motion arrived in 30 s. Are both AirPods in your ears and connected?")
+            exit(1)
         }
     }
 case "count":
