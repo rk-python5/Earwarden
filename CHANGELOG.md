@@ -19,6 +19,14 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     Claude Code 2.1.318.
 - The five message contracts (`earshot.contracts`), with Pydantic as the first runtime
   dependency, and the wire format and file locations shared by the hook and the daemon.
+- `earshotd`, the background service's core (Phase 1, milestone 2):
+  - It listens on a Unix socket that only you can reach, and checks each message's contract
+    and the shared token. Anything that fails gets no reply, so the hook hands off.
+  - It keeps track of sessions and of requests waiting for an answer.
+  - A request ends when the decider answers (for now always a hand-off to the screen), when
+    you approve it on screen and the tool runs, when you press No or Esc, when its session
+    ends, when the daemon stops, or at the wait limit (D-020).
+  - It replaces a socket left behind by a crash, and refuses to start twice.
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)

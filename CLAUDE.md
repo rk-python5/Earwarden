@@ -101,6 +101,8 @@ compiles when you work in the Linux container, so check the CI run after changin
     share. Standard library only.
   - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
     imports.
+  - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`
+    the sessions and waiting requests, `cli.py` the command. `auth.py` keeps the shared token.
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in
   `spikes/RESULTS.md`. Spike scripts declare their dependencies inline (PEP 723) and run with
   `uv run`. Their raw output goes to a git-ignored `out/` folder. Only their stdlib and

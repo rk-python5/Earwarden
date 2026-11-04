@@ -65,7 +65,7 @@ rehaan's Mac and AirPods.
 | # | Milestone                                  | Where           | Rests on     | Status                    |
 | - | ------------------------------------------ | --------------- | ------------ | ------------------------- |
 | 1 | Contracts and the hook client              | Cloud           | D-019, D-020 | Done                      |
-| 2 | The daemon core                            | Cloud           | D-020        | To do                     |
+| 2 | The daemon core                            | Cloud           | D-020        | Done                      |
 | 3 | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | To do                     |
 | 4 | Narrator v0 and redaction                  | Cloud           | P-03, D-022  | To do                     |
 | 5 | Speech out and speech in                   | Mac             | D-022, P-14  | To do                     |
@@ -113,6 +113,13 @@ rehaan's Mac and AirPods.
 - At this stage every request goes to the screen. The voice path plugs in at milestone 6.
 - **Done when:** tests cover the protocol, token rejection, three sessions at once, both kinds of
   cancellation, and a killed daemon (the hook prints nothing).
+- **Done (4 Nov):** `earshotd` and its 47 tests, all with the real hook. They cover the cases
+  above, a session ending, the wait limit, a failing or confused decider, stopping, a second
+  daemon, and a socket left by a crash. A request that arrives while the daemon stops goes to
+  the screen.
+- **Found:** in Python 3.11, closing an asyncio server while it's accepting a connection drops
+  that connection without closing its socket. The daemon now stops accepting and lets accepted
+  connections finish before closing the server, and a test guards it.
 
 ### 3. Install, uninstall and observe mode (cloud, then a week on the Mac)
 
