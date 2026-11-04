@@ -15,6 +15,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 ### Changed
 
 - Setup instructions use `source dev/activate` instead of installing uv system-wide.
+- The hook probe report credits each tool run to its own request, even when a refused command is
+  asked for again. It also says who decided: the hook, or you on screen.
 
 ## [0.0.1] - 2026-11-03
 

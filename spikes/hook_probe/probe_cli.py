@@ -152,11 +152,16 @@ def permission_rows(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for record in events:
         if record.get("event") == "PermissionRequest":
             by_start[(record.get("pid"), record.get("t_start_ns"))].append(record)
-    for (_, t_start), records in sorted(by_start.items(), key=lambda item: item[0][1] or 0):
+    requests = sorted(by_start.items(), key=lambda item: item[0][1] or 0)
+    for index, ((_, t_start), records) in enumerate(requests):
         phases = {r.get("phase"): r for r in records}
         base = records[0]
         payload = base.get("payload", {})
         key = _key(base)
+        # A tool run belongs to this request only if it starts before the same command is asked
+        # for again; otherwise a retry's run would be credited to an attempt that was refused.
+        retries = [start for (_, start), later in requests[index + 1 :] if _key(later[0]) == key]
+        until = retries[0] if retries else None
         pre = [
             e
             for e in finished
@@ -165,7 +170,10 @@ def permission_rows(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         post = [
             e
             for e in finished
-            if e.get("event") == "PostToolUse" and _key(e) == key and e["t_start_ns"] >= t_start
+            if e.get("event") == "PostToolUse"
+            and _key(e) == key
+            and e["t_start_ns"] >= t_start
+            and (until is None or e["t_start_ns"] < until)
         ]
         end = phases.get("end")
         if end:
@@ -174,6 +182,16 @@ def permission_rows(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
             ended = "signal " + str(phases["signal"].get("signal"))
         else:
             ended = "vanished: no end record, so probably killed with SIGKILL"
+        if "signal" in phases:
+            decided = "you: No or Esc, hook killed"
+        elif end and post and post[0]["t_start_ns"] < end["t_end_ns"]:
+            decided = "you, on screen, while the hook waited"
+        elif end and end.get("output"):
+            decided = "hook"
+        elif end and post:
+            decided = "you, on screen"
+        else:
+            decided = "nobody: the tool didn't run"
         rows.append(
             {
                 "tool": payload.get("tool_name"),
@@ -186,6 +204,7 @@ def permission_rows(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     _ms(post[0]["t_start_ns"], end["t_end_ns"]) if post and end else None
                 ),
                 "tool_ran": bool(post),
+                "decided": decided,
             }
         )
     return rows
@@ -246,14 +265,19 @@ def cmd_report(args: argparse.Namespace) -> int:
             )
     print()
 
-    print("PermissionRequest hooks (times in ms):")
-    print(f"  {'tool':8} {'mode':14} {'hook':>6} {'pre→req':>8} {'req→post':>9} ran  ended / input")
+    print("PermissionRequest hooks (times in ms). A negative req→post means the tool ran while")
+    print("the hook was still waiting, so you answered on screen first.")
+    print(
+        f"  {'tool':6} {'mode':16} {'hook':>6} {'pre→req':>8} {'req→post':>9} {'ran':4} "
+        f"{'decided by':38} ended"
+    )
     for row in permission_rows(events):
         print(
-            f"  {row['tool'] or '?':8} {row['mode']:14} {_fmt(row['hook_ms']):>6} "
+            f"  {row['tool'] or '?':6} {row['mode']:16} {_fmt(row['hook_ms']):>6} "
             f"{_fmt(row['pre_to_request_ms']):>8} {_fmt(row['request_to_post_ms']):>9} "
-            f"{'yes' if row['tool_ran'] else 'no ':4} {row['ended']} / {row['input']}"
+            f"{'yes' if row['tool_ran'] else 'no':4} {row['decided']:38} {row['ended']}"
         )
+        print(f"         {row['input']}")
 
     print("\nNotifications (seconds after the latest PermissionRequest hook started):")
     last_request_ns: int | None = None

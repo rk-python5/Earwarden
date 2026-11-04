@@ -177,6 +177,40 @@ def test_report_links_the_tool_events_and_writes_fixtures(tmp_path: Path) -> Non
     assert json.loads((tmp_path / "fixtures" / "PermissionRequest.json").read_text())["tool_name"]
 
 
+def test_report_credits_a_retry_and_shows_who_decided(tmp_path: Path) -> None:
+    """Run 5 on rehaan's Mac: No on screen killed the first hook; the retry was approved on
+    screen while its hook still waited. The retry's tool run must not be credited to the first."""
+    ms = 1_000_000
+
+    def record(event: str, phase: str, pid: int, start: int, **extra: Any) -> dict[str, Any]:
+        payload = {**request(event)}
+        return {"event": event, "phase": phase, "pid": pid, "t_start_ns": start * ms,
+                "payload": payload, **extra}  # fmt: skip
+
+    held = {"mode": "hold-allow", "hold_s": 20.0}
+    records = [
+        record("PreToolUse", "end", 1, 1000, t_end_ns=1010 * ms, output=""),
+        record("PermissionRequest", "hold-start", 2, 1050, **held),
+        record("PermissionRequest", "signal", 2, 1050, signal="SIGTERM", **held),
+        record("PreToolUse", "end", 3, 5000, t_end_ns=5010 * ms, output=""),
+        record("PermissionRequest", "hold-start", 4, 5050, **held),
+        record("PostToolUse", "end", 5, 7500, t_end_ns=7510 * ms, output=""),
+        record("PermissionRequest", "end", 4, 5050, t_end_ns=25056 * ms, output="allow", **held),
+    ]
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "events.jsonl").write_text("".join(json.dumps(r) + "\n" for r in records))
+
+    report = run_cli(tmp_path, "report")
+    assert report.returncode == 0, report.stderr
+    rows = [line for line in report.stdout.splitlines() if line.strip().startswith("Bash")]
+    assert len(rows) == 2
+    assert " no " in rows[0]
+    assert "you: No or Esc, hook killed" in rows[0]
+    assert "you, on screen, while the hook waited" in rows[1]
+    assert "-17556" in rows[1]
+
+
 def test_report_explains_when_no_permission_was_asked(tmp_path: Path) -> None:
     out = tmp_path / "out"
     for event in ("SessionStart", "PreToolUse", "PostToolUse"):
