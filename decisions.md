@@ -40,6 +40,9 @@ How this file works:
 | D-020 | Lifecycle while the hook waits (P-12)                     | Accepted |
 | D-021 | Auto mode is a first filter; observe mode first (P-15)    | Accepted |
 | D-022 | Earshot owns Kokoro's text front-end (P-04)               | Accepted |
+| D-023 | Finish Phase 1 now: observe week optional, scope trimmed  | Accepted |
+| D-024 | Speakable summaries (P-03), strict intents (P-07, P-16)   | Accepted |
+| D-025 | A keyed audit chain (P-10, anchoring later)               | Accepted |
 
 ## Decisions
 
@@ -380,6 +383,40 @@ How this file works:
 - **Consequences:** With no espeak fallback, a word the front-end can't pronounce is silent. P-03
   (spell such words out) is due before milestone 4.
 
+### D-023 Finish Phase 1 now: the observe week is optional, and two pieces move to Phase 2
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** Claude, delegated by rehaan ("finish off this phase 1 for me")
+- **Decision:**
+  - The week of observe mode (D-021) no longer blocks anything. Observe mode stays, to run
+    whenever rehaan likes; its counts inform Phase 2 but aren't a gate.
+  - In Phase 1 the daemon captures the mic itself, through sounddevice. The signed helper app's
+    audio half moves to Phase 2, with head motion (amends D-016's consequences). Started by the
+    LaunchAgent, the daemon's Python gets its own mic prompt, as Step 0 showed works.
+  - Phase 1 ends speech by energy (400 ms of quiet, or 6 s), like the Step 0 `--trim`. Silero VAD
+    comes in Phase 2.
+  - P-14 (self-hosted runner) is deferred: the recorded-audio test runs by hand on the Mac.
+- **Why:** rehaan wants Phase 1 finished without waiting a week. The gate (a real session approved
+  by voice) needs none of the deferred pieces, and Swift and audio can only be tested on the Mac.
+
+### D-024 Summaries must be speakable, and only exact answers count
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** Claude, delegated by rehaan ("finish off this phase 1 for me")
+- **Decision:** P-03, P-07 and P-16 are accepted as written:
+  - Every word of a spoken summary must get phonemes from Kokoro's front-end (D-022); a word
+    that doesn't is spelled out letter by letter (P-03).
+  - Approval needs the whole reply to match a short list exactly; any negation or extra word
+    means no approval (P-07).
+  - An answer always applies to the one open approval; session names are never parsed to pick
+    one (P-16).
+
+### D-025 A keyed audit chain; anchoring comes later
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **By:** Claude, delegated by rehaan ("finish off this phase 1 for me")
+- **Decision:** The audit chain uses HMAC-SHA256 with a key kept in the macOS Keychain (a 0600
+  file elsewhere, for tests), so a process that can write the log can't recompute the chain.
+  Anchoring the head hash outside the file, from P-10, moves to Phase 4's hardening. Edits to
+  Earshot's own files already go to the screen under the safety stub (D-019).
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -437,7 +474,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
 - **Proposal:** The checker runs the pronunciation step and rejects any sentence with a word that
   gets no phonemes, and the normaliser spells such words letter by letter. Step 0 measures this
   (`spikes/speech`).
-- **Decide by:** before the Phase 1 narrator.
+- **Status:** Accepted as D-024.
 
 ### P-04 Own the Kokoro text front-end to stay clear of GPL code
 
@@ -500,7 +537,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   strict rules never approved anything that wasn't an approval, including "don't do it", "do it
   later" and "don't approve that". The cost is re-asks: about one reply in ten missed in quiet,
   after trimming.
-- **Decide by:** before the Phase 1 intent rules.
+- **Status:** Accepted as D-024.
 
 ### P-08 Challenge-word matching
 
@@ -554,7 +591,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Anchor the head hash outside the file from time to time.
   - Make touching Earshot's own files tier 3: the audit directory, config, token, policies and
     `~/.claude/settings.json`.
-- **Decide by:** before the Phase 1 audit log.
+- **Status:** Accepted in part as D-025: the keyed chain now, anchoring in Phase 4.
 
 ### P-11 Repo policy can only raise tiers
 
@@ -623,7 +660,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   layer (recorded replies through MLX models) probably can't run there.
 - **Proposal:** Run that layer on rehaan's M2 as a self-hosted runner. Hosted macOS runners keep
   the unit, property and end-to-end layers.
-- **Decide by:** before the Phase 1 integration tests.
+- **Status:** Deferred by D-023: the recorded-audio test runs by hand on the Mac for now.
 
 ### P-15 Auto mode means fewer, riskier prompts
 
@@ -651,7 +688,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Earshot speaks session names but never parses them to pick a request. If a reply names a
     session other than the open one, it isn't an approval: ask again.
   - Briefings can still use names, since they only read things out.
-- **Decide by:** before the Phase 1 intent rules.
+- **Status:** Accepted as D-024.
 
 ### P-17 Two-stage recognition: Parakeet first, Whisper when unclear
 
