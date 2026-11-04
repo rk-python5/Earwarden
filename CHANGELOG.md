@@ -35,6 +35,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     safety stub would let voice approve it) and never answers. `earshot observe` summarises the
     log.
   - The safety stub (D-019) decides what voice may approve until Phase 2's policy engine.
+- The template narrator (Phase 1, milestone 4): one sentence per request for the six action
+  families, test runs and a fallback, with the spec's spoken forms ("routes dot p y, in the api
+  folder"). Secrets are redacted before anything is spoken or logged, and a request holding one
+  never goes to voice. Sentences over 25 words aren't spoken, and words the voice can't
+  pronounce are spelled out (D-024).
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)

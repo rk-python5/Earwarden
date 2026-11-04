@@ -71,7 +71,7 @@ rehaan's Mac and AirPods.
 | 1 | Contracts and the hook client              | Cloud           | D-019, D-020 | Done                      |
 | 2 | The daemon core                            | Cloud           | D-020        | Done                      |
 | 3 | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | Built; observe week next  |
-| 4 | Narrator v0 and redaction                  | Cloud           | P-03, D-022  | To do                     |
+| 4 | Narrator v0 and redaction                  | Cloud           | D-022, D-024 | Done                      |
 | 5 | Speech out and speech in                   | Mac             | D-022, P-14  | To do                     |
 | 6 | Intent, presence and the decision path     | Cloud           | P-07, P-16   | To do                     |
 | 7 | The audit log                              | Cloud           | P-10         | To do                     |

@@ -12,8 +12,11 @@ Everything else goes to the screen. The policy engine that replaces this must ne
 
 from __future__ import annotations
 
+import json
 import posixpath
 from typing import Any, NamedTuple
+
+from earshot.narrator import redact
 
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 PROTECTED_DIRS = (".git", ".claude", ".earshot", ".github/workflows")
@@ -74,6 +77,8 @@ def _test_command(tool_input: dict[str, Any]) -> Verdict:
 
 
 def judge(tool_name: str, tool_input: dict[str, Any], cwd: str) -> Verdict:
+    if redact.contains_secret(json.dumps(tool_input)):
+        return Verdict(False, "contains a secret")
     if tool_name in EDIT_TOOLS:
         return _edit(tool_input, cwd)
     if tool_name == "Bash":
