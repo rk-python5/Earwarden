@@ -37,6 +37,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   word alone), and can compare other recognisers such as Parakeet v3, Whisper and Moonshine
   (`--model`).
 
+### Fixed
+
+- The voiceprint spike's ONNX check also cuts each recording to shorter lengths. Every recording
+  is 3 seconds long, so the check had covered only one length.
+
 ## [0.0.1] - 2026-11-03
 
 The Step 0 kit: project conventions, the package scaffold, CI, and the feasibility spikes ready to

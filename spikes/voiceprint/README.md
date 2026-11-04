@@ -33,8 +33,10 @@ scored against it. The report gives:
 - your lowest score and your friend's highest
 - **the gap** between them: positive means a clean separation on this small sample
 - a mid-point threshold (Phase 2 calibrates the real one, aiming for at most 2% impostors accepted)
-- **ONNX parity:** the lowest cosine similarity between ONNX and PyTorch embeddings across every
-  recording length. The target is at least 0.999.
+- **ONNX parity:** the lowest cosine similarity between ONNX and PyTorch embeddings. The target is
+  at least 0.999. Every recording is 3 seconds long, but Earshot will trim silence, so phrases
+  will vary. Each recording is therefore also cut to 0.5, 1, 1.5, 2 and 2.5 seconds, and all
+  lengths must pass.
 - how fast and how big an onnxruntime-only process is: the speaker-model share of the memory
   budget, estimated at about 100 MB
 

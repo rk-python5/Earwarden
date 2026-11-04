@@ -23,7 +23,8 @@ Your first `--enroll` phrases build the profile; the rest of yours, and all of y
 are scored against it by cosine similarity.
 
 It then exports ECAPA's embedding network to ONNX and checks that onnxruntime gives the same
-embeddings as PyTorch on every recording, at every length. The plan keeps PyTorch out of the
+embeddings as PyTorch on every recording, each also cut to shorter lengths, because Earshot will
+trim silence and phrases will vary in length. The plan keeps PyTorch out of the
 daemon (D-002), so this must hold. It also measures embedding time and the memory of an
 onnxruntime-only process. Runs on any OS; this script was written for the M2.
 """
@@ -206,18 +207,33 @@ def main() -> None:
 
     session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
     name = session.get_inputs()[0].name
-    cosines, diffs = [], []
-    for path, f in feats.items():
-        onnx_emb = session.run(None, {name: f.numpy()})[0].squeeze()
-        cosines.append(float(unit(onnx_emb) @ unit(embeddings[path])))
-        diffs.append(float(np.max(np.abs(onnx_emb - embeddings[path]))))
-    lengths = sorted({f.shape[1] for f in feats.values()})
+    # The recorder makes every clip 3 s long, but trimmed phrases will vary, so each clip is also
+    # cut to 0.5, 1, 1.5, 2 and 2.5 s (a frame is 10 ms).
+    cosines, diffs, failures = [], [], []
+    checked: set[int] = set()
+    for f in feats.values():
+        full = f.shape[1]
+        for frames in sorted({*range(50, full - 25, 50), full}):
+            part = f[:, :frames, :]
+            try:
+                onnx_emb = session.run(None, {name: part.numpy()})[0].squeeze()
+            except Exception as exc:
+                failures.append(f"{frames} frames: {exc!r}"[:200])
+                continue
+            reference = torch_embedding(part)
+            cosines.append(float(unit(onnx_emb) @ unit(reference)))
+            diffs.append(float(np.max(np.abs(onnx_emb - reference))))
+            checked.add(frames)
+    span = f"{min(checked, default=0)} to {max(checked, default=0)} frames"
     print(
-        f"\nONNX export ({exporter} exporter) checked on {len(cosines)} recordings, "
-        f"{lengths[0]} to {lengths[-1]} frames:"
+        f"\nONNX export ({exporter} exporter) checked on {len(feats)} recordings, cut to "
+        f"{len(checked)} lengths from {span}:"
     )
-    print(f"  cosine to PyTorch: min {min(cosines):.6f}   (target ≥ 0.999)")
-    print(f"  largest element difference: {max(diffs):.2e}")
+    if cosines:
+        print(f"  cosine to PyTorch: min {min(cosines):.6f}   (target ≥ 0.999)")
+        print(f"  largest element difference: {max(diffs):.2e}")
+    if failures:
+        print(f"  onnxruntime FAILED on {len(failures)} cuts, for example {failures[0]}")
     print(f"  file size: {onnx_path.stat().st_size / 1e6:.1f} MB")
 
     np.save(OUT / "sample_feats.npy", sample.numpy())
