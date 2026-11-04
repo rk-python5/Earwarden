@@ -177,6 +177,23 @@ def test_report_links_the_tool_events_and_writes_fixtures(tmp_path: Path) -> Non
     assert json.loads((tmp_path / "fixtures" / "PermissionRequest.json").read_text())["tool_name"]
 
 
+def test_report_explains_when_no_permission_was_asked(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    for event in ("SessionStart", "PreToolUse", "PostToolUse"):
+        payload = {**request(event), "permission_mode": "acceptEdits"}
+        assert run_hook(out, json.dumps(payload)).returncode == 0
+    report = run_cli(tmp_path, "report")
+    assert report.returncode == 0, report.stderr
+    assert "No PermissionRequest hook ran" in report.stdout
+    assert "Permission modes seen: acceptEdits (3)" in report.stdout
+
+
+def test_report_without_a_log_says_how_to_start(tmp_path: Path) -> None:
+    report = run_cli(tmp_path, "report")
+    assert report.returncode == 1
+    assert "the probe has never run" in report.stderr
+
+
 def test_bench_runs(tmp_path: Path) -> None:
     result = run_cli(tmp_path, "bench", "--runs", "2")
     assert result.returncode == 0, result.stderr

@@ -43,6 +43,12 @@ For each run, ask Claude in the probe session for something that needs permissio
 your allow list. For example: *Run this exact command: `touch probe-1.txt`*. Use a new file name
 each time, so Claude never reuses an earlier approval.
 
+**Check first:** the session must be in Claude Code's default permission mode. If the bottom of
+the screen shows a mode such as "accept edits" or "auto", press Shift+Tab until none shows. In
+those modes Claude Code runs commands like `touch` without asking, so the probe never gets a
+`PermissionRequest`. Run 1 is the test: if no dialog appears, stop and run `report`; it says
+which mode the session was in.
+
 | # | Mode            | What you do                                    | What to note                                                  |
 | - | --------------- | ---------------------------------------------- | ------------------------------------------------------------- |
 | 1 | `none`          | Approve on screen                              | The dialog appears as usual                                   |

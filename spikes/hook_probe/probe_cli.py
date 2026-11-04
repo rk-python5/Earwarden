@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -195,6 +195,10 @@ def _fmt(value: float | None) -> str:
     return "—" if value is None else f"{value:.0f}"
 
 
+def _counts(counter: Counter[str]) -> str:
+    return ", ".join(f"{name} ({count})" for name, count in sorted(counter.items()))
+
+
 def _sanitize(value: Any, home: str) -> Any:
     if isinstance(value, str):
         return value.replace(home, "~") if home else value
@@ -208,10 +212,39 @@ def _sanitize(value: Any, home: str) -> Any:
 def cmd_report(args: argparse.Namespace) -> int:
     path = out_dir() / "events.jsonl"
     if not path.exists():
-        print(f"No log at {path}", file=sys.stderr)
+        print(
+            f"No log at {path}: the probe has never run. Run `install` first, then start claude\n"
+            "inside that folder and accept its trust prompt.",
+            file=sys.stderr,
+        )
         return 1
     events = load_events(path)
     print(f"{len(events)} records in {path}\n")
+
+    finished = [e for e in events if e.get("phase") == "end"]
+    calls = Counter(str(e.get("event")) for e in finished)
+    modes = Counter(
+        str(e["payload"]["permission_mode"])
+        for e in finished
+        if isinstance(e.get("payload"), dict) and "permission_mode" in e["payload"]
+    )
+    print("Hook calls by event:   " + (_counts(calls) or "none"))
+    print("Permission modes seen: " + (_counts(modes) or "none"))
+    if not any(e.get("event") == "PermissionRequest" for e in events):
+        if calls.get("PreToolUse"):
+            print(
+                "\nNo PermissionRequest hook ran. The hooks work, but Claude Code never asked for\n"
+                "permission, so the probe's modes were never used. In the probe session, press\n"
+                "Shift+Tab until no mode (such as 'accept edits' or 'auto') shows at the\n"
+                "bottom, make sure your settings don't already allow the command, then redo\n"
+                "the runs."
+            )
+        else:
+            print(
+                "\nNo tool has run yet. Ask Claude in the probe session to run a command, such as\n"
+                "`touch probe-1.txt`."
+            )
+    print()
 
     print("PermissionRequest hooks (times in ms):")
     print(f"  {'tool':8} {'mode':14} {'hook':>6} {'pre→req':>8} {'req→post':>9} ran  ended / input")
