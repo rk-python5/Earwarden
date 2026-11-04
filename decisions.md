@@ -211,6 +211,8 @@ How this file works:
   `.tools/python`, the spike's environment landed in `.tools/cache`, and nothing was written to the
   home folder.
 
+## Proposals
+
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
 
 ### P-01 Hold the tier-3 promise per effect, not just per request
