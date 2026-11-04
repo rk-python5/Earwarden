@@ -120,6 +120,7 @@ Notes:
   | Parakeet TDT 0.6B v2 | 17/19 (89.5%) | 18/19 (94.7%) | 0 | 2 / 2, 1 | 68 ms | 2.60 GB |
   | Parakeet TDT 0.6B v3 | 15/19 (78.9%) | 15/19 (78.9%) | **1** | 4 / 5, 1 | 68 ms | 2.64 GB |
   | Whisper large-v3-turbo | **19/19 (100%)** | 17/19 (89.5%) | 0 | 0 / 4, 1 | **1,135 ms** | 2.14 GB |
+  | Moonshine base | 9/19 (47.4%) | 10/19 (52.6%) | 0 | 8 / 7, 0 | 33 ms | 0.32 GB |
 
   - **Parakeet v3 is ruled out.** It sometimes decided short English answers were Russian
     ("Штоп." for "stop", "Я." for "yeah", "Докс ну." for "docs, no"). It also heard the decoy
@@ -129,8 +130,32 @@ Notes:
     it" became "Blink." and "status" became "Stryker.".
   - **Every model false-approved the same decoy under the word rule:** in noise, "approve orchid"
     came out ending in "orchard". Close-sounding words must stay out of the challenge list (P-08).
-  - **Next:** Moonshine, a small English-only recogniser for short commands, and a two-stage
-    what-if: a fast recogniser first, and a second listen only when the first is unclear.
+  - **Moonshine is ruled out.** It's fast and tiny, but it got only about half the yes/no
+    answers. It doubled short answers ("Yes, yes.", "Go ahead go ahead") and sometimes looped
+    until its token limit ("approve approve approve…", "knock, knock, knock…"), taking 1.1 s.
+- **Two-stage recognition (`combine.py`):** the first recogniser hears every reply, and the
+  second listens only when the first is unclear. Both are judged with P-07 and the challenge-word
+  rule.
+
+  | Setup | Yes/no quiet | Yes/no noisy | Approvals missed | False approvals | Second listens | Time per reply, median / p95 |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Parakeet v2 alone | 17/19 (89.5%) | 18/19 (94.7%) | 4 | 1 | — | 68 / 78 ms |
+  | Whisper alone | 19/19 (100%) | 17/19 (89.5%) | 4 | 1 | — | 1,135 / 1,172 ms |
+  | **Parakeet v2, then Whisper** | **19/19 (100%)** | **19/19 (100%)** | **0** | 1 | 23/100 | 70 / 1,217 ms |
+  | Parakeet v2, then Moonshine | 18/19 (94.7%) | 18/19 (94.7%) | 2 | 1 | 23/100 | 70 / 107 ms |
+  | Moonshine, then Whisper | 18/19 (94.7%) | 17/19 (89.5%) | 2 | 1 | 49/100 | 54 / 1,200 ms |
+
+  - **Parakeet v2, then Whisper, meets the plan's yes/no targets** on these recordings, with
+    nothing missed.
+  - **Its one false approval is the deliberately confusable decoy** ("orchid" heard as "Atro
+    orchard"), which a word list without close-sounding pairs rules out (P-08).
+  - **Its other remaining mistake is "the docs one",** which P-16 removes.
+  - **The costs:**
+    - About 1.2 s on the 23% of replies that needed Whisper. The test set is heavy on challenge
+      phrases and decoys, so real use should need it less.
+    - Memory: both recognisers loaded at once is well over 3 GB unquantised.
+
+  See P-17.
 - **Safety held:** across 100 replies, including the negation traps, nothing that wasn't an
   approval was ever taken as one.
 - **Kokoro's first sound:** a short first chunk fixes it, either by splitting the first sentence at
@@ -227,7 +252,7 @@ Notes:
 | Week-1 test                                 | Pass? | Notes |
 | ------------------------------------------- | ----- | ----- |
 | 1. Claude Code hook round trip              | Yes   | Q-1 answered: the dialog shows while the hook runs. Hook start 19.7 ms median. |
-| 2. Speech in and out on the M2 with AirPods | Not yet | Speed passes, with Kokoro a little over budget. No single recogniser meets both accuracy targets at the plan's speed: Parakeet v2 gives 89.5% quiet and 94.7% noisy in 68 ms; Whisper gives 100% and 89.5% but takes 1.1 s; v3 is ruled out. Moonshine and a two-stage setup are still to test. |
+| 2. Speech in and out on the M2 with AirPods | Yes, with changes (P-17) | Parakeet v2 with a Whisper second listen gets yes/no 100% in quiet and noise, missing nothing, in 70 ms median. Still open: Kokoro's first audio (237 ms against 200), the 1.2 s second listens, and memory above 3 GB until the models are quantised. |
 | 3. Head motion                              |       |       |
 | 4. Voiceprint                               |       |       |
 

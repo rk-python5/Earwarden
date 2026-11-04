@@ -296,6 +296,8 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   all 100 replies, but the score separates poorly. The median lowest-word probability is 0.597
   when right and 0.375 when wrong, and a 0.70 threshold catches 94% of errors while re-asking 65%
   of correct answers. On its own it's too weak a gate. A diagnosis run is pending.
+- **Recommendation (4 Nov, after the recogniser comparison):** reject. The two-stage recogniser
+  (P-17) uses "unclear" as its trigger and reaches the targets without a confidence score.
 - **Decide by:** Step 0 gate.
 
 ### P-06 Earshot must not hear itself approve
@@ -469,6 +471,29 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     session other than the open one, it isn't an approval: ask again.
   - Briefings can still use names, since they only read things out.
 - **Decide by:** before the Phase 1 intent rules.
+
+### P-17 Two-stage recognition: Parakeet first, Whisper when unclear
+
+- **Problem:** On rehaan's 100 recordings, with the silence trimmed, no single recogniser met the
+  plan's yes/no targets (98% quiet, 95% noisy) within its 260 ms budget:
+  - Parakeet v2 got 89.5% and 94.7% in 68 ms.
+  - Whisper large-v3-turbo got 100% and 89.5% in 1.1 s.
+  - Parakeet v3 confused languages and false-approved a decoy.
+  - Moonshine base got about 50% and looped.
+- **Proposal:**
+  - Parakeet v2 hears every reply (voice-activity trimmed).
+  - Only when its answer is unclear, an empty transcript included, does Whisper large-v3-turbo get
+    a second listen on the same audio.
+  - Both are judged with the same strict rules: P-07, P-08 (revised) and P-16.
+  - On the recordings: yes/no 100% in both rooms, no approvals missed, a second listen on 23 of
+    100 replies, 70 ms median and 1.2 s p95. The only false approval is the deliberately
+    confusable decoy, which P-08's word list rules out.
+- **Costs to handle in Phase 1:**
+  - The second listens add about 1.2 s; Whisper always encodes a 30-second window. Measure
+    shorter windows or a smaller Whisper.
+  - Memory: both models unquantised are about 3 GB of weights alone, before Kokoro. Try 8-bit
+    Parakeet and 4-bit Whisper, or load Whisper only when needed.
+- **Decide by:** Step 0 gate.
 
 ## Open questions
 
