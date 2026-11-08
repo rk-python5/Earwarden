@@ -21,7 +21,7 @@ from earshot.policy.fields import Action
 _WORDS = """a and as at branch current data delete dot edit every fetch files folder force from
 has in index install its long network on or outside packages project push read recursively request
 run search secret send slash so something tests the then to upstream use value version waiting
-wants web write"""
+wants web which looks like popular package unusual letters write"""
 VOCABULARY = frozenset(_WORDS.split())  # the narrator's own words
 
 

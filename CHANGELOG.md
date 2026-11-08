@@ -32,6 +32,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     call's domain and method.
   - The narrator says one clause per command, and the checker refuses any sentence that drops a
     field or invents a word. A refused sentence sends the request to the screen.
+- Lookalike packages (Phase 2, milestone 4), with P-09's thresholds.
+  - An install of a name close to a popular PyPI or npm package, but not on the list, is tier 3,
+    spelled out, and said as "which looks like requests".
+  - The lists ship in the package and are refreshed at release time
+    (`dev/refresh_package_lists.py`).
 - Redaction knows more token formats (GitLab, Stripe, Google, SendGrid, npm, PyPI, Hugging Face,
   Twilio), and secrets named by assignments and `--password` options. A corpus test covers it. `earshot policy
   trust` lets a repo's policy lower tiers until the file changes. PyYAML is a new dependency.

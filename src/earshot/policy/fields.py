@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, NamedTuple
 
 from earshot.narrator import redact, spoken
-from earshot.policy import bash, git, places
+from earshot.policy import bash, git, lookalike, places
 from earshot.policy.shell import UNSEEN
 
 MAX_REQUIREMENTS_BYTES = 64_000
@@ -172,9 +172,9 @@ def _command(words: tuple[str, ...], cwd: str, pushes: Any) -> Action:
     if words[:2] == ("git", "push"):
         push: git.Push | None = next(pushes, None)
         return _push(push, words)
-    for start, valued in INSTALLS.items():
-        if words[: len(start)] == start:
-            return _install(words[len(start) :], valued, cwd, start[0])
+    install = parse_install(words, cwd)
+    if install is not None:
+        return _install(install)
     if words[0] == "rm":
         return _delete(words[1:], cwd)
     if words[0] in ("curl", "wget", "http", "xh"):
@@ -211,10 +211,24 @@ def _push(push: git.Push | None, words: tuple[str, ...]) -> Action:
     return Action("push", tuple(fields), detail)
 
 
-def _install(args: tuple[str, ...], valued: frozenset[str], cwd: str, manager: str) -> Action:
+class Install(NamedTuple):
+    manager: str
+    registry: str | None  # "pypi" or "npm", for the lookalike check
+    packages: tuple[str, ...]  # requirement specs, including those a requirements file lists
+    unread: tuple[str, ...]  # requirements files that couldn't be read
+    index_url: str | None  # a non-default index or registry
+
+
+def parse_install(words: tuple[str, ...], cwd: str) -> Install | None:
+    """The packages an install command asks for, or None if `words` isn't an install."""
+    start = next((s for s in INSTALLS if words[: len(s)] == s), None)
+    if start is None:
+        return None
+    valued = INSTALLS[start]
+    args = words[len(start) :]
     packages: list[str] = []
-    index: str | None = None
     files: list[str] = []
+    index: str | None = None
     i = 0
     while i < len(args):
         word = args[i]
@@ -230,19 +244,47 @@ def _install(args: tuple[str, ...], valued: frozenset[str], cwd: str, manager: s
         if not word.startswith("-"):
             packages.append(word)
         i += 1
-    said = [spoken.package(say(p)) for p in packages]
+    unread: list[str] = []
     for name in files:
         listed = _requirements(name, cwd)
         if listed is None:
-            said.append(f"the packages in {spoken.file_name(posixpath.basename(say(name)))}")
+            unread.append(name)
         else:
-            said += [spoken.package(say(p)) for p in listed]
-    if not said and manager in ("npm", "pnpm", "yarn"):
+            packages += listed
+    registry = lookalike.MANAGERS.get(start[0])
+    return Install(start[0], registry, tuple(packages), tuple(unread), index)
+
+
+def lookalikes(install: Install) -> list[lookalike.Lookalike]:
+    if install.registry is None:
+        return []
+    found = (
+        lookalike.check(lookalike.requirement_name(spec, install.registry), install.registry)
+        for spec in install.packages
+    )
+    return [hit for hit in found if hit is not None]
+
+
+def _install(install: Install) -> Action:
+    flagged = {hit.name: hit.like for hit in lookalikes(install)}
+    said = []
+    for spec in install.packages:
+        name = lookalike.requirement_name(spec, install.registry or "pypi")
+        if name in flagged:  # spelled out, so you hear exactly what it is
+            said.append(
+                f"{spoken.spell(say(name))}, which looks like {spoken.identifier(flagged[name])}"
+            )
+        else:
+            said.append(spoken.package(say(spec)))
+    said += [
+        f"the packages in {spoken.file_name(posixpath.basename(say(f)))}" for f in install.unread
+    ]
+    if not said and install.manager in ("npm", "pnpm", "yarn"):
         said = ["the packages in package dot json"]
     fields = [Field("package", s) for s in said]
     detail: dict[str, Any] = {"packages": said, "index": None}
-    if index:
-        detail["index"] = spoken.domain(say(index))
+    if install.index_url:
+        detail["index"] = spoken.domain(say(install.index_url))
         fields.append(Field("index", detail["index"]))
     return Action("install", tuple(fields), detail)
 

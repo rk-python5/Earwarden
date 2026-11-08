@@ -62,8 +62,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | 1 | The policy engine and `earshot policy check` | Code      | D-029 (P-02, P-11)  | Done   |
 | 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Done   |
 | 3 | Critical fields, the checker, redaction      | Code      | D-024               | Done   |
-| 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Next   |
-| 5 | Challenge words                              | Code, Mac | D-029 (P-08)        |        |
+| 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Done   |
+| 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Next   |
 | 6 | The voiceprint                               | Code, Mac | D-014, Q-5          |        |
 | 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 |        |
 | 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        |        |
@@ -182,6 +182,20 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 - **Done when:**
   - recall is measured on the ecosyste.ms typosquat dataset and recorded with the thresholds
   - false flags on the legitimate 5,001–15,000 range stay near the measured 3.9%
+- **Done (8 Nov):**
+  - `policy/lookalike.py`, with the lists in `policy/data/`:
+    - PyPI's top 15,000 names, from hugovk's dump of 1 Nov. The source has no licence, so only
+      the names are kept. rehaan to confirm this is acceptable.
+    - npm-high-impact's 17,338 names (MIT).
+    - `dev/refresh_package_lists.py` rebuilds both at release time.
+  - npm names keep their separators: there, `uglify.js` and `uglify-js` differ.
+  - False flags: 4.0% of names ranked 5,001–15,000, if they weren't exempt (P-09 measured 3.9%).
+  - Recall on the ecosyste.ms dataset (CC0, kept as a test fixture), for squats of popular
+    names over 5 letters: PyPI 57 of 64, npm 17 of 25.
+    - The misses are combosquats (`requests-darwin-lite`), and names 2 edits from an 8-letter
+      target.
+    - Under P-09's thresholds, squats of 5 letters or fewer (`numoy`) pass unless confusable.
+  - A lookalike is tier 3, spelled out, and said as "which looks like requests".
 
 ### 5. Challenge words (code, then Mac)
 

@@ -62,7 +62,8 @@ Cut a release only when rehaan asks, or when a phase's gate passes (D-006).
 
 1. In `CHANGELOG.md`, rename *Unreleased* to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh empty
    *Unreleased* above it, and update the compare links at the bottom.
-2. Run `uv version X.Y.Z`, then run the checks.
+2. Run `uv version X.Y.Z` and `uv run python dev/refresh_package_lists.py` (the lookalike
+   check's lists), then run the checks.
 3. Commit as "Release X.Y.Z", tag it with `git tag -a vX.Y.Z -m "…"`, and push the commit and
    the tag. Cloud sessions can push `main` but not tags: GitHub answers HTTP 403, so don't
    retry. Instead, ask rehaan to run
@@ -98,6 +99,7 @@ compiles when you work in the Linux container, so check the CI run after changin
 - `dev/false_approvals.py`: the recorded-audio check for false approvals (D-027), run by hand on
   the Mac, since P-14's runner is deferred (D-023). It sends Step 0's recordings in
   `spikes/speech/out/` through the daemon's own listening path. Run it after any change there.
+- `dev/refresh_package_lists.py`: rebuilds the popular-package lists at release time.
 - `docs/design/`: the spec (PDF).
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `docs/phase-2-plan.md`: the Phase 2 build plan, the same way, with its gate's targets.
@@ -116,7 +118,8 @@ compiles when you work in the Linux container, so check the CI run after changin
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
     every request, from rules alone. Bash goes through `shell.py` (a parser), `bash.py` (each
     command it runs) and `git.py` (aliases and where a push goes); `places.py` holds the path
-    checks, and `fields.py` the critical fields the narrator must say.
+    checks, and `fields.py` the critical fields the narrator must say. `lookalike.py` compares
+    package names with the popular lists in `policy/data/` (D-029, P-09).
   - `audit.py`: the keyed, hash-chained audit log (D-025) behind `earshot audit verify`.
   - `narrator/`: the template narrator, spoken forms, secret redaction, and the fidelity
     checker (`checker.py`), which refuses a sentence that drops or invents a detail.

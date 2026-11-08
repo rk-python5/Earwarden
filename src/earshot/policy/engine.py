@@ -30,7 +30,7 @@ from typing import Any, NamedTuple
 
 from earshot import contracts, paths
 from earshot.narrator import redact
-from earshot.policy import bash, places
+from earshot.policy import bash, fields, places
 from earshot.policy.file import (
     Match,
     PolicyError,
@@ -196,6 +196,10 @@ def judge(
     tier = max(tiers)
 
     limits += _limits(tool_name, tool_input, named, cwd)
+    for words in assessment.commands if assessment else ():
+        install = fields.parse_install(words, cwd)
+        for hit in fields.lookalikes(install) if install else ():
+            limits.append((3, f"minimum: {hit.name} looks like {hit.like} (P-09)"))
     if tool_name == "Bash" and config_edited:
         limits.append((2, "minimum: runs code after build or test config was edited (P-01)"))
     raised = [(m, why) for m, why in limits if m > tier]
