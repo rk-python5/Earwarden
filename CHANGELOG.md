@@ -6,6 +6,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-08
+
+Phase 1, the walking skeleton. A real Claude Code session was approved by voice through AirPods,
+end to end, and the Phase 1 gate passed (D-026). Use voice only in a scratch project until P-20 is
+fixed.
+
 ### Added
 
 - The Phase 1 plan (`docs/phase-1-plan.md`): nine milestones in build order, which ones need
@@ -190,6 +196,7 @@ run on the Mac.
 - The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
   and lists what gets decided at the gate.
 
-[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/rk-python5/Earshot/compare/v0.0.2...v0.1.0
 [0.0.2]: https://github.com/rk-python5/Earshot/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/rk-python5/Earshot/releases/tag/v0.0.1
