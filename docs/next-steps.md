@@ -61,7 +61,16 @@ The hooks are already in `~/earshot-scratch/.claude/settings.local.json`. To try
 
 D-027 has the numbers from the recordings and the live check. Live, VAD dropped a short "no",
 then let through a faint sound that Parakeet heard as "Yeah.". The audio wasn't kept, so the
-next fix needs real failure clips first.
+next fix needs real failure clips first:
+
+1. Run the daemon with `--keep-audio`. Each reply's clip goes to `.tools/earshot/audio/`, with a
+   line per clip in `clips.jsonl`: the levels, VAD's verdict, and the transcript.
+2. Run a scripted set of `earshot test` answers, mostly denials: "no", "nope", talking over the
+   question, a cough before "no", and a few approvals.
+3. Try the candidate guards on those clips and on Step 0's: Whisper agreement on approvals, a
+   minimum length of speech, and loudness against the room. Pick the cheapest that approves
+   nothing it shouldn't.
+4. Delete `.tools/earshot/audio/` when done; it holds rehaan's voice.
 
 To repeat the live check, start the daemon as in section 1 and watch its log. Then run
 `uv run earshot test --home .tools/earshot` three times:

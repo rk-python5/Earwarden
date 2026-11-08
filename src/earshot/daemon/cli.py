@@ -34,6 +34,12 @@ def main(argv: list[str] | None = None) -> int:
         help="use voice even while you're at the keyboard (for testing)",
     )
     parser.add_argument("--headset", default="AirPods", help="part of the headset's device name")
+    parser.add_argument(
+        "--keep-audio",
+        action="store_true",
+        help="save each reply's audio, and what became of it, in the home's audio folder "
+        "(for tuning; off by default, as audio isn't stored)",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s earshotd %(levelname)s %(message)s")
     decider: Decider = hand_off
@@ -42,7 +48,10 @@ def main(argv: list[str] | None = None) -> int:
         from earshot.voice.mac import MacVoice
         from earshot.voice.presence import KeyboardPresence
 
-        voice = MacVoice(headset=args.headset)
+        keep = paths.resolve(args.home).audio_dir if args.keep_audio else None
+        if keep is not None:
+            print(f"Keeping each reply's audio in {keep}", file=sys.stderr)
+        voice = MacVoice(headset=args.headset, keep_audio=keep)
         print("Loading the voice models (the first time, they download)…", file=sys.stderr)
         voice.load()  # until this finishes, there's no socket, so prompts go to the screen
         decider = VoiceDecider(voice, KeyboardPresence(pinned=args.pin_voice))

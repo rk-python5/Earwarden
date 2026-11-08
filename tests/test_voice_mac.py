@@ -1,11 +1,13 @@
-"""The Mac voice's model cache check and audio locking, with sounddevice and numpy faked."""
+"""The Mac voice's model cache check, audio locking and kept clips, with sounddevice faked."""
 
 from __future__ import annotations
 
+import json
 import sys
 import threading
 import time
 import types
+import wave
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -133,3 +135,25 @@ def test_devices_refresh_only_when_no_stream_is_open(sd: FakeSounddevice) -> Non
     voice._mic = None
     assert voice.headset_ready()
     assert sd.refreshes == 1
+
+
+def test_no_audio_is_kept_by_default(tmp_path: Path) -> None:
+    voice = MacVoice()
+    assert voice._keep([0.0] * 1600, verdict="not speech") is None
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_keep_audio_saves_each_clip_and_what_became_of_it(tmp_path: Path) -> None:
+    np = pytest.importorskip("numpy")  # the voice group, on the Mac
+    voice = MacVoice(keep_audio=tmp_path / "audio")
+    name = voice._keep(np.zeros(1600, dtype=np.float32), verdict="speech", loudest=0.04)
+    assert name is not None
+    voice._keep(None, file=name, transcript="Yeah.", intent="approve")
+    with wave.open(str(tmp_path / "audio" / name)) as clip:
+        assert (clip.getframerate(), clip.getnframes()) == (16_000, 1600)
+    lines = (tmp_path / "audio" / "clips.jsonl").read_text().splitlines()
+    notes = [json.loads(line) for line in lines]
+    assert [(n["file"], n.get("verdict"), n.get("transcript")) for n in notes] == [
+        (name, "speech", None),
+        (name, None, "Yeah."),
+    ]

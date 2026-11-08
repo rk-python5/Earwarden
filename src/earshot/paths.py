@@ -40,6 +40,10 @@ class Paths(NamedTuple):
     def observe_log(self) -> Path:
         return self.state_dir / "observe.jsonl"
 
+    @property
+    def audio_dir(self) -> Path:
+        return self.state_dir / "audio"  # only with earshotd --keep-audio
+
 
 def resolve(home: str | None = None) -> Paths:
     """The folders to use: `home` if given, else `EARSHOT_HOME`, else the plan's defaults."""

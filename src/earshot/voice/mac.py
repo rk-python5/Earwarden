@@ -12,6 +12,8 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
   it, or it's ignored as noise (P-20). Talking while Earshot speaks stops playback (barge-in).
 - Recognition: Parakeet hears every answer; only when its answer is unclear does Whisper listen
   again to the same audio (D-017).
+- With `keep_audio` (`earshotd --keep-audio`), each reply's clip is saved with what became of
+  it, to tune the guards on real failures. Off by default: audio isn't stored (P-20).
 - Models download the first time. Once all of them are cached, loading runs with the Hub offline,
   so nothing leaves the Mac, not even an update check.
 """
@@ -19,12 +21,15 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import math
 import os
 import threading
 import time
+import wave
 from collections import deque
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -76,8 +81,16 @@ def models_cached(cache: Path) -> bool:
 
 
 class MacVoice:
-    def __init__(self, headset: str = "AirPods", voice: str = "af_heart", speed: float = 1.1):
+    def __init__(
+        self,
+        headset: str = "AirPods",
+        voice: str = "af_heart",
+        speed: float = 1.1,
+        keep_audio: Path | None = None,
+    ):
         self.headset = headset
+        self.keep_audio = keep_audio
+        self._kept: str | None = None  # the last clip saved, for its transcript
         self.voice_name = voice
         self.speed = speed
         self._tts: Any = None
@@ -296,15 +309,25 @@ class MacVoice:
                 reply.loudest,
                 ", began before the window" if reply.cut_off else "",
             )
-            if reply.cut_off:
-                return CUT_OFF
             keep = [
                 c
                 for t, c in frames
                 if t >= opened and reply.start - PRE_ROLL_S <= t <= reply.end + 0.25
             ]
             clip = self._resample(np.concatenate(keep), self._mic_rate)
-            if self.is_speech(clip):
+            levels_seen = {
+                "seconds": round(reply.end - reply.start, 2),
+                "noise": round(reply.noise, 4),
+                "threshold": round(reply.threshold, 4),
+                "loudest": round(reply.loudest, 4),
+            }
+            if reply.cut_off:
+                self._kept = self._keep(clip, verdict="cut off", **levels_seen)
+                return CUT_OFF
+            speech = self.is_speech(clip)
+            verdict = "speech" if speech else "not speech"
+            self._kept = self._keep(clip, verdict=verdict, **levels_seen)
+            if speech:
                 return clip
             log.info("not speech: ignored")
             if now > deadline:
@@ -342,5 +365,27 @@ class MacVoice:
             text = str(second.generate(mx.array(clip), language="en", temperature=0.0).text).strip()
             recognizer = "parakeet+whisper"
         ms = int((time.monotonic() - start) * 1000)
-        log.info("recognized: %s, by %s in %d ms", intents.parse(text).kind, recognizer, ms)
+        kind = intents.parse(text).kind
+        log.info("recognized: %s, by %s in %d ms", kind, recognizer, ms)
+        if self._kept is not None:
+            self._keep(None, file=self._kept, transcript=text, recognizer=recognizer, intent=kind)
+            self._kept = None
         return Heard(text, recognizer, ms)
+
+    def _keep(self, clip: Any, **fields: Any) -> str | None:
+        """With keep_audio, save a clip as 16 kHz WAV, and a line about it in clips.jsonl."""
+        if self.keep_audio is None:
+            return None
+        import numpy as np
+
+        self.keep_audio.mkdir(parents=True, exist_ok=True)
+        if clip is not None:
+            fields = {"file": datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ.wav"), **fields}
+            with wave.open(str(self.keep_audio / fields["file"]), "wb") as out:
+                out.setnchannels(1)
+                out.setsampwidth(2)
+                out.setframerate(ASR_RATE)
+                out.writeframes((np.clip(clip, -1, 1) * 32767).astype(np.int16).tobytes())
+        with (self.keep_audio / "clips.jsonl").open("a", encoding="utf-8") as notes:
+            notes.write(json.dumps({"ts": datetime.now(UTC).isoformat(), **fields}) + "\n")
+        return fields.get("file")
