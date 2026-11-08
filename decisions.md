@@ -534,6 +534,15 @@ How this file works:
   - **Loudness:**
     - Real approvals were 16–148× the room's noise, and in Step 0's recordings 26× or more.
     - The first live check's false "Yeah." was 7.3×, at a peak of 0.04.
+- **Tone check (8 Nov), 7 runs:**
+  - The tone was heard and used. After "Wait for the tone, then say yes or no.", "No." denied and
+    "Go ahead." approved.
+  - Three requests went to the screen or were stopped. 0 false approvals.
+  - Barge-in fired in 6 of 7 questions, 2–6 s in.
+    - By pitch, the voice was rehaan's: a median of 120 Hz, against 112 Hz for his answers and
+      185 Hz for Earshot's Kokoro voice. So it wasn't Earshot hearing itself.
+    - Parakeet heard "Okay.", "Yeah." and "Mm-hmm." in those clips. Talking while Earshot speaks,
+      even an "okay" as it starts, stops the question.
 - **P-20 stays open.** The faint "Yeah." from the first live check wasn't seen again, but without
   the loudness rule nothing aims at it specifically. The voiceprint (Phase 2) is the next guard.
 

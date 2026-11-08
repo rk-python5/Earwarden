@@ -76,7 +76,8 @@ next fix needs real failure clips first:
 Done on 8 Nov (D-028): the second live check found 0 false approvals in 10 runs, and the clips
 showed what was breaking barge-in and timing. rehaan declined the loudness rule. What's left:
 
-- Try the listening tone live, a few `earshot test` runs, and check the timing feels natural.
+- The tone was tried live the same day, and answers given after it were heard. Talking while
+  Earshot speaks, even an "okay", stops the question (barge-in): wait for the tone.
 - Use voice in the scratch project for a longer stretch with `--keep-audio`, then look for any
   approval whose clip isn't a clear "yes". If none turns up, ask rehaan whether P-20 can close
   before the voiceprint arrives.
