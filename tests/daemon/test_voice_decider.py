@@ -6,7 +6,7 @@ import asyncio
 import json
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 from conftest import StartDaemon
@@ -14,21 +14,28 @@ from harness import finish, fixture, run_hook, start_hook
 
 from earshot import contracts, wire
 from earshot.daemon.state import Pending, Sessions
-from earshot.voice.decider import CUT_OFF, Heard, VoiceDecider
+from earshot.voice import challenge
+from earshot.voice.decider import CUT_OFF, Heard, Speaker, VoiceDecider
 
 TOO_EARLY = Heard("", CUT_OFF, 0)  # an answer begun before the listening tone
 
 
 class FakeVoice:
-    def __init__(self, answers: list[str | Heard | None], headset: bool = True) -> None:
+    def __init__(
+        self, answers: list[str | Heard | None], headset: bool = True, enrolled: bool = False
+    ) -> None:
         self.answers: Iterator[str | Heard | None] = iter(answers)
         self.headset = headset
+        self.enrolled = enrolled
         self.said: list[str] = []
         self.mic_open = False
         self.listens = 0
 
     def headset_ready(self) -> bool:
         return self.headset
+
+    def speaker_ready(self) -> bool:
+        return self.enrolled
 
     def can_say(self, word: str) -> bool:
         return word.lower() != "pydantic"
@@ -121,6 +128,64 @@ def test_an_answer_begun_too_early_is_asked_again_after_the_tone() -> None:
 def test_two_answers_begun_too_early_go_to_the_screen() -> None:
     voice = FakeVoice([TOO_EARLY, TOO_EARLY])
     assert decide(voice, pending()).outcome == "handoff"
+
+
+INSTALL = {"command": "pip install httpx"}  # tier 2: the built-in install rule
+
+
+def tier_two(
+    monkeypatch: pytest.MonkeyPatch, answers: list[str | Heard | None], enrolled: bool = True
+) -> tuple[FakeVoice, contracts.Decision, Pending]:
+    monkeypatch.setattr(challenge, "pick", lambda: "harbor")
+    voice = FakeVoice(answers, enrolled=enrolled)
+    item = pending("Bash", INSTALL)
+    return voice, decide(voice, item), item
+
+
+def you(text: str, verdict: Literal["match", "borderline", "mismatch"] = "match") -> Heard:
+    return Heard(text, "parakeet", 70, Speaker(0.71, verdict))
+
+
+def test_tier_2_asks_for_the_challenge_word(monkeypatch: pytest.MonkeyPatch) -> None:
+    voice, decision, item = tier_two(monkeypatch, [you("approve harbor")])
+    assert decision.outcome == "allow"
+    assert voice.said[0].endswith("To install, say: approve harbor.")
+    assert (item.notes["challenge"], item.notes["voiceprint"]) == ("harbor", 0.71)
+
+
+def test_a_plain_yes_never_answers_a_challenge(monkeypatch: pytest.MonkeyPatch) -> None:
+    voice, decision, _ = tier_two(monkeypatch, [you("yes"), you("Approve harbor.")])
+    assert decision.outcome == "allow"
+    assert "Sorry, say: approve harbor." in voice.said
+
+
+def test_the_right_word_in_the_wrong_voice_goes_to_the_screen(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for verdict in ("borderline", "mismatch"):
+        voice, decision, item = tier_two(monkeypatch, [you("approve harbor", verdict)])
+        assert decision.outcome == "handoff"
+        assert voice.said[-1] == "Didn't catch that clearly; it's on your screen."
+        assert f"voiceprint: {verdict}" in item.notes["rules"]
+
+
+def test_a_challenge_without_a_voiceprint_result_goes_to_the_screen(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, decision, _ = tier_two(monkeypatch, ["approve harbor"])
+    assert decision.outcome == "handoff"
+
+
+def test_no_still_denies_at_tier_2(monkeypatch: pytest.MonkeyPatch) -> None:
+    _, decision, _ = tier_two(monkeypatch, [you("no")])
+    assert decision.outcome == "deny"
+
+
+def test_tier_2_waits_for_an_enrolled_voiceprint(monkeypatch: pytest.MonkeyPatch) -> None:
+    voice, decision, item = tier_two(monkeypatch, [you("approve harbor")], enrolled=False)
+    assert decision.outcome == "handoff"
+    assert voice.said[-1].endswith("It's on your screen.")
+    assert "voice: tier 2 waits for an enrolled voiceprint" in item.notes["rules"]
 
 
 def test_two_unclear_answers_go_to_the_screen() -> None:

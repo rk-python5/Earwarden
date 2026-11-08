@@ -18,10 +18,15 @@ from earshot.policy.engine import Judgement
 MAX_WORDS = 25
 
 
+# What a tier-2 challenge asks to do: "To install, say: approve harbor."
+VERBS = {"push": "push", "install": "install", "delete": "delete", "write": "write", "edit": "edit"}
+
+
 class Narration(NamedTuple):
     text: str
     fits: bool  # False when the request can't be said faithfully, in few enough words
     problem: str | None = None  # why it doesn't fit, for the audit log
+    verb: str = "allow"  # what a tier-2 challenge asks to do: "To install, say: approve harbor."
 
 
 def _clause(action: fields.Action, chained: bool) -> str:
@@ -77,4 +82,5 @@ def narrate(
     if not result.ok:
         problem = "; ".join([*(f"missing {m}" for m in result.missing), *result.invented])
         return Narration(f"{who} has a request waiting.", False, f"checker: {problem}")
-    return Narration(text, True)
+    verb = next((VERBS[a.kind] for a in actions if a.kind in VERBS), "allow")
+    return Narration(text, True, None, verb)

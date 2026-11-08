@@ -341,6 +341,7 @@ name = "earshot-agents"
 version = "0.2.0.dev0"
 source = { editable = "." }
 dependencies = [
+    { name = "metaphone" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
@@ -364,6 +365,7 @@ voice = [
 
 [package.metadata]
 requires-dist = [
+    { name = "metaphone", specifier = "==0.6" },
     { name = "pydantic", specifier = ">=2.11,<3" },
     { name = "pyyaml", specifier = ">=6.0,<7" },
 ]
@@ -851,6 +853,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
 ]
+
+[[package]]
+name = "metaphone"
+version = "0.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/ae/c9e4d007e32a6469be212da11d0b8e104d643f6f247d771742caf6ac6bb8/Metaphone-0.6.tar.gz", hash = "sha256:ad0beadca66cb7ec6ede71ef72bb02da097c493ddf159930d6340bc83f53da27", size = 14075, upload-time = "2016-08-24T14:37:29.687Z" }
 
 [[package]]
 name = "miniaudio"

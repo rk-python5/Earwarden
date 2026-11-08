@@ -9,32 +9,43 @@ says what's waiting and that it's on the screen.
 One approval is asked at a time. If nothing is heard, it waits and asks again instead of handing
 off (D-020); an answer it can't understand twice goes to the screen. A tone marks when to answer,
 and an answer begun before it is never parsed: Earshot asks you to wait for the tone (D-028).
+
+Tier 2 asks for a fresh challenge word ("To install, say: approve harbor.", milestone 5), and
+approves only when the word matches and the voiceprint says it's you (milestone 6). A plain "yes"
+never answers a challenge. Until a voiceprint is enrolled, tier 2 goes to the screen.
 """
 
 from __future__ import annotations
 
 import asyncio
 import time
-from typing import NamedTuple, Protocol
+from typing import Literal, NamedTuple, Protocol
 
 from earshot import contracts, paths, wire
 from earshot.daemon.state import Pending
 from earshot.narrator.spoken import speakable
 from earshot.narrator.templates import narrate
 from earshot.policy import engine
-from earshot.voice import intents
+from earshot.voice import challenge, intents
 
 CUT_OFF = "cut off"  # Heard.recognizer for a reply begun before the window: never parsed (P-20)
+
+
+class Speaker(NamedTuple):
+    score: float  # the voiceprint's similarity to the enrolled profile
+    verdict: Literal["match", "borderline", "mismatch"]
 
 
 class Heard(NamedTuple):
     transcript: str
     recognizer: str  # "parakeet", "parakeet+whisper" after a second listen (D-017), or CUT_OFF
     ms: int
+    speaker: Speaker | None = None  # the voiceprint's verdict, once one is enrolled
 
 
 class Voice(Protocol):
     def headset_ready(self) -> bool: ...
+    def speaker_ready(self) -> bool: ...  # a voiceprint is enrolled: tier 2 can be asked
     def can_say(self, word: str) -> bool: ...
     async def say(self, text: str, chime: int | None = None) -> None: ...
     async def listen(self, seconds: float) -> Heard | None: ...
@@ -86,9 +97,16 @@ class VoiceDecider:
         notes = pending.notes
         notes["tier"] = judgement.tier
         notes["rules"] = list(judgement.rules)
+        notes["checker"] = "pass" if narration.fits else "fail"
         if not narration.fits:
             notes["rules"].append(narration.problem or "narrator: can't be said faithfully")
-        voice_ok = judgement.tier in engine.VOICE_TIERS and narration.fits
+        word: str | None = None
+        if judgement.tier == 2:
+            if self.voice.speaker_ready():
+                word = challenge.pick()
+            else:
+                notes["rules"].append("voice: tier 2 waits for an enrolled voiceprint")
+        voice_ok = (judgement.tier in engine.VOICE_TIERS or word is not None) and narration.fits
         if not self.presence.away():
             notes["rules"].append("presence: at the keyboard")
             return _decision(pending, "handoff")
@@ -101,7 +119,7 @@ class VoiceDecider:
         finally:
             self._queued -= 1
         try:
-            return await self._ask(pending, narration.text, voice_ok)
+            return await self._ask(pending, narration.text, voice_ok, word, narration.verb)
         finally:
             self._floor.release()
 
@@ -113,11 +131,16 @@ class VoiceDecider:
         timings = pending.notes.setdefault("timings_ms", {})
         timings["speak"] = timings.get("speak", 0) + int((time.monotonic() - start) * 1000)
 
-    async def _ask(self, pending: Pending, text: str, listen: bool) -> contracts.Decision:
+    async def _ask(
+        self, pending: Pending, text: str, listen: bool, word: str | None, verb: str
+    ) -> contracts.Decision:
         if not listen:
             await self._say(pending, f"{text} It's on your screen.")
             return _decision(pending, "handoff")
-        question = f"{text} Approve?"
+        answer_with = f"say: approve {word}" if word else "say yes or no"
+        question = f"{text} To {verb}, {answer_with}." if word else f"{text} Approve?"
+        if word:
+            pending.notes["challenge"] = word
         if self._queued:
             question += f" {self._queued} more waiting."
         await self.voice.open_mic()  # before speaking: the headset mode switch takes ~0.85 s (Q-2)
@@ -138,8 +161,23 @@ class VoiceDecider:
                 pending.notes["transcript"] = heard.transcript
                 pending.notes["recognizer"] = heard.recognizer
                 pending.notes.setdefault("timings_ms", {})["recognize"] = heard.ms
+                if heard.speaker is not None:
+                    pending.notes["voiceprint"] = heard.speaker.score
                 answer = intents.parse(heard.transcript)
-                if answer.kind == "approve":
+                if word is not None and heard.recognizer != CUT_OFF:
+                    if challenge.matches(heard.transcript, word):
+                        if heard.speaker is not None and heard.speaker.verdict == "match":
+                            return _decision(pending, "allow")
+                        verdict = heard.speaker.verdict if heard.speaker else "not checked"
+                        pending.notes["rules"] = [
+                            *pending.notes.get("rules", []),
+                            f"voiceprint: {verdict}",
+                        ]
+                        await self._say(pending, "Didn't catch that clearly; it's on your screen.")
+                        return _decision(pending, "handoff")
+                    if answer.kind == "approve":
+                        answer = intents.Intent("unclear")  # a plain yes never answers a challenge
+                elif answer.kind == "approve":
                     return _decision(pending, "allow")
                 if answer.kind == "deny":
                     return _decision(pending, "deny")
@@ -153,8 +191,8 @@ class VoiceDecider:
                     await self._say(pending, "I didn't catch that. It's on your screen.")
                     return _decision(pending, "handoff")
                 if heard.recognizer == CUT_OFF:
-                    await self._say(pending, "Wait for the tone, then say yes or no.")
+                    await self._say(pending, f"Wait for the tone, then {answer_with}.")
                 else:
-                    await self._say(pending, "Sorry, say yes or no.")
+                    await self._say(pending, f"Sorry, {answer_with}.")
         finally:
             await self.voice.close_mic()

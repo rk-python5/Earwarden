@@ -16,6 +16,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
+    "metaphone==0.6",
     "pydantic>=2.11,<3",
     "pyyaml>=6.0,<7",
 ]
@@ -89,7 +90,7 @@ files = ["src", "tests", "spikes/hook_probe", "spikes/speech/speech_data.py", "s
 
 # The voice stack is installed only on the Mac (`uv sync --group voice`).
 [[tool.mypy.overrides]]
-module = ["mlx.*", "mlx_audio.*", "sounddevice", "numpy"]
+module = ["mlx.*", "mlx_audio.*", "sounddevice", "numpy", "metaphone"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

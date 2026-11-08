@@ -32,6 +32,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     call's domain and method.
   - The narrator says one clause per command, and the checker refuses any sentence that drops a
     field or invents a word. A refused sentence sends the request to the screen.
+- Challenge words for tier 2 (Phase 2, milestone 5).
+  - 200 words, pronounceable by Kokoro, no two within one Double Metaphone edit (P-08).
+  - A tier-2 request asks "To install, say: approve harbor." It's approved only when the reply
+    ends with the word and the voiceprint matches, and a plain "yes" never answers it.
+  - Until a voiceprint is enrolled, tier 2 stays on the screen. `metaphone` (BSD) is a new
+    dependency.
 - Lookalike packages (Phase 2, milestone 4), with P-09's thresholds.
   - An install of a name close to a popular PyPI or npm package, but not on the list, is tier 3,
     spelled out, and said as "which looks like requests".

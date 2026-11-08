@@ -24,6 +24,9 @@ class SaysYes:
     def headset_ready(self) -> bool:
         return True
 
+    def speaker_ready(self) -> bool:
+        return False
+
     def can_say(self, word: str) -> bool:
         return True
 

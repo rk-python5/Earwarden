@@ -125,7 +125,8 @@ compiles when you work in the Linux container, so check the CI run after changin
     checker (`checker.py`), which refuses a sentence that drops or invents a detail.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
     settings file, with a byte-for-byte backup.
-  - `voice/`: the voice decider, intent rules and endpointer (testable anywhere), presence by
+  - `voice/`: the voice decider, intent rules, endpointer and challenge words (`challenge.py`,
+    built by `dev/build_challenge_words.py`), all testable anywhere; presence by
     keyboard idle time, and `mac.py`, which speaks and listens with Kokoro, Silero VAD, Parakeet
     and Whisper (macOS only; `uv sync --group voice`).
   - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`

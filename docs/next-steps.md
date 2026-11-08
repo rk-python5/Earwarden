@@ -102,9 +102,8 @@ D-029. The plan has nine milestones, the gate's targets, and the decisions still
 (which friends), and whether tier 1 also checks the voiceprint.
 
 Milestones 1 to 3 (the policy engine, its resolvers, critical fields and the fidelity checker)
-and lookalike packages (milestone 4) were done on 8 Nov. They replaced the safety stub, and tier 2
-stays on the screen until challenge words and the voiceprint are both in. Next is milestone 5:
-challenge words.
+and lookalike packages (milestone 4) were done on 8 Nov, and challenge words (milestone 5) in code.
+Tier 2 stays on the screen until a voiceprint is enrolled. Next is milestone 6: the voiceprint.
 
 ## 4. Later, and loose ends
 

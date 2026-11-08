@@ -152,6 +152,10 @@ class MacVoice:
 
     # Devices
 
+    def speaker_ready(self) -> bool:
+        """Whether a voiceprint is enrolled, so tier 2 can be asked by voice (milestone 6)."""
+        return False
+
     def headset_ready(self) -> bool:
         import sounddevice as sd
 

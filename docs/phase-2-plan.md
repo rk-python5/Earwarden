@@ -63,8 +63,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Done   |
 | 3 | Critical fields, the checker, redaction      | Code      | D-024               | Done   |
 | 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Done   |
-| 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Next   |
-| 6 | The voiceprint                               | Code, Mac | D-014, Q-5          |        |
+| 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Code   |
+| 6 | The voiceprint                               | Code, Mac | D-014, Q-5          | Next   |
 | 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 |        |
 | 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        |        |
 | 9 | The gate                                     | Mac       | —                   |        |
@@ -212,6 +212,22 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
   recorded-audio set, which grows towards the spec's 200 replies.
 - **Done when:** on the recordings, every genuine reply is accepted at the spec's yes/no rates, and
   no decoy or wrong word is.
+- **Code done (8 Nov):**
+  - `voice/challenge.py` and 200 words in `voice/data/challenge-words.txt`. They're built by
+    `dev/build_challenge_words.py` from about 630 easy nouns, keeping only words Kokoro's
+    front-end can say. `metaphone` (BSD) is a new dependency.
+  - Every pair of words is at least 2 Double Metaphone edits apart, and so is every word from
+    the "everyday words" set. That set is the reply words plus about 150 common words, a
+    narrower reading of P-08's "common English words".
+  - The decider asks "To install, say: approve harbor." Tier 2 stays on the screen until a
+    voiceprint is enrolled (milestone 6).
+  - On Step 0's recordings (`dev/false_approvals.py --challenges`), with the old ten words:
+    - 27 of 30 genuine replies matched. The 3 misses were noisy-room recognition errors, and
+      they're asked again.
+    - 7 of 8 decoys, wrong words and bare yeses were refused. The one false match is P-08's own
+      case: noise turned "approve orchid" into "a plum orchard". `orchard` isn't in the new
+      list, and a match still needs the voiceprint.
+  - **Left for the Mac:** rehaan records a sample of the new words, quiet and noisy.
 
 ### 6. The voiceprint (code, then Mac)
 

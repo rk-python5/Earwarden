@@ -11,6 +11,10 @@ Whisper when unclear) and the intent rules. After `uv sync --group voice`:
 - Cut-off replies: the window opens 50 ms, 100 ms, ... into each non-approval.
 
 The target is zero false approvals, with every real approval still heard. It takes a few minutes.
+
+With `--challenges`, it checks tier 2's challenge words instead (milestone 5): each recorded
+"approve <word>" must match its word, and the decoys ("approve orchid" for orchard), a wrong word
+and a bare "yes" must not. It takes about a minute.
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from typing import Any
 
 import numpy as np
 
-from earshot.voice import endpoint, intents
+from earshot.voice import challenge, endpoint, intents
 from earshot.voice.mac import ASR_RATE, FRAME_S, PRE_ROLL_S, MacVoice
 
 FRAME = int(FRAME_S * ASR_RATE)
@@ -67,12 +71,40 @@ def hear(voice: MacVoice, audio: Any, opened: float) -> tuple[str, str]:
         opened = end + FRAME_S  # noise: listen on after it, as the daemon does
 
 
+def challenges(voice: MacVoice, replies: Path, rows: list[dict[str, str]]) -> int:
+    """Tier 2: genuine challenge replies must match their word; decoys and wrong words mustn't."""
+    accepted = genuine = refused = trick = 0
+    for row in rows:
+        if not row["challenge"] or row["condition"] == "friend":
+            continue
+        transcript = hear(voice, read(replies / row["file"]), 0.0)[1]
+        match = challenge.matches(transcript, row["challenge"])
+        name = f"{row['condition']}/{row['id']} {row['text']!r} for {row['challenge']}"
+        if row["intent"] == "approve":
+            genuine += 1
+            accepted += match
+            if not match:
+                print(f"NOT ACCEPTED {name}: heard {transcript!r}")
+        else:
+            trick += 1
+            refused += not match
+            if match:
+                print(f"FALSE MATCH {name}: heard {transcript!r}")
+    print(f"\ngenuine challenge replies accepted: {accepted} of {genuine}")
+    print(f"decoys, wrong words and bare yeses refused: {refused} of {trick}")
+    return 1 if refused < trick else 0
+
+
 def main() -> int:
-    replies = Path(sys.argv[1] if len(sys.argv) > 1 else "spikes/speech/out/replies")
+    replies = Path(
+        next((a for a in sys.argv[1:] if not a.startswith("-")), "spikes/speech/out/replies")
+    )
     with (replies / "labels.csv").open(encoding="utf-8") as labels:
         rows = [row for row in csv.DictReader(labels) if row["condition"] != "friend"]
     voice = MacVoice()
     voice.load()
+    if "--challenges" in sys.argv:
+        return challenges(voice, replies, rows)
     false: list[str] = []
     wrong: list[str] = []
     approvals = approvals_heard = rooms = rooms_speech = cuts = cuts_flagged = 0
