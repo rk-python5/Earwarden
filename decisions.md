@@ -46,6 +46,7 @@ How this file works:
 | D-026 | The Phase 1 gate passed                                   | Accepted |
 | D-027 | Only speech, begun inside the window, is parsed (P-20)    | Accepted |
 | D-028 | A listening tone, and barge-in only on speech             | Accepted |
+| D-029 | Phase 2's rules (P-01, P-02, P-08, P-09, P-11)            | Accepted |
 
 ## Decisions
 
@@ -546,6 +547,36 @@ How this file works:
 - **P-20 stays open.** The faint "Yeah." from the first live check wasn't seen again, but without
   the loudness rule nothing aims at it specifically. The voiceprint (Phase 2) is the next guard.
 
+### D-029 Phase 2's rules: tiers per effect, defaults, challenge words, lookalikes, repo policy
+
+- **Date:** 2026-11-08 · **Status:** Accepted · **By:** rehaan
+- **Decision:** the five proposals due before Phase 2 are accepted as written:
+  - **P-01, tier 3 per effect:**
+    - Edits to `.git/`, `.claude/`, `.earshot/`, `.github/workflows/` and `.envrc` are tier 3.
+    - Edits to build and test config are at least tier 2, and so is running code after such an
+      edit in the same session.
+    - Git aliases are expanded, and `git config` and `git -c` are tier 3.
+    - The push resolver learns refspecs, `--mirror`, `--all`, `--delete` and `-C`.
+  - **P-02, defaults:**
+    - Tier 0 means tier 1: nothing is approved without an answer.
+    - Reads outside the project are at least tier 2.
+    - The secret paths are widened.
+    - Bash commands that match no rule are tier 2.
+  - **P-08, revised, challenge words:**
+    - The challenge word decides. It must end a reply of four words or fewer with no negation,
+      and the carrier word is ignored.
+    - The ~200 words are at least 2 sound-code edits apart from each other and from common
+      English words.
+  - **P-09, lookalike packages:**
+    - Exact matches and the top-15,000 list are exempt.
+    - The edit distance scales with name length: none up to 5 letters, 1 for 6–8, 2 for 9 or
+      more. Confusable characters are always checked.
+    - Recall is measured on the ecosyste.ms squat dataset before the numbers are final.
+  - **P-11, repo policy:** a repo's rules can only raise tiers. Lowering one needs a trust step
+    that pins the file's hash.
+- **Why:** each one closes a gap the design review found, and none of them loosens the spec.
+  Phase 2's plan (`docs/phase-2-plan.md`) builds on them.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -566,7 +597,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Teach the push resolver `HEAD:main`, `src:dst`, `:dst` (delete), `--mirror`, `--all`,
     `--delete` and `git -C`.
   - Add two-step attacks to the red-team suite, and word the public claim exactly.
-- **Decide by:** before Phase 2.
+- **Status:** Accepted before Phase 2 as D-029.
 
 ### P-02 Define tier 0 and fix the default tiers
 
@@ -582,7 +613,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Secret paths also cover `id_ed25519`, `id_ecdsa`, `.netrc`, `.npmrc`, `.pypirc`,
     `~/.kube/config`, `~/.docker/config.json` and `*.key`.
   - Unmatched Bash commands default to tier 2.
-- **Decide by:** before Phase 2.
+- **Status:** Accepted before Phase 2 as D-029.
 
 ### P-03 Check that the summary can be spoken, not only that the text is right
 
@@ -693,7 +724,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - `asr_eval.py` reports this rule as a what-if.
 - **Proposal:** Require an exact code match, or pick the ~200 words so every pair, and every word
   against common English words, is at least 2 code edits apart.
-- **Decide by:** before Phase 2.
+- **Status:** Accepted before Phase 2 as D-029.
 
 ### P-09 Lookalike rule thresholds
 
@@ -708,7 +739,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     confusable-character check still applies), 1 for 6–8 letters, 2 for 9 or more. That cuts the
     rate to 3.9%.
   - Measure recall on the ecosyste-ms squat dataset before settling.
-- **Decide by:** before Phase 2.
+- **Status:** Accepted before Phase 2 as D-029.
 
 ### P-10 A keyed, anchored audit chain
 
@@ -728,7 +759,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   holds back a repo's hooks until the folder is trusted; Earshot has nothing similar.
 - **Proposal:** Rules from a repo policy can only raise tiers. Lowering one needs an explicit trust
   step that pins the file's hash.
-- **Decide by:** before Phase 2.
+- **Status:** Accepted before Phase 2 as D-029.
 
 ### P-12 Lifecycle while the hook waits
 

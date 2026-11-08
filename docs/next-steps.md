@@ -95,30 +95,14 @@ If those hold, record the result in D-027 and drop the scratch-project-only rule
 CLAUDE.md and the README. After any change to the listening path, run
 `uv run python dev/false_approvals.py` (about 10 minutes); it must report 0 false approvals.
 
-## 3. Plan Phase 2, the safety layer (before writing its code)
+## 3. Build Phase 2, the safety layer
 
-Phase 2 is what makes voice safe for real work. Its gate: the safety targets in the spec's goals
-table are met. Write `docs/phase-2-plan.md` the way `docs/phase-1-plan.md` was written, from the
-spec's Phase 2 list plus what earlier decisions moved into it:
+Planned on 8 Nov in `docs/phase-2-plan.md`. rehaan accepted P-01, P-02, P-08, P-09 and P-11 as
+D-029. The plan has nine milestones, the gate's targets, and the decisions still open: Q-5
+(which friends), and whether tier 1 also checks the voiceprint.
 
-- the policy engine: YAML rules, tiers, the never-by-voice floor, `earshot policy check`. It
-  replaces the safety stub (D-019) and must never be looser than it.
-- resolvers (the real `git push` target, force flags, command splitting, obfuscation to tier 3,
-  requirements files)
-- critical-field extractors, the fidelity checker, and hardened secret redaction (entropy, a test
-  corpus)
-- lookalike checks against the top PyPI and npm names
-- challenge words (about 200, from the week-1 recordings) and their matching
-- the voiceprint: `earshot enroll`, ONNX, threshold calibration with 3–5 friends (Q-5)
-- the signed Swift helper, `earshot-motion`: mic capture and device changes (moved here by
-  D-023, from D-016) and head motion, with a fixed signing identity; the nod detector under D-018
-- Silero VAD in place of energy endpointing (D-023)
-- property tests for rules and resolvers
-
-**Decisions due before Phase 2**, each with a recommendation in `decisions.md`: P-01 (tier 3 per
-effect), P-02 (tier 0 and default tiers), P-08 (challenge-word matching, revised), P-09 (lookalike
-thresholds), P-11 (repo policy only raises tiers). Ask rehaan for each, as the Phase 1 decisions
-were asked.
+Start with milestone 1, the policy engine. It replaces the safety stub and must never be looser
+than it: tier 2 stays on the screen until challenge words and the voiceprint are both in.
 
 ## 4. Later, and loose ends
 

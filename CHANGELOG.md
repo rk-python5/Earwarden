@@ -8,6 +8,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ### Added
 
+- The Phase 2 plan (`docs/phase-2-plan.md`): nine milestones in build order, the gate's targets
+  and how each is measured, and the decisions each milestone needs. rehaan accepted the five
+  proposals due before Phase 2 (P-01, P-02, P-08, P-09, P-11) as D-029.
 - `dev/false_approvals.py`, the recorded-audio check for false approvals, run by hand on the Mac
   (D-023). It sends Step 0's recordings through the daemon's own listening path.
 - A short listening tone marks when to answer. An answer begun before it is never parsed, and
