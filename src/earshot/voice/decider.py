@@ -15,10 +15,9 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Callable
 from typing import NamedTuple, Protocol
 
-from earshot import contracts, wire
+from earshot import contracts, paths, wire
 from earshot.daemon.state import Pending
 from earshot.narrator.spoken import speakable
 from earshot.narrator.templates import narrate
@@ -63,10 +62,10 @@ class VoiceDecider:
         window_s: float = 8.0,
         reannounce_s: float = 60.0,
         reannounce_max: int = 3,
-        judge: Callable[[contracts.ApprovalRequest], engine.Judgement] = engine.judge_built_in,
+        where: paths.Paths | None = None,
     ) -> None:
         self.voice = voice
-        self.judge = judge
+        self.where = where  # where the policy files are; None for the built-in rules alone
         self.presence = presence
         self.window_s = window_s
         self.reannounce_s = reannounce_s
@@ -76,7 +75,11 @@ class VoiceDecider:
 
     async def __call__(self, pending: Pending) -> contracts.Decision:
         request = pending.request
-        judgement = self.judge(request)
+        edited = pending.session.config_edited
+        if self.where is None:
+            judgement = engine.judge_built_in(request, edited)
+        else:
+            judgement = engine.judge_request(self.where, request, edited)
         narration = narrate(
             pending.session.name, request.cwd, request.tool_name, request.tool_input
         )

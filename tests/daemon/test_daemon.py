@@ -289,6 +289,16 @@ def test_approving_on_screen_silences_the_waiting_prompt(
     assert (resolved.outcome, resolved.reason) == ("handoff", "tool_ran")
 
 
+def test_an_edit_to_build_config_marks_the_session(home: Path, start_daemon: StartDaemon) -> None:
+    """P-01: after conftest.py changes, `pytest` runs new code, so it's no longer tier 1."""
+    running = start_daemon(never)
+    edited = fixture("post_tool_use")
+    edited["tool_name"] = "Write"
+    edited["tool_input"] = {"file_path": f"{edited['cwd']}/tests/conftest.py", "content": "x"}
+    run_hook(home, edited, "--event")
+    running.wait_for(lambda d: any(s.config_edited for s in d.sessions.all()))
+
+
 def test_another_tool_run_leaves_the_prompt_waiting(home: Path, start_daemon: StartDaemon) -> None:
     running = start_daemon(never)
     waiting = start_hook(home, fixture("permission_request"))

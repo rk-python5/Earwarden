@@ -41,6 +41,8 @@ EVENT_TIMEOUT_S = 0.5
 MAX_SHORT_CHARS = 200
 MAX_STOP_MESSAGE_CHARS = 4000
 MAX_NOTIFICATION_CHARS = 2000
+MAX_PATH_CHARS = 4096
+EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 DECISION_KEYS = {"v", "id", "outcome", "message", "tier"}
 
 
@@ -165,6 +167,11 @@ def build_event(payload: dict[str, Any], token: str) -> dict[str, Any] | None:
         fields["tool_name"] = tool_name
         fields["tool_use_id"] = _text(payload, "tool_use_id")
         fields["input_sha256"] = wire.input_sha256(payload["tool_input"])
+        tool_input = payload["tool_input"]
+        if tool_name in EDIT_TOOLS and isinstance(tool_input, dict):
+            path = tool_input.get("file_path") or tool_input.get("notebook_path")
+            if isinstance(path, str) and path:
+                fields["file_path"] = path[:MAX_PATH_CHARS]  # for P-01's session rule
     if fields["cwd"] is not None and not fields["cwd"].startswith("/"):
         fields["cwd"] = None
     event.update({key: value for key, value in fields.items() if value is not None})

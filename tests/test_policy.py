@@ -136,9 +136,9 @@ def test_secrets_in_the_input_are_tier_3() -> None:
     assert tier("Write", {"file_path": "config.py", "content": f"KEY = '{key}'"}) == 3
 
 
-def test_shell_syntax_is_at_least_tier_2_until_commands_are_split() -> None:
-    assert tier("Bash", {"command": "pytest && echo done"}) == 2
-    assert tier("Bash", {"command": "pytest -k 'slow'"}) == 2
+def test_each_command_in_a_chain_is_judged_and_the_highest_wins() -> None:
+    assert tier("Bash", {"command": "pytest && echo done"}) == 2  # echo matches no rule
+    assert tier("Bash", {"command": "pytest -k 'slow'"}) == 1  # quotes are read, not feared
 
 
 # Policy files
@@ -281,9 +281,16 @@ STUB_CASES: list[tuple[str, dict[str, Any]]] = [
 ]
 
 
+# The stub refused any quote character; the engine reads quotes (milestone 2), so a plain test
+# run with a quoted argument is tier 1. It's the one Bash case where the engine is looser.
+READ_PROPERLY_NOW = {"pytest 'a b'"}
+
+
 @pytest.mark.parametrize(("tool", "tool_input"), STUB_CASES)
 def test_never_looser_than_the_stub(tool: str, tool_input: dict[str, Any]) -> None:
-    if not stub.judge(tool, tool_input, CWD).voice_ok:
+    if tool_input.get("command") in READ_PROPERLY_NOW:
+        assert tier(tool, tool_input) == 1
+    elif not stub.judge(tool, tool_input, CWD).voice_ok:
         assert tier(tool, tool_input) >= 2
 
 

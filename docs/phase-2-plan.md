@@ -60,8 +60,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | # | Milestone                                    | Where     | Rests on            | Status |
 | - | -------------------------------------------- | --------- | ------------------- | ------ |
 | 1 | The policy engine and `earshot policy check` | Code      | D-029 (P-02, P-11)  | Done   |
-| 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Next   |
-| 3 | Critical fields, the checker, redaction      | Code      | D-024               |        |
+| 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Done   |
+| 3 | Critical fields, the checker, redaction      | Code      | D-024               | Next   |
 | 4 | Lookalike packages                           | Code      | D-029 (P-09)        |        |
 | 5 | Challenge words                              | Code, Mac | D-029 (P-08)        |        |
 | 6 | The voiceprint                               | Code, Mac | D-014, Q-5          |        |
@@ -124,6 +124,20 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
     quoting, chaining or whitespace
   - the two-step attacks from P-01 come out tier 2 or 3: `conftest.py` then `pytest`, and an
     alias then its use
+- **Done (8 Nov):**
+  - `policy/shell.py`: a small shell parser. It splits commands, reads quotes, follows `$(...)`,
+    backticks and heredocs, and reports what can't be read statically.
+  - `policy/bash.py`: judges each simple command. It sees through wrappers, parses `sh -c`, and
+    finds pipes into a shell, recursive deletes, deploys, and writes to protected or outside
+    places. It follows `cd`.
+  - `policy/git.py`: aliases, `-C`, and where a push goes, read from the repository.
+  - `policy/places.py`: the path checks, shared with the edit tools.
+  - The hook now sends an edit's file path with PostToolUse. A session where build or test config
+    was edited raises every later Bash command to at least tier 2.
+  - Property tests (hypothesis) disguise floor commands with quoting, spacing, wrappers,
+    subshells, `bash -c` and chaining. None drops below tier 3.
+  - The engine reads quotes, so a plain test run with a quoted argument is tier 1, where the stub
+    refused any quote.
 
 ### 3. Critical fields, the checker and redaction (code)
 

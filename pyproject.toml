@@ -31,6 +31,7 @@ Changelog = "https://github.com/rk-python5/Earshot/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
+    "hypothesis>=6.100",
     "mypy>=1.13",
     "pytest>=8.3",
     "ruff>=0.8",

@@ -119,6 +119,8 @@ class Event(Contract):
     tool_name: ShortText | None = None
     tool_use_id: ShortText | None = None
     input_sha256: Sha256 | None = None
+    # PostToolUse of an edit tool: the file it changed, for P-01's session rule
+    file_path: str | None = Field(default=None, min_length=1, max_length=4096)
 
     @model_validator(mode="after")
     def _post_tool_use_names_its_tool(self) -> Event:

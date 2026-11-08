@@ -29,6 +29,7 @@ class Session:
     started_at: float = field(default_factory=time.time)
     last_seen: float = field(default_factory=time.time)
     last_message: str | None = None
+    config_edited: bool = False  # build or test config changed: later commands rise (P-01)
 
 
 class Sessions:

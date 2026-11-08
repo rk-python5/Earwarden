@@ -114,7 +114,9 @@ compiles when you work in the Linux container, so check the CI run after changin
     Phase 1's safety stub (D-019), kept as the reference the policy engine must never be looser
     than.
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
-    every request, from rules alone.
+    every request, from rules alone. Bash goes through `shell.py` (a parser), `bash.py` (each
+    command it runs) and `git.py` (aliases and where a push goes); `places.py` holds the path
+    checks.
   - `audit.py`: the keyed, hash-chained audit log (D-025) behind `earshot audit verify`.
   - `narrator/`: the template narrator, spoken forms, and secret redaction.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code

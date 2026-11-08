@@ -27,14 +27,14 @@ import stat
 import threading
 import time
 from collections.abc import Awaitable, Callable
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from pydantic import ValidationError
 
 from earshot import audit, auth, contracts, paths, wire
-from earshot.daemon.state import Pending, PendingRequests, Resolved, Sessions
+from earshot.daemon.state import Pending, PendingRequests, Resolved, Session, Sessions
 from earshot.narrator import redact
-from earshot.policy import engine
+from earshot.policy import engine, places
 
 log = logging.getLogger("earshot.daemon")
 
@@ -224,6 +224,8 @@ class Daemon:
         elif event.event == "Stop" and event.last_assistant_message:
             session.last_message = event.last_assistant_message
         elif event.event == "PostToolUse":
+            if event.file_path and PurePosixPath(event.file_path).name in places.CONFIG_FILES:
+                session.config_edited = True
             answered = self.pending.answered_by(event)
             if answered is not None:
                 answered.cancel("tool_ran")
@@ -241,7 +243,7 @@ class Daemon:
         self.pending.add(pending)
         log.info("request %s: %s in %s", request.id, request.tool_name, session.name)
         if self.observe:
-            self._observe(request, session.name)
+            self._observe(request, session)
 
         decide = asyncio.ensure_future(self._decide(pending))
         hook_gone = asyncio.ensure_future(reader.read(1))  # returns at EOF: No or Esc
@@ -287,7 +289,7 @@ class Daemon:
         request = pending.request
         notes = pending.notes
         if "tier" not in notes or "rules" not in notes:  # the decider didn't judge it
-            judgement = engine.judge_request(self.where, request)
+            judgement = engine.judge_request(self.where, request, pending.session.config_edited)
             notes.setdefault("tier", judgement.tier)
             notes.setdefault("rules", list(judgement.rules))
         try:
@@ -309,9 +311,10 @@ class Daemon:
         except Exception:
             log.exception("couldn't write the audit log for %s", request.id)
 
-    def _observe(self, request: contracts.ApprovalRequest, session_name: str) -> None:
+    def _observe(self, request: contracts.ApprovalRequest, session: Session) -> None:
         """Observe mode (D-021): one line per prompt, with no command text or file contents."""
-        judgement = engine.judge_request(self.where, request)
+        judgement = engine.judge_request(self.where, request, session.config_edited)
+        session_name = session.name
         record = {
             "ts": wire.utc_timestamp(),
             "session": session_name,

@@ -394,6 +394,18 @@ def test_post_tool_use_carries_the_fingerprint_of_its_request() -> None:
     assert event["input_sha256"] == wire.input_sha256(by_event["PermissionRequest"]["tool_input"])
 
 
+def test_an_edits_post_tool_use_names_the_file_it_changed() -> None:
+    """The daemon needs it for P-01's rule: once conftest.py changes, running code needs more."""
+    payload = fixture("post_tool_use")
+    payload["tool_name"] = "Edit"
+    payload["tool_input"] = {"file_path": "/Users/rehaan/code/api/conftest.py", "old_string": "a"}
+    event = hook.build_event(payload, TOKEN)
+    assert event is not None
+    assert event["file_path"] == "/Users/rehaan/code/api/conftest.py"
+    contracts.Event.model_validate_json(json.dumps(event))
+    assert "file_path" not in (hook.build_event(fixture("post_tool_use"), TOKEN) or {})
+
+
 def test_event_mode_never_answers_a_permission_request(
     home: Path, daemon: Callable[[Reply], StubDaemon]
 ) -> None:
