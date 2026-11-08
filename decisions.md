@@ -958,6 +958,31 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   They stop every false approval on the recordings, but the first live check still found one.
   D-028 adds a listening tone; rehaan declined a loudness rule for approvals.
 
+### P-21 Phase 2's choices to confirm at the gate
+
+- **Problem:** Building Phase 2 without stopping (rehaan's instruction, 8 Nov) meant choosing
+  details the accepted decisions leave open. None of them loosens a rule. They're listed here to
+  confirm or change at the gate, before 0.2.0.
+- **Proposal:**
+  - **The helper's signature is a self-signed certificate** made in Keychain Access, not an Apple
+    Development one. D-016 asks for a fixed identity, which this is. Xcode would need about
+    15 GB of disk, and the Mac has 7 GB free. Public releases need a real Developer ID later
+    (Phase 5).
+  - **The PyPI popular-names list comes from hugovk's dump, names only.** That source has no
+    licence, and the names are facts derived from PyPI's public download counts. npm's list is
+    MIT, and the squat dataset is CC0.
+  - **P-08's "common English words" is read as the words people say in replies,** plus about 150
+    everyday words. A larger frequency list would need a licence too, and would cut the 200
+    words further.
+  - **Parakeet and Whisper run at 8 bits.** On Step 0's recordings, 8-bit Parakeet hears 109 of
+    110 replies word for word as the full model does. The footprint falls from 3.2 GB to 1.7 GB,
+    and from 4.9 GB to 2.8 GB with Whisper loaded.
+  - **Every answer's voiceprint score is logged, tier 1 included,** so P-20's question (should
+    tier 1 check the voiceprint?) can be answered from data.
+  - **The tier-2 prompt's verb comes from the action** ("To install", "To push"), and "To allow"
+    otherwise.
+- **Status:** Open, for the Phase 2 gate.
+
 ## Open questions
 
 From the plan's open-questions list.

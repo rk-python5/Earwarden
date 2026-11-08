@@ -107,6 +107,7 @@ def main() -> int:
         return challenges(voice, replies, rows)
     false: list[str] = []
     wrong: list[str] = []
+    yes_no: dict[str, list[bool]] = {}  # the spec's yes/no accuracy, per room
     approvals = approvals_heard = rooms = rooms_speech = cuts = cuts_flagged = 0
     vad_ms: list[float] = []
     for row in rows:
@@ -116,6 +117,8 @@ def main() -> int:
         kind, transcript = hear(voice, audio, 0.0)
         if kind != expected:
             wrong.append(f"{name}: expected {expected}, heard {kind} {transcript!r}")
+        if expected in ("approve", "deny"):
+            yes_no.setdefault(row["condition"], []).append(kind == expected)
         if expected == "approve":
             approvals += 1
             approvals_heard += kind == "approve"
@@ -159,6 +162,12 @@ def main() -> int:
     print(f"room sound:      {rooms_speech} of {rooms} clips passed VAD")
     print(f"cut-off replies: {cuts_flagged} of {cuts} windows flagged as cut off")
     print(f"false approvals: {len(false)}")
+    for room, results in sorted(yes_no.items()):
+        target = {"quiet": "98%", "noisy": "95%"}.get(room, "")
+        print(
+            f"yes/no in the {room} recordings: {sum(results)} of {len(results)} "
+            f"({sum(results) / len(results):.1%})" + (f"; the target is {target}" if target else "")
+        )
     print(f"Silero VAD:      median {statistics.median(vad_ms):.0f} ms per clip")
     return 1 if false or approvals_heard < approvals else 0
 

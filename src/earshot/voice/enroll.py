@@ -6,8 +6,10 @@ the reply is captured like any answer, so the same endpointer and voice detector
 profile is the mean of their embeddings. A few more phrases are held out and scored against it as
 a first check; calibration against other voices sets the real threshold (Q-5).
 
-With `--save-clips`, the phrases are kept as WAV files for `dev/calibrate_voiceprint.py`. With
-`--impostor NAME`, a friend records phrases for calibration only, and no profile is made.
+With `--save-clips DIR`, the phrases are kept as WAV files for `dev/calibrate_voiceprint.py`,
+those that built the profile in `DIR/profile` and the held-out ones in `DIR/held-out`. With
+`--record NAME`, someone records phrases for calibration only, a friend's (Q-5) or more of yours
+on another day, and no profile is made.
 """
 
 from __future__ import annotations
@@ -73,12 +75,13 @@ def enroll(
     keep: Path | None = None,
 ) -> voiceprint.Profile | None:
     words = random.sample(challenge.words(), phrases + held_out)
-    got = collect(record, embed, words, report, keep)
+    got = collect(record, embed, words[:phrases], report, keep and keep / "profile")
     if len(got) < phrases:
         report(f"Only {len(got)} phrases were heard; {phrases} are needed. Run it again.")
         return None
-    profile = voiceprint.build_profile(got[:phrases])
-    scores = [voiceprint.cosine(e, profile.embedding) for e in got[phrases:]]
+    checks = collect(record, embed, words[phrases:], report, keep and keep / "held-out")
+    profile = voiceprint.build_profile(got)
+    scores = [voiceprint.cosine(e, profile.embedding) for e in checks]
     if scores:
         middle = statistics.median(scores)
         report(

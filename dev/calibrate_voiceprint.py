@@ -3,14 +3,15 @@
     uv run python dev/calibrate_voiceprint.py --home .tools/earshot \\
         --yours .tools/earshot/enroll --impostors .tools/earshot/calibration [--write]
 
-- `--yours`: your held-out phrases (`earshot enroll --save-clips DIR`), as WAV files.
+- `--yours`: your phrases as WAV files (`earshot enroll --save-clips DIR`). A `profile` folder
+  in it is skipped: those phrases built the profile, so they'd flatter it.
 - `--impostors`: other people's phrases (`earshot enroll --impostor NAME`), one folder each.
 - `--enroll-from DIR --enroll N`: build the profile from the first N phrases in DIR instead of
   using your enrolled one. This is how Step 0's recordings are checked:
 
     R=spikes/speech/out/replies
     uv run python dev/calibrate_voiceprint.py --enroll-from $R/you --enroll 5 \\
-        --yours $R/you --impostors $R/friend
+        --yours $R/you --impostors $R/friend --only ch-
 
 It prints every score, the equal error rate, and the threshold that accepts at most 2% of the
 impostors' phrases, with your false-reject rate there. `--write` saves that threshold into your
@@ -85,7 +86,7 @@ def main() -> int:
     parser.add_argument("--impostors", required=True, help="other voices' phrases (WAV)")
     parser.add_argument("--enroll-from", help="build the profile from this folder instead")
     parser.add_argument("--enroll", type=int, default=12, help="phrases for that profile")
-    parser.add_argument("--only", default="ch-", help="only files whose name starts with this")
+    parser.add_argument("--only", default="", help="only files whose name starts with this")
     parser.add_argument("--write", action="store_true", help="save the threshold into your profile")
     args = parser.parse_args()
     where = paths.resolve(args.home)
@@ -95,7 +96,8 @@ def main() -> int:
         return embedder.embed(trim(read(path)))
 
     def pick(folder: str) -> list[Path]:
-        return [p for p in wavs(Path(folder)) if p.name.startswith(args.only)]
+        found = [p for p in wavs(Path(folder)) if p.name.startswith(args.only)]
+        return [p for p in found if "profile" not in p.relative_to(folder).parts[:-1]]
 
     enrolled: list[Path] = []
     if args.enroll_from:

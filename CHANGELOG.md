@@ -32,6 +32,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     call's domain and method.
   - The narrator says one clause per command, and the checker refuses any sentence that drops a
     field or invents a word. A refused sentence sends the request to the screen.
+- `earshot test --tier 2` tries a challenge word and the voiceprint. `earshot enroll --record
+  NAME` records phrases for calibration only. `docs/phase-2-gate.md` is the Mac session that runs
+  Phase 2's gate.
 - The signed helper, `earshot-motion` (Phase 2, milestone 7).
   - It's a small Swift app that captures the AirPods mic (so macOS grants the mic to it, once),
     streams head motion, and reports device changes, over a private, token-checked socket.
@@ -73,6 +76,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ### Changed
 
+- Parakeet and Whisper run at 8 bits (Phase 2, milestone 8).
+  - Earshot's footprint falls from 3.2 GB to 1.7 GB, or 2.8 GB with Whisper loaded, under the
+    spec's 3 GB.
+  - On Step 0's recordings, 8-bit Parakeet hears 109 of 110 replies word for word as before.
+- Speech starts sooner. Kokoro speaks clause by clause, and makes each clause while the chime or
+  the last one plays. The first word arrives in about 0.6 s, where it took 1.1 s.
 - The hook sends an edited file's path with PostToolUse, so the daemon knows when build or test
   config changed.
 - The voice decider, the audit log and observe mode take tiers from the policy engine, in place

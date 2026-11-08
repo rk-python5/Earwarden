@@ -66,8 +66,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Code   |
 | 6 | The voiceprint                               | Code, Mac | D-014, Q-5          | Code   |
 | 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 | Code   |
-| 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        | Next   |
-| 9 | The gate                                     | Mac       | —                   |        |
+| 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        | Code   |
+| 9 | The gate                                     | Mac       | —                   | Ready  |
 
 ### 1. The policy engine and `earshot policy check` (code)
 
@@ -253,7 +253,7 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
     - Parity: features within 0.0012 dB of SpeechBrain's, and embeddings at cosine 1.000000
       with PyTorch's on every Step 0 recording.
   - `earshot enroll`: 12 phrases plus 6 held out, spoken as challenge phrases in headset mode.
-    `--impostor NAME` records a friend's phrases for calibration.
+    `--record NAME` records a friend's phrases, or more of yours, for calibration.
   - `dev/calibrate_voiceprint.py` gives the equal error rate and the threshold at no more than
     2% impostors, and `--write` saves it.
     - On Step 0's recordings (one friend), rehaan's lowest was 0.535 and the friend's highest
@@ -315,6 +315,25 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
   - Removing `misaki[en]` (D-022) drops PyTorch from the voice install.
 - **Latency:** Kokoro's first audio should be at most 200 ms. Split long sentences into shorter
   chunks for the first audio.
+- **Code done (8–9 Nov):**
+  - **Memory:** Parakeet and Whisper are quantised to 8 bits at load, and MLX's cache is cleared.
+    - The footprint falls from 3.16 GB to 1.68 GB, and with Whisper loaded from 4.85 GB to
+      2.85 GB, under the 3 GB target.
+    - Parakeet at 8 bits: 108 of 110 intents right, as at 32 bits, and 109 of 110 word for
+      word.
+    - Whisper at 8 bits: 108 of 110 right, as at 16 bits. 4 bits was worse (107, 74 word for
+      word) and slower.
+    - The recorded-audio check with these models: 0 false approvals, all 18 approvals heard, and
+      109 of 110 replies heard as labelled.
+  - **Latency:** Kokoro speaks clause by clause (commas, colons and semicolons too), and makes
+    each clause while the chime or the last clause plays.
+    - Its first audio fell from a median of 588 ms to 227 ms.
+    - The first word after the speech starts fell from 1,116 ms to 562 ms; about 0.64 s from
+      the prompt, inside the spec's 0.7 s.
+    - A long first clause without a comma still takes about 1 s.
+    - An MLX lock keeps two models from running at once.
+  - **P-20:** left to the gate session's longer stretch of voice use (`docs/phase-2-gate.md`).
+  - Removing `misaki[en]` (D-022) stays a Phase 5 task, before any public release.
 
 ### 9. The gate (Mac)
 
@@ -332,7 +351,7 @@ The spec's goals table, and how each target is measured:
 | 0 prompts lost when down        | the kill-the-daemon test                                     |
 
 Footprint and latency are measured and recorded, but they don't gate Phase 2, unless rehaan
-decides they should.
+decides they should. The session that runs the gate is `docs/phase-2-gate.md`.
 
 ## Decisions Phase 2 needs
 

@@ -3,7 +3,8 @@
 macOS on Apple Silicon only; install with `uv sync --group voice`. Everything heavy is imported
 lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
 
-- Speaking: a session chime, then Kokoro (mlx-audio), sentence by sentence, at 1.1x. The espeak
+- Speaking: a session chime, then Kokoro (mlx-audio), clause by clause, at 1.1x. The next clause
+  is made while the chime or the last clause plays, so the first words come sooner. The espeak
   fallback is switched off, so words Kokoro can't pronounce are reported by `can_say` and
   spelled out by the narrator (D-022, D-024). Before speaking, the output must be the headset.
 - Listening: the mic opens when an approval starts and stays warm while it's asked (Q-2). Only
@@ -13,7 +14,9 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
   it (D-028). Talking while Earshot speaks stops playback (barge-in),
   but only once Silero hears speech: a noise or a click in the headset doesn't.
 - Recognition: Parakeet hears every answer; only when its answer is unclear does Whisper listen
-  again to the same audio (D-017).
+  again to the same audio (D-017). Both are quantised at load (milestone 8), to keep Earshot
+  under the 3 GB footprint: on Step 0's recordings, 8-bit Parakeet hears 109 of 110 replies word
+  for word as the full model does, and makes no false approvals.
 - The voiceprint (`voiceprint.py`) scores every answer once a profile is enrolled (`earshot
   enroll`); tier 2 needs a match, and tier 1's scores go to the audit log (milestone 6).
 - With the signed helper connected (`helper.py`, milestone 7), the mic comes from it, at 16 kHz,
@@ -28,10 +31,12 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import math
 import os
+import queue
 import threading
 import time
 import wave
@@ -51,10 +56,13 @@ TTS_RATE = 24_000
 ASR_MODEL = "mlx-community/parakeet-tdt-0.6b-v2"
 SECOND_MODEL = "mlx-community/whisper-large-v3-turbo-asr-fp16"
 VAD_MODEL = "mlx-community/silero-vad"
+ASR_BITS = 8  # Parakeet's weights: 2.51 GB as float32, 0.97 GB at 8 bits (milestone 8)
+SECOND_BITS = 8  # Whisper's, loaded only when needed: 1.62 GB as float16, 0.87 GB at 8 bits
 ASR_RATE = 16_000
 FRAME_S = 0.02
 GUARD_S = 0.15  # output delay after playback ends (D-015)
 PRE_ROLL_S = 0.25
+CLAUSES = r"(?<=[.?!,:;])\s+"  # Kokoro speaks clause by clause: short first clauses start sooner
 MIN_SPEECH_MS = 100  # Silero's default of 250 ms is longer than a quick "no"
 BARGE_LEVEL = 0.05  # this loud while Earshot speaks, and Silero checks for speech
 BARGE_LOOK_S = 0.5  # how much of the mic Silero hears for that check
@@ -100,6 +108,17 @@ def listening_tone(rate: int = TTS_RATE) -> list[float]:
     ]
 
 
+def _quantized(model: Any, bits: int) -> Any:
+    """`model` with its linear layers quantised to `bits`, in place (MLX)."""
+    import mlx.core as mx
+    import mlx.nn as nn
+
+    nn.quantize(model, group_size=64, bits=bits)  # type: ignore[attr-defined]  # not in the stubs
+    mx.eval(model.parameters())
+    mx.clear_cache()  # MLX keeps the full-size weights' memory cached otherwise
+    return model
+
+
 class MacVoice:
     def __init__(
         self,
@@ -135,6 +154,7 @@ class MacVoice:
         self._frames: deque[tuple[float, Any]] = deque(maxlen=int(30 / FRAME_S))
         self._lock = threading.Lock()
         self._audio = threading.Lock()  # PortAudio isn't thread-safe: one stream change at a time
+        self._mlx = threading.RLock()  # nor is MLX: one model runs at a time, across threads
         self._playing = threading.Event()
         self._loud = threading.Event()  # something loud while Earshot speaks: speech or noise?
         self._barge = threading.Event()  # it was speech: you're talking over Earshot
@@ -157,7 +177,7 @@ class MacVoice:
         pipeline = self._tts._get_pipeline("a")
         pipeline.g2p.fallback = None  # no espeak at runtime (D-022)
         self._g2p = pipeline.g2p
-        self._asr = load_stt(ASR_MODEL)
+        self._asr = _quantized(load_stt(ASR_MODEL), ASR_BITS)
         self._vad = load_vad(VAD_MODEL)
         log.info("voice ready: %s, %s and %s", TTS_MODEL, ASR_MODEL, VAD_MODEL)
         self._load_voiceprint()
@@ -201,7 +221,7 @@ class MacVoice:
         if self._second is None:
             from mlx_audio.stt.utils import load as load_stt
 
-            self._second = load_stt(SECOND_MODEL)  # loaded on first need, to save memory
+            self._second = _quantized(load_stt(SECOND_MODEL), SECOND_BITS)  # loaded on first need
         return self._second
 
     # Devices
@@ -342,20 +362,57 @@ class MacVoice:
             self._barge.clear()
             self._ignored = 0
             self._playing.set()
+            halt = threading.Event()
+            chunks: queue.Queue[Any] = queue.Queue(maxsize=3)
+            producer = threading.Thread(
+                target=self._produce, args=(text, chunks, halt), daemon=True
+            )
+            producer.start()  # Kokoro works on the first clause while the chime plays
             try:
                 if chime_index is not None:
                     self._play(np.array(chime(chime_index), dtype=np.float32), stop)
-                for result in self._tts.generate(
-                    text, voice=self.voice_name, speed=self.speed, split_pattern=r"(?<=[.?!])\s+"
-                ):
-                    if stop.is_set() or self._talked_over():
+                while not (stop.is_set() or self._talked_over()):
+                    try:
+                        chunk = chunks.get(timeout=0.05)  # short, so a cancel stops it at once
+                    except queue.Empty:
+                        continue
+                    if chunk is None or stop.is_set() or self._talked_over():
                         break
-                    self._play(np.array(result.audio, dtype=np.float32), stop)
+                    self._play(chunk, stop)
             finally:
+                halt.set()
+                with contextlib.suppress(queue.Empty):
+                    while True:  # let a producer blocked on a full queue see the halt
+                        chunks.get_nowait()
+                producer.join(timeout=5)
                 self._playing.clear()
                 sd.stop()
                 if self._ignored:
                     log.info("ignored %d noises while speaking", self._ignored)
+
+    def _produce(self, text: str, chunks: queue.Queue[Any], halt: threading.Event) -> None:
+        """Make the speech clause by clause, ahead of playback; None marks the end."""
+        import numpy as np
+
+        try:
+            clauses = self._tts.generate(
+                text, voice=self.voice_name, speed=self.speed, split_pattern=CLAUSES
+            )
+            while not halt.is_set():
+                with self._mlx:
+                    result = next(clauses, None)
+                if result is None:
+                    break
+                audio = np.array(result.audio, dtype=np.float32)
+                while not halt.is_set():
+                    with contextlib.suppress(queue.Full):
+                        chunks.put(audio, timeout=0.1)
+                        break
+        except Exception:
+            log.exception("speech couldn't be made")
+        finally:
+            with contextlib.suppress(queue.Full):
+                chunks.put(None, timeout=1)
 
     def _play(self, audio: Any, stop: threading.Event) -> None:
         import sounddevice as sd
@@ -491,9 +548,10 @@ class MacVoice:
         """Whether Silero hears speech in a 16 kHz clip: a cough, bump or breath isn't (P-20)."""
         import mlx.core as mx
 
-        found = self._vad.get_speech_timestamps(
-            mx.array(clip), sample_rate=ASR_RATE, min_speech_duration_ms=MIN_SPEECH_MS
-        )
+        with self._mlx:
+            found = self._vad.get_speech_timestamps(
+                mx.array(clip), sample_rate=ASR_RATE, min_speech_duration_ms=MIN_SPEECH_MS
+            )
         return bool(found)
 
     @staticmethod
@@ -511,11 +569,14 @@ class MacVoice:
         import mlx.core as mx
 
         start = time.monotonic()
-        text = str(self._asr.generate(mx.array(clip)).text).strip()
+        with self._mlx:
+            text = str(self._asr.generate(mx.array(clip)).text).strip()
         recognizer = "parakeet"
         if intents.parse(text).kind == "unclear":  # a second listen, only when unclear (D-017)
-            second = self._second_model()
-            text = str(second.generate(mx.array(clip), language="en", temperature=0.0).text).strip()
+            with self._mlx:
+                second = self._second_model()
+                heard = second.generate(mx.array(clip), language="en", temperature=0.0)
+            text = str(heard.text).strip()
             recognizer = "parakeet+whisper"
         ms = int((time.monotonic() - start) * 1000)
         kind = intents.parse(text).kind

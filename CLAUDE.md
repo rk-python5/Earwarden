@@ -23,11 +23,12 @@ Phase 1 (weeks 2–3, the walking skeleton) passed its gate on 8 Nov 2026 (D-026
 as 0.1.0. A real Claude Code session on rehaan's subscription was approved by voice end to end. Its
 milestones are in `docs/phase-1-plan.md`; the LaunchAgent's checks at login are still open.
 
-Phase 2, the safety layer, is under way. **Start with `docs/next-steps.md`** (how to run the
-voice on the Mac), then `docs/phase-2-plan.md`: its milestones, its gate and the decisions each
-needs. D-029 settled the five due first. Mark milestones done there as they finish. P-20
-(non-speech heard as an approval) is still open (D-027, D-028). Until it closes, run
-`earshotd --voice` only with the hooks in a scratch project.
+Phase 2, the safety layer, has its code done (8–9 Nov). Its gate needs rehaan:
+`docs/phase-2-gate.md` is the session, and `docs/phase-2-plan.md` has the targets and what each
+milestone did. **Start with `docs/next-steps.md`.** P-20 (non-speech heard as an approval) and
+P-21 (choices made while building) are settled at the gate. Until then, run `earshotd --voice`
+only with the hooks in a scratch project. Tier 2 stays on the screen until a voiceprint is
+enrolled.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
 later phase's components before the current phase's gate passes.
@@ -109,6 +110,7 @@ the CI run after changing Swift code.
 - `docs/design/`: the spec (PDF).
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `docs/phase-2-plan.md`: the Phase 2 build plan, the same way, with its gate's targets.
+- `docs/phase-2-gate.md`: the session on the Mac that runs Phase 2's gate, step by step.
 - `docs/next-steps.md`: the hand-over to local sessions: running the voice, P-20, Phase 2.
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.

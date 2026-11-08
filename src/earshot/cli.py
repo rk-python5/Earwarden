@@ -233,7 +233,11 @@ def test_approval(args: argparse.Namespace) -> int:
         "tool_name": "Write",
         "tool_input": {"file_path": os.path.join(folder, "notes.md"), "content": "hello"},  # noqa: PTH118
     }
-    print("Sending a test request: write notes.md. Answer by voice, or wait for the screen.")
+    what = "write notes.md"
+    if args.tier == 2:  # an install: a challenge word, and the voiceprint (milestones 5, 6)
+        payload["tool_name"], payload["tool_input"] = "Bash", {"command": "pip install httpx"}
+        what = "pip install httpx, at tier 2"
+    print(f"Sending a test request: {what}. Answer by voice, or wait for the screen.")
     script = Path(sys.executable).parent / "earshot-hook"
     command = [str(script)] + (["--home", args.home] if args.home else [])
     result = subprocess.run(  # noqa: S603 - our own hook, with fixed arguments
@@ -275,9 +279,9 @@ def enroll(args: argparse.Namespace) -> int:
     voice.load()
     embedder = voiceprint.Embedder(model)
     keep = Path(args.save_clips) if args.save_clips else None
-    if args.impostor:
-        keep = (keep or where.state_dir / "calibration") / args.impostor
-        print(f"Recording {args.phrases} phrases from {args.impostor}, for calibration only.")
+    if args.record:
+        keep = (keep or where.state_dir / "calibration") / args.record
+        print(f"Recording {args.phrases} phrases from {args.record}, for calibration only.")
         words = challenge.words()[: args.phrases]
         enrolling.collect(voice.record_phrase, embedder.embed, list(words), print, keep)
         print(f"Saved to {keep}. No profile was made.")
@@ -384,7 +388,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--phrases", type=int, default=12, help="phrases for the profile (default 12)")
     p.add_argument("--held-out", type=int, default=6, help="phrases to check it with (default 6)")
     p.add_argument("--save-clips", help="also keep the phrases as WAV files here, for calibration")
-    p.add_argument("--impostor", help="record a friend's phrases for calibration; no profile")
+    p.add_argument(
+        "--record", metavar="NAME", help="only record NAME's phrases, for calibration; no profile"
+    )
     p.set_defaults(run=enroll)
 
     p = commands.add_parser("policy", help="check requests against your policy, or trust a repo's")
@@ -400,6 +406,9 @@ def main(argv: list[str] | None = None) -> int:
 
     p = commands.add_parser("test", help="send one made-up request through the running daemon")
     p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.add_argument(
+        "--tier", type=int, choices=(1, 2), default=1, help="2 asks for a challenge word"
+    )
     p.set_defaults(run=test_approval)
 
     args = parser.parse_args(argv)

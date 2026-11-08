@@ -111,6 +111,11 @@ def test_a_cancelled_voice_stops_before_the_next_one_speaks(sd: FakeSounddevice)
     first_stop = threading.Event()
     first = speak(voice, "first", first_stop)
     assert tts.waiting.wait(5)
+    for _ in range(100):  # until the first clause has played (speech is made ahead of playback)
+        if "play first 1" in sd.events:
+            break
+        time.sleep(0.01)
+    time.sleep(0.1)
     first_stop.set()  # the request was answered on the screen
     second = speak(voice, "second", threading.Event())
     time.sleep(0.1)  # time for the second voice to start, if nothing held it back
