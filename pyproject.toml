@@ -17,6 +17,7 @@ classifiers = [
 ]
 dependencies = [
     "pydantic>=2.11,<3",
+    "pyyaml>=6.0,<7",
 ]
 
 [project.scripts]
@@ -33,6 +34,7 @@ dev = [
     "mypy>=1.13",
     "pytest>=8.3",
     "ruff>=0.8",
+    "types-pyyaml>=6.0",
 ]
 # The voice stack, macOS on Apple Silicon only: `uv sync --group voice` on the Mac (D-023).
 voice = [

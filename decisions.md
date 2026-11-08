@@ -576,6 +576,9 @@ How this file works:
     that pins the file's hash.
 - **Why:** each one closes a gap the design review found, and none of them loosens the spec.
   Phase 2's plan (`docs/phase-2-plan.md`) builds on them.
+- **Consequence:** reads inside the project are tier 1 (the spec's tier 0, by P-02). D-019's
+  stub sent every read to the screen, so this is the one way the policy engine is looser than
+  the stub. It's deliberate, since reading your own project's files is low-risk.
 
 ## Proposals
 

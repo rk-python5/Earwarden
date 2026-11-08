@@ -31,9 +31,10 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from earshot import audit, auth, contracts, paths, stub, wire
+from earshot import audit, auth, contracts, paths, wire
 from earshot.daemon.state import Pending, PendingRequests, Resolved, Sessions
 from earshot.narrator import redact
+from earshot.policy import engine
 
 log = logging.getLogger("earshot.daemon")
 
@@ -284,8 +285,11 @@ class Daemon:
         if self.audit_log is None:
             return
         request = pending.request
-        verdict = stub.judge(request.tool_name, request.tool_input, request.cwd)
         notes = pending.notes
+        if "tier" not in notes or "rules" not in notes:  # the decider didn't judge it
+            judgement = engine.judge_request(self.where, request)
+            notes.setdefault("tier", judgement.tier)
+            notes.setdefault("rules", list(judgement.rules))
         try:
             self.audit_log.append(
                 id=request.id,
@@ -293,8 +297,8 @@ class Daemon:
                 tool=request.tool_name,
                 input_sha256=pending.input_sha256,
                 input_redacted=redact.redact(json.dumps(request.tool_input))[:2000],
-                tier=notes.get("tier", 1 if verdict.voice_ok else 3),
-                rules=notes.get("rules", [f"stub: {verdict.reason}"]),
+                tier=notes["tier"],
+                rules=notes["rules"],
                 spoken=notes.get("spoken"),
                 transcript=notes.get("transcript"),
                 recognizer=notes.get("recognizer"),
@@ -307,14 +311,15 @@ class Daemon:
 
     def _observe(self, request: contracts.ApprovalRequest, session_name: str) -> None:
         """Observe mode (D-021): one line per prompt, with no command text or file contents."""
-        verdict = stub.judge(request.tool_name, request.tool_input, request.cwd)
+        judgement = engine.judge_request(self.where, request)
         record = {
             "ts": wire.utc_timestamp(),
             "session": session_name,
             "permission_mode": request.permission_mode,
             "tool": request.tool_name,
-            "voice_ok": verdict.voice_ok,
-            "reason": verdict.reason,
+            "tier": judgement.tier,
+            "voice_ok": judgement.tier in engine.VOICE_TIERS,
+            "reason": "; ".join(judgement.rules),
         }
         line = (json.dumps(record) + "\n").encode()
         try:

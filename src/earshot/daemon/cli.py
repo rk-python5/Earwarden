@@ -44,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s earshotd %(levelname)s %(message)s")
     decider: Decider = hand_off
     if args.voice:
+        from earshot.policy import engine
         from earshot.voice.decider import VoiceDecider
         from earshot.voice.mac import MacVoice
         from earshot.voice.presence import KeyboardPresence
@@ -54,7 +55,12 @@ def main(argv: list[str] | None = None) -> int:
         voice = MacVoice(headset=args.headset, keep_audio=keep)
         print("Loading the voice models (the first time, they download)…", file=sys.stderr)
         voice.load()  # until this finishes, there's no socket, so prompts go to the screen
-        decider = VoiceDecider(voice, KeyboardPresence(pinned=args.pin_voice))
+        where = paths.resolve(args.home)
+        decider = VoiceDecider(
+            voice,
+            KeyboardPresence(pinned=args.pin_voice),
+            judge=lambda request: engine.judge_request(where, request),
+        )
     try:
         run_forever(paths.resolve(args.home), observe=args.observe, decider=decider)
     except AlreadyRunningError as exc:

@@ -59,8 +59,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 
 | # | Milestone                                    | Where     | Rests on            | Status |
 | - | -------------------------------------------- | --------- | ------------------- | ------ |
-| 1 | The policy engine and `earshot policy check` | Code      | D-029 (P-02, P-11)  | Next   |
-| 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        |        |
+| 1 | The policy engine and `earshot policy check` | Code      | D-029 (P-02, P-11)  | Done   |
+| 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Next   |
 | 3 | Critical fields, the checker, redaction      | Code      | D-024               |        |
 | 4 | Lookalike packages                           | Code      | D-029 (P-09)        |        |
 | 5 | Challenge words                              | Code, Mac | D-029 (P-08)        |        |
@@ -90,6 +90,14 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
   - a repo policy that tries to lower a tier is refused until trusted, and untrusted again after
     a change
   - no request the stub sends to the screen comes out tier 1
+- **Done (8 Nov):**
+  - `earshot/policy/` (`engine.py` and `file.py`), with `earshot policy check` and
+    `earshot policy trust`. The daemon, the audit log and observe mode use it in place of the
+    stub. PyYAML is a new dependency.
+  - The floor's shell effects (force push, a push naming the default branch, recursive delete,
+    piping into a shell, deploys, the agent's files) are found by pattern until milestone 2.
+  - One deliberate difference from the stub: reads inside the project are tier 1 (the spec's
+    tier 0, by P-02), where the stub sent every read to the screen.
 
 ### 2. Resolvers and per-effect rules (code)
 

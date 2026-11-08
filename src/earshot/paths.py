@@ -41,6 +41,14 @@ class Paths(NamedTuple):
         return self.state_dir / "observe.jsonl"
 
     @property
+    def policy(self) -> Path:
+        return self.config_dir / "policy.yaml"  # yours; a repo's is .earshot/policy.yaml
+
+    @property
+    def trusted_policies(self) -> Path:
+        return self.config_dir / "trusted-policies.json"  # repo policies pinned by hash (P-11)
+
+    @property
     def audio_dir(self) -> Path:
         return self.state_dir / "audio"  # only with earshotd --keep-audio
 

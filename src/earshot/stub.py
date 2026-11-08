@@ -1,4 +1,7 @@
-"""The safety stub (D-019): what voice may approve until Phase 2's policy engine replaces it.
+"""The safety stub (D-019): what voice could approve in Phase 1.
+
+The daemon now takes tiers from the policy engine (`earshot.policy`). This module stays as the
+reference the engine is tested against (`tests/test_policy.py`).
 
 Voice may approve only:
 

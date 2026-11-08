@@ -101,8 +101,9 @@ Planned on 8 Nov in `docs/phase-2-plan.md`. rehaan accepted P-01, P-02, P-08, P-
 D-029. The plan has nine milestones, the gate's targets, and the decisions still open: Q-5
 (which friends), and whether tier 1 also checks the voiceprint.
 
-Start with milestone 1, the policy engine. It replaces the safety stub and must never be looser
-than it: tier 2 stays on the screen until challenge words and the voiceprint are both in.
+Milestone 1, the policy engine, was done on 8 Nov. It replaced the safety stub, and tier 2 stays
+on the screen until challenge words and the voiceprint are both in. Next is milestone 2: the
+resolvers, and parsing commands properly in place of milestone 1's patterns.
 
 ## 4. Later, and loose ends
 

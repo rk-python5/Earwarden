@@ -110,8 +110,11 @@ compiles when you work in the Linux container, so check the CI run after changin
   - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
     imports.
   - `cli.py`: the `earshot` command (`init`, `uninstall`, `observe`, `audit`, `service`, `doctor`,
-    `test`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`: the safety
-    stub (D-019) that limits what voice may approve until Phase 2.
+    `test`, `policy`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
+    Phase 1's safety stub (D-019), kept as the reference the policy engine must never be looser
+    than.
+  - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
+    every request, from rules alone.
   - `audit.py`: the keyed, hash-chained audit log (D-025) behind `earshot audit verify`.
   - `narrator/`: the template narrator, spoken forms, and secret redaction.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code

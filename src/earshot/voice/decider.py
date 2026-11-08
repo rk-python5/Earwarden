@@ -2,8 +2,9 @@
 
 It plugs into the daemon in place of the hand-off decider. It only asks by voice when you're away
 from the keyboard (or voice is pinned on) and the headset is the output; otherwise the request goes
-straight to the screen. Under the safety stub (D-019) it only listens for requests voice may
-approve; for the rest it says what's waiting and that it's on the screen.
+straight to the screen. The policy engine gives each request a tier. Voice listens only for the
+tiers it may approve (tier 1, until challenge words and the voiceprint arrive); for the rest it
+says what's waiting and that it's on the screen.
 
 One approval is asked at a time. If nothing is heard, it waits and asks again instead of handing
 off (D-020); an answer it can't understand twice goes to the screen. A tone marks when to answer,
@@ -14,12 +15,14 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Callable
 from typing import NamedTuple, Protocol
 
-from earshot import contracts, stub, wire
+from earshot import contracts, wire
 from earshot.daemon.state import Pending
 from earshot.narrator.spoken import speakable
 from earshot.narrator.templates import narrate
+from earshot.policy import engine
 from earshot.voice import intents
 
 CUT_OFF = "cut off"  # Heard.recognizer for a reply begun before the window: never parsed (P-20)
@@ -60,8 +63,10 @@ class VoiceDecider:
         window_s: float = 8.0,
         reannounce_s: float = 60.0,
         reannounce_max: int = 3,
+        judge: Callable[[contracts.ApprovalRequest], engine.Judgement] = engine.judge_built_in,
     ) -> None:
         self.voice = voice
+        self.judge = judge
         self.presence = presence
         self.window_s = window_s
         self.reannounce_s = reannounce_s
@@ -71,13 +76,16 @@ class VoiceDecider:
 
     async def __call__(self, pending: Pending) -> contracts.Decision:
         request = pending.request
-        verdict = stub.judge(request.tool_name, request.tool_input, request.cwd)
+        judgement = self.judge(request)
         narration = narrate(
             pending.session.name, request.cwd, request.tool_name, request.tool_input
         )
         notes = pending.notes
-        notes["tier"] = 1 if verdict.voice_ok and narration.fits else 3
-        notes["rules"] = [f"stub: {verdict.reason}"]
+        notes["tier"] = judgement.tier
+        notes["rules"] = list(judgement.rules)
+        if not narration.fits:
+            notes["rules"].append("narrator: too long to say faithfully")
+        voice_ok = judgement.tier in engine.VOICE_TIERS and narration.fits
         if not self.presence.away():
             notes["rules"].append("presence: at the keyboard")
             return _decision(pending, "handoff")
@@ -90,7 +98,7 @@ class VoiceDecider:
         finally:
             self._queued -= 1
         try:
-            return await self._ask(pending, narration.text, verdict.voice_ok and narration.fits)
+            return await self._ask(pending, narration.text, voice_ok)
         finally:
             self._floor.release()
 

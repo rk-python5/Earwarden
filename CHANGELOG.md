@@ -8,6 +8,15 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ### Added
 
+- The policy engine (Phase 2, milestone 1). Every request gets a tier from rules alone:
+  - a default per tool
+  - the spec's example rules, built in
+  - your `~/.earshot/policy.yaml`
+  - a repo's `.earshot/policy.yaml`, which can only raise tiers until trusted (P-11)
+  - minimums and a never-by-voice floor that no file can lower
+
+  `earshot policy check` prints the tier a saved request would get and why. `earshot policy
+  trust` lets a repo's policy lower tiers until the file changes. PyYAML is a new dependency.
 - The Phase 2 plan (`docs/phase-2-plan.md`): nine milestones in build order, the gate's targets
   and how each is measured, and the decisions each milestone needs. rehaan accepted the five
   proposals due before Phase 2 (P-01, P-02, P-08, P-09, P-11) as D-029.
@@ -18,6 +27,13 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - `earshotd --keep-audio` saves each reply's clip in the home's `audio/` folder, with what VAD
   and the recognizers made of it, to tune listening on real failures (P-20). It's off by
   default, since audio isn't stored.
+
+### Changed
+
+- The voice decider, the audit log and observe mode take tiers from the policy engine, in place
+  of Phase 1's safety stub. Voice still approves only tier 1. Tier 2 joins once challenge words
+  and the voiceprint are in. Reads inside the project are now tier 1, where the stub sent them to
+  the screen.
 
 ### Fixed
 

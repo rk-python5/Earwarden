@@ -237,6 +237,47 @@ def test_approval(args: argparse.Namespace) -> int:
     return 0
 
 
+def policy_check(args: argparse.Namespace) -> int:
+    """The tier a request would get, and why, without speaking (the spec's dry run)."""
+    from earshot.policy import engine
+
+    try:
+        request = json.loads(Path(args.request).read_text(encoding="utf-8"))
+        tool_name, tool_input = request["tool_name"], request["tool_input"]
+        cwd = request.get("cwd") or str(Path.cwd())
+        if not isinstance(tool_name, str) or not isinstance(tool_input, dict):
+            raise TypeError("tool_name must be a string and tool_input an object")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f"earshot: can't read a request from {args.request}: {exc}", file=sys.stderr)
+        return 1
+    judgement = engine.judge_at(paths.resolve(args.home), tool_name, tool_input, cwd)
+    voice = "by voice" if judgement.tier in engine.VOICE_TIERS else "on the screen"
+    print(f"Tier {judgement.tier}: {tool_name}, answered {voice} for now.")
+    for why in judgement.rules:
+        print(f"  {why}")
+    if judgement.critical:
+        print(f"Critical fields: {', '.join(judgement.critical)}")
+    return 0
+
+
+def policy_trust(args: argparse.Namespace) -> int:
+    """Let a repo's policy lower tiers, until the file changes (P-11)."""
+    from earshot.policy.file import PolicyError, trust
+
+    target = Path(args.path)
+    if not target.is_file():
+        print(f"earshot: no policy file at {target}", file=sys.stderr)
+        return 1
+    try:
+        pinned = trust(target, paths.resolve(args.home).trusted_policies)
+    except PolicyError as exc:
+        print(f"earshot: {exc}", file=sys.stderr)
+        return 1
+    print(f"Trusted {target.resolve()} (sha256 {pinned[:12]}…).")
+    print("Its rules can now lower tiers. Any change to the file undoes this.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="earshot", description="Answer Claude Code by voice.")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -278,6 +319,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--settings", default=str(DEFAULT_SETTINGS), help="the settings file")
     p.add_argument("--headset", default="AirPods", help="part of the headset's device name")
     p.set_defaults(run=doctor)
+
+    p = commands.add_parser("policy", help="check requests against your policy, or trust a repo's")
+    policy_commands = p.add_subparsers(dest="policy_command", required=True)
+    q = policy_commands.add_parser("check", help="print the tier a saved request would get")
+    q.add_argument("request", help="a JSON file with tool_name, tool_input and cwd")
+    q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    q.set_defaults(run=policy_check)
+    q = policy_commands.add_parser("trust", help="let a repo's policy lower tiers (pins its hash)")
+    q.add_argument("path", nargs="?", default=".earshot/policy.yaml", help="the repo's policy file")
+    q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    q.set_defaults(run=policy_trust)
 
     p = commands.add_parser("test", help="send one made-up request through the running daemon")
     p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
