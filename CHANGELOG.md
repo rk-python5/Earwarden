@@ -19,6 +19,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     is never parsed; Earshot asks again.
   - On Step 0's recordings, Parakeet alone approved 38 of 134 room-sound clips and 139 of 1,297
     cut-off non-approvals. Now none get through, and every real approval is still heard.
+  - A live check with the AirPods still found one false approval: VAD dropped a short "no", then
+    let a faint sound through that Parakeet heard as "Yeah.". P-20 stays open, and voice is for
+    a scratch project only.
 
 ## [0.1.0] - 2026-11-08
 

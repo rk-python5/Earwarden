@@ -492,9 +492,19 @@ How this file works:
     - At 400 ms, 1–2 are.
 - **Why not Whisper agreement:** it would add 1–2 s to every approval, against the spec's 1 s
   target, and VAD with the window rule reached zero without it.
-- **Still open:**
-  - a live check with the AirPods: a cough, and talking over the prompt
-  - the voiceprint (Phase 2), for voices other than rehaan's
+- **Live check (8 Nov), 8 `earshot test` runs with the AirPods: one false approval.**
+  - **What worked:**
+    - Talking over the question was caught as begun before the window, every time.
+    - Coughs were ignored as not speech.
+    - "No, don't do it." denied.
+  - **The false approval:** after a re-ask, rehaan said "no".
+    - It was 0.1 s above the threshold, peaking at 0.0975, and VAD dropped it as not speech.
+    - 0.8 s later, a faint sound passed VAD: one frame above the threshold, peaking at 0.04.
+      Parakeet heard it as "Yeah.", so the request was approved.
+    - So P-20 stays open, and voice stays in a scratch project.
+  - **Also seen:** a cough during the question stops playback (barge-in), and then Earshot waits
+    in silence. It should ask again.
+- **Still open:** the voiceprint (Phase 2), for voices other than rehaan's.
 
 ## Proposals
 
@@ -870,8 +880,8 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     recognisers, with a target of zero false approvals.
 - **Until then:** run `earshotd --voice` only with the hooks in a scratch project. The safety stub
   (D-019) already limits voice to edits inside the project and single test commands.
-- **Status:** Accepted as D-027, with Silero VAD and the window rule in place of Whisper
-  agreement.
+- **Status:** Open. D-027 added Silero VAD and the window rule, in place of Whisper agreement.
+  They stop every false approval on the recordings, but the live check still found one.
 
 ## Open questions
 

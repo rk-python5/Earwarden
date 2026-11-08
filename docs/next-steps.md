@@ -11,8 +11,9 @@ sections as they're done.
   session, approved by voice through the AirPods. `main` is at 0.2.0.dev0.
 - **The gate found a safety hole (P-20):** Parakeet heard non-speech, or the tail of a cut-off
   reply, as "Yeah." or another approval. It's fixed on Step 0's recordings (D-027): Silero VAD
-  checks every reply, and a reply that began before the window is never parsed. Check it live
-  (section 2); until then, run `earshotd --voice` only with the hooks in a scratch project.
+  checks every reply, and a reply that began before the window is never parsed. But the live
+  check found one more false approval (section 2), so P-20 is still open. Until it's closed,
+  run `earshotd --voice` only with the hooks in a scratch project.
 - **Never run on hardware yet:**
   - the LaunchAgent (`service.py`) at a real login, and its restart after a crash
   - presence routing without `--pin-voice`
@@ -56,11 +57,14 @@ The hooks are already in `~/earshot-scratch/.claude/settings.local.json`. To try
    Then run `uv run earshot test --home .tools/earshot` and answer in the AirPods.
 3. **In `~/earshot-scratch`:** `claude --permission-mode default`.
 
-## 2. Check P-20's fix live (about 5 minutes)
+## 2. Close P-20 (a live false approval remains)
 
-D-027 has the numbers from the recordings. What's left is the AirPods in a real room. Start the
-daemon as in section 1 and watch its log, then run `uv run earshot test --home .tools/earshot`
-three times:
+D-027 has the numbers from the recordings and the live check. Live, VAD dropped a short "no",
+then let through a faint sound that Parakeet heard as "Yeah.". The audio wasn't kept, so the
+next fix needs real failure clips first.
+
+To repeat the live check, start the daemon as in section 1 and watch its log. Then run
+`uv run earshot test --home .tools/earshot` three times:
 
 1. **Say "yes".** It should allow.
 2. **Cough or tap an AirPod during the answer window, then say "yes".** The log should show
