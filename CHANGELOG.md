@@ -88,6 +88,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - A voice cancelled because you answered on screen now stops before the next request speaks.
   Before, its final stop could cut off the next request's speech. The device list is no longer
   refreshed while Earshot is speaking.
+- The LaunchAgent passes on `HF_HOME` and `HF_HUB_CACHE` from the shell that installs it.
+  Started by launchd, the daemon would otherwise have downloaded the models again into
+  `~/.cache` instead of using the ones in `.tools/` (D-013).
 
 ## [0.0.2] - 2026-11-04
 

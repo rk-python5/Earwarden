@@ -15,6 +15,7 @@ from pathlib import Path
 
 LABEL = "dev.earshot.daemon"
 LAUNCHCTL = "/bin/launchctl"
+HF_VARIABLES = ("HF_HOME", "HF_HUB_CACHE")  # where the voice's models are kept
 
 
 def plist_path() -> Path:
@@ -24,17 +25,21 @@ def plist_path() -> Path:
 def agent(daemon_args: list[str], log_file: Path) -> bytes:
     """The LaunchAgent: this environment's earshotd, started at login and kept alive."""
     program = str(Path(sys.executable).parent / "earshotd")
-    return plistlib.dumps(
-        {
-            "Label": LABEL,
-            "ProgramArguments": [program, *daemon_args],
-            "RunAtLoad": True,
-            "KeepAlive": True,
-            "ProcessType": "Interactive",  # audio wants low latency
-            "StandardOutPath": str(log_file),
-            "StandardErrorPath": str(log_file),
-        }
-    )
+    fields: dict[str, object] = {
+        "Label": LABEL,
+        "ProgramArguments": [program, *daemon_args],
+        "RunAtLoad": True,
+        "KeepAlive": True,
+        "ProcessType": "Interactive",  # audio wants low latency
+        "StandardOutPath": str(log_file),
+        "StandardErrorPath": str(log_file),
+    }
+    # launchd doesn't read your shell, so the models stay where dev/activate put them (D-013),
+    # instead of downloading again into ~/.cache.
+    cache = {name: os.environ[name] for name in HF_VARIABLES if os.environ.get(name)}
+    if cache:
+        fields["EnvironmentVariables"] = cache
+    return plistlib.dumps(fields)
 
 
 def _launchctl(*args: str) -> subprocess.CompletedProcess[str]:

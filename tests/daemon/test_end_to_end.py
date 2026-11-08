@@ -118,7 +118,9 @@ def test_doctor_reports_what_is_missing(
     assert code in (0, 1)  # the voice libraries only exist on the Mac
 
 
-def test_the_launch_agent(tmp_path: Path) -> None:
+def test_the_launch_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("HF_HOME", raising=False)
+    monkeypatch.delenv("HF_HUB_CACHE", raising=False)
     agent = plistlib.loads(
         service.agent(["--home", "/repo/.tools/earshot", "--voice"], tmp_path / "earshotd.log")
     )
@@ -127,6 +129,16 @@ def test_the_launch_agent(tmp_path: Path) -> None:
     assert agent["ProgramArguments"][1:] == ["--home", "/repo/.tools/earshot", "--voice"]
     assert agent["KeepAlive"] is True
     assert agent["RunAtLoad"] is True
+    assert "EnvironmentVariables" not in agent
+
+
+def test_the_launch_agent_keeps_the_models_where_they_are(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HF_HOME", "/repo/.tools/huggingface")
+    monkeypatch.delenv("HF_HUB_CACHE", raising=False)
+    agent = plistlib.loads(service.agent(["--voice"], tmp_path / "earshotd.log"))
+    assert agent["EnvironmentVariables"] == {"HF_HOME": "/repo/.tools/huggingface"}
 
 
 def test_pending_requests_carry_their_notes() -> None:
