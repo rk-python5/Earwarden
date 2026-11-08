@@ -13,7 +13,8 @@ sections as they're done.
   reply, as "Yeah." or another approval. It's fixed on Step 0's recordings (D-027): Silero VAD
   checks every reply, and a reply that began before the window is never parsed. But the live
   check found one more false approval (section 2), so P-20 is still open. Until it's closed,
-  run `earshotd --voice` only with the hooks in a scratch project.
+  run `earshotd --voice` only with the hooks in a scratch project. A second live check (D-028)
+  found no false approvals, and added a listening tone.
 - **Never run on hardware yet:**
   - the LaunchAgent (`service.py`) at a real login, and its restart after a crash
   - presence routing without `--pin-voice`
@@ -71,6 +72,14 @@ next fix needs real failure clips first:
    minimum length of speech, and loudness against the room. Pick the cheapest that approves
    nothing it shouldn't.
 4. Delete `.tools/earshot/audio/` when done; it holds rehaan's voice.
+
+Done on 8 Nov (D-028): the second live check found 0 false approvals in 10 runs, and the clips
+showed what was breaking barge-in and timing. rehaan declined the loudness rule. What's left:
+
+- Try the listening tone live, a few `earshot test` runs, and check the timing feels natural.
+- Use voice in the scratch project for a longer stretch with `--keep-audio`, then look for any
+  approval whose clip isn't a clear "yes". If none turns up, ask rehaan whether P-20 can close
+  before the voiceprint arrives.
 
 To repeat the live check, start the daemon as in section 1 and watch its log. Then run
 `uv run earshot test --home .tools/earshot` three times:

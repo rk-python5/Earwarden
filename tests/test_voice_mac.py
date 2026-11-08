@@ -181,3 +181,10 @@ def test_talking_over_earshot_stops_it(monkeypatch: pytest.MonkeyPatch) -> None:
     assert voice._talked_over()
     assert voice._talked_over()  # it stays stopped without asking Silero again
     assert voice._barge.is_set()
+
+
+def test_the_listening_tone_is_short_soft_and_above_every_chime() -> None:
+    tone = mac.listening_tone()
+    assert len(tone) == int(mac.TTS_RATE * mac.LISTEN_TONE_S)
+    assert max(abs(sample) for sample in tone) <= 0.15
+    assert max(mac.CHIME_NOTES) * 1.25 < mac.LISTEN_TONE_HZ  # a chime's second note is 1.25x

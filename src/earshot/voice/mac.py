@@ -9,7 +9,8 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
 - Listening: the mic opens when an approval starts and stays warm while it's asked (Q-2). Only
   audio from after playback ends, plus a short guard, counts (D-015). `endpoint.py` finds the
   reply; one that began before the window is never parsed, and Silero VAD must hear speech in
-  it, or it's ignored as noise (P-20). Talking while Earshot speaks stops playback (barge-in),
+  it, or it's ignored as noise (P-20). A short tone marks when to answer; the window opens after
+  it (D-028). Talking while Earshot speaks stops playback (barge-in),
   but only once Silero hears speech: a noise or a click in the headset doesn't.
 - Recognition: Parakeet hears every answer; only when its answer is unclear does Whisper listen
   again to the same audio (D-017).
@@ -35,7 +36,7 @@ from pathlib import Path
 from typing import Any
 
 from earshot.voice import endpoint, intents
-from earshot.voice.decider import Heard
+from earshot.voice.decider import CUT_OFF, Heard
 
 log = logging.getLogger("earshot.voice")
 
@@ -51,7 +52,8 @@ PRE_ROLL_S = 0.25
 MIN_SPEECH_MS = 100  # Silero's default of 250 ms is longer than a quick "no"
 BARGE_LEVEL = 0.05  # this loud while Earshot speaks, and Silero checks for speech
 BARGE_LOOK_S = 0.5  # how much of the mic Silero hears for that check
-CUT_OFF = object()  # what _capture returns for a reply that began before the window (P-20)
+LISTEN_TONE_HZ = 1318.5  # E6, above every session chime
+LISTEN_TONE_S = 0.1
 CHIME_NOTES = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77, 1046.5]
 
 
@@ -81,6 +83,15 @@ def models_cached(cache: Path) -> bool:
         any((cache / f"models--{model.replace('/', '--')}" / "snapshots").glob("*/*.safetensors"))
         for model in (TTS_MODEL, ASR_MODEL, SECOND_MODEL, VAD_MODEL)
     )
+
+
+def listening_tone(rate: int = TTS_RATE) -> list[float]:
+    """The short, soft tone that says "answer now", made in code like the chimes (D-028)."""
+    count = int(rate * LISTEN_TONE_S)
+    return [
+        0.15 * math.sin(math.pi * n / count) * math.sin(2 * math.pi * LISTEN_TONE_HZ * n / rate)
+        for n in range(count)
+    ]
 
 
 class MacVoice:
@@ -308,7 +319,7 @@ class MacVoice:
         if clip is None:
             return None
         if clip is CUT_OFF:
-            return Heard("", "cut off", 0)  # never parsed: it's unclear, so it's asked again
+            return Heard("", CUT_OFF, 0)  # never parsed; the decider asks again
         return await asyncio.to_thread(self._recognize, clip)
 
     def _capture(self, seconds: float) -> Any:
@@ -317,6 +328,7 @@ class MacVoice:
 
         if self._mic is None:
             self._open_mic()
+        self._tone()
         opened = time.monotonic() + GUARD_S  # nothing from before the window counts (D-015)
         deadline = opened + seconds
         while True:
@@ -366,6 +378,15 @@ class MacVoice:
             if now > deadline:
                 return None
             opened = reply.end + FRAME_S  # listen on, after the noise
+
+    def _tone(self) -> None:
+        """Play the listening tone and wait for it to finish; the window opens after it."""
+        import numpy as np
+        import sounddevice as sd
+
+        with self._audio:
+            sd.play(np.array(listening_tone(), dtype=np.float32), TTS_RATE)
+            sd.wait()
 
     def is_speech(self, clip: Any) -> bool:
         """Whether Silero hears speech in a 16 kHz clip: a cough, bump or breath isn't (P-20)."""

@@ -45,6 +45,7 @@ How this file works:
 | D-025 | A keyed audit chain (P-10, anchoring later)               | Accepted |
 | D-026 | The Phase 1 gate passed                                   | Accepted |
 | D-027 | Only speech, begun inside the window, is parsed (P-20)    | Accepted |
+| D-028 | A listening tone, and barge-in only on speech             | Accepted |
 
 ## Decisions
 
@@ -506,6 +507,36 @@ How this file works:
     in silence. It should ask again.
 - **Still open:** the voiceprint (Phase 2), for voices other than rehaan's.
 
+### D-028 A listening tone, and barge-in only on speech
+
+- **Date:** 2026-11-08 · **Status:** Accepted · **By:** rehaan
+- **Decision:**
+  - **Earshot plays a short, soft tone when it starts listening** (0.1 s at 1318.5 Hz, above
+    every session chime). The window opens after the tone, and D-015's guard still applies. An
+    answer begun before the window gets "Wait for the tone, then say yes or no." in place of
+    "Sorry, say yes or no.".
+  - **Barge-in stops Earshot only when Silero hears speech** in the last 0.5 s of the mic. A
+    louder frame than 0.05 now only prompts that check.
+  - **No loudness rule for approvals.** rehaan declined making an approval need at least 12×
+    the room's noise and a peak over 0.05.
+- **Evidence:** a second live check, 10 scripted `earshot test` runs with `--keep-audio`.
+  - **0 false approvals.**
+    - The window rule caught fragments that Parakeet heard as "Yeah." and "Mm-hmm.", one in a run
+      where rehaan said "no".
+    - Every clip that VAD passed was heard correctly (6 of 6).
+  - **What broke barge-in:** most questions had a burst 1.0–1.8 s after the mic opened, peaking
+    at 0.13–0.38, as the AirPods switched to headset mode. Parakeet hears it as "Okay." and
+    Silero calls it not speech. Barge-in on loudness alone had stopped most questions within
+    2 s, before anything could be heard.
+  - **Why the tone:** in 5 of 10 runs an answer began before the window, as the question ended
+    or over the short re-ask. That included "go ahead" twice, so a real approval went to the
+    screen.
+  - **Loudness:**
+    - Real approvals were 16–148× the room's noise, and in Step 0's recordings 26× or more.
+    - The first live check's false "Yeah." was 7.3×, at a peak of 0.04.
+- **P-20 stays open.** The faint "Yeah." from the first live check wasn't seen again, but without
+  the loudness rule nothing aims at it specifically. The voiceprint (Phase 2) is the next guard.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -881,7 +912,8 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
 - **Until then:** run `earshotd --voice` only with the hooks in a scratch project. The safety stub
   (D-019) already limits voice to edits inside the project and single test commands.
 - **Status:** Open. D-027 added Silero VAD and the window rule, in place of Whisper agreement.
-  They stop every false approval on the recordings, but the live check still found one.
+  They stop every false approval on the recordings, but the first live check still found one.
+  D-028 adds a listening tone; rehaan declined a loudness rule for approvals.
 
 ## Open questions
 

@@ -14,12 +14,14 @@ from harness import finish, fixture, run_hook, start_hook
 
 from earshot import contracts, wire
 from earshot.daemon.state import Pending, Sessions
-from earshot.voice.decider import Heard, VoiceDecider
+from earshot.voice.decider import CUT_OFF, Heard, VoiceDecider
+
+TOO_EARLY = Heard("", CUT_OFF, 0)  # an answer begun before the listening tone
 
 
 class FakeVoice:
-    def __init__(self, answers: list[str | None], headset: bool = True) -> None:
-        self.answers: Iterator[str | None] = iter(answers)
+    def __init__(self, answers: list[str | Heard | None], headset: bool = True) -> None:
+        self.answers: Iterator[str | Heard | None] = iter(answers)
         self.headset = headset
         self.said: list[str] = []
         self.mic_open = False
@@ -37,7 +39,9 @@ class FakeVoice:
     async def listen(self, seconds: float) -> Heard | None:
         self.listens += 1
         answer = next(self.answers, None)
-        return None if answer is None else Heard(answer, "parakeet", 70)
+        if answer is None or isinstance(answer, Heard):
+            return answer
+        return Heard(answer, "parakeet", 70)
 
     async def open_mic(self) -> None:
         self.mic_open = True
@@ -105,6 +109,18 @@ def test_one_unclear_answer_is_asked_again() -> None:
     voice = FakeVoice(["mm-hmm", "yes"])
     assert decide(voice, pending()).outcome == "allow"
     assert "Sorry, say yes or no." in voice.said
+
+
+def test_an_answer_begun_too_early_is_asked_again_after_the_tone() -> None:
+    voice = FakeVoice([TOO_EARLY, "no"])
+    assert decide(voice, pending()).outcome == "deny"
+    assert "Wait for the tone, then say yes or no." in voice.said
+    assert "Sorry, say yes or no." not in voice.said
+
+
+def test_two_answers_begun_too_early_go_to_the_screen() -> None:
+    voice = FakeVoice([TOO_EARLY, TOO_EARLY])
+    assert decide(voice, pending()).outcome == "handoff"
 
 
 def test_two_unclear_answers_go_to_the_screen() -> None:

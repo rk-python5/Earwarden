@@ -10,6 +10,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 - `dev/false_approvals.py`, the recorded-audio check for false approvals, run by hand on the Mac
   (D-023). It sends Step 0's recordings through the daemon's own listening path.
+- A short listening tone marks when to answer. An answer begun before it is never parsed, and
+  Earshot asks you to wait for the tone (D-028).
 - `earshotd --keep-audio` saves each reply's clip in the home's `audio/` folder, with what VAD
   and the recognizers made of it, to tune listening on real failures (P-20). It's off by
   default, since audio isn't stored.

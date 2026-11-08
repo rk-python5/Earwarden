@@ -6,7 +6,8 @@ straight to the screen. Under the safety stub (D-019) it only listens for reques
 approve; for the rest it says what's waiting and that it's on the screen.
 
 One approval is asked at a time. If nothing is heard, it waits and asks again instead of handing
-off (D-020); an answer it can't understand twice goes to the screen.
+off (D-020); an answer it can't understand twice goes to the screen. A tone marks when to answer,
+and an answer begun before it is never parsed: Earshot asks you to wait for the tone (D-028).
 """
 
 from __future__ import annotations
@@ -21,10 +22,12 @@ from earshot.narrator.spoken import speakable
 from earshot.narrator.templates import narrate
 from earshot.voice import intents
 
+CUT_OFF = "cut off"  # Heard.recognizer for a reply begun before the window: never parsed (P-20)
+
 
 class Heard(NamedTuple):
     transcript: str
-    recognizer: str  # "parakeet", or "parakeet+whisper" after a second listen (D-017)
+    recognizer: str  # "parakeet", "parakeet+whisper" after a second listen (D-017), or CUT_OFF
     ms: int
 
 
@@ -138,6 +141,9 @@ class VoiceDecider:
                 if unclear >= 2:
                     await self._say(pending, "I didn't catch that. It's on your screen.")
                     return _decision(pending, "handoff")
-                await self._say(pending, "Sorry, say yes or no.")
+                if heard.recognizer == CUT_OFF:
+                    await self._say(pending, "Wait for the tone, then say yes or no.")
+                else:
+                    await self._say(pending, "Sorry, say yes or no.")
         finally:
             await self.voice.close_mic()
