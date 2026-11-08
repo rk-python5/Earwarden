@@ -19,7 +19,10 @@ AirPods, with confirmation strength set by risk tier. Tier 3 is never approvable
 Step 0 (week 1, feasibility) passed its gate on 4 Nov 2026 (D-014). Its results are in
 `spikes/RESULTS.md`, and the decisions taken at the gate are D-014 to D-018.
 
-Phase 1 (weeks 2–3, the walking skeleton) is next. Its gate: a real Claude Code session on
+**Start with `docs/next-steps.md`:** where things stand, how to run the Phase 1 gate on the Mac,
+and what Phase 2 needs first.
+
+Phase 1 (weeks 2–3, the walking skeleton) has its code complete; its gate is still to run. Its gate: a real Claude Code session on
 rehaan's subscription, approved by voice end to end. Its scope is the plan's Phase 1 list, plus the
 helper app's mic capture and device changes (D-016) and two-stage recognition (D-017). The build
 order, milestones and the decisions each one needs are in `docs/phase-1-plan.md`. Mark milestones
@@ -94,6 +97,7 @@ compiles when you work in the Linux container, so check the CI run after changin
   environments and model downloads in the git-ignored `.tools/` (D-013).
 - `docs/design/`: the spec (PDF).
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
+- `docs/next-steps.md`: the hand-over to local sessions: the gate run, likely fixes, Phase 2.
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.
   - `contracts.py`: the five messages as Pydantic models, at version 1.

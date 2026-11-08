@@ -60,6 +60,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   milestones 8 and 9.
 - An end-to-end test that replays rehaan's captured Claude Code session through the real hook and
   daemon.
+- `docs/next-steps.md`, the hand-over from cloud sessions to Claude Code on the Mac: how to run
+  the Phase 1 gate, the likely first fixes, and how to start Phase 2.
 - Decided before Phase 1:
   - a safety stub that keeps risky requests off voice until Phase 2's policy engine (D-019)
   - how Earshot behaves while a hook waits (D-020)
