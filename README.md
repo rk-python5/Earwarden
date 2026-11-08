@@ -13,7 +13,10 @@ Everything runs on your Mac: no cloud calls at runtime, and no account or API ke
 
 Pre-alpha, and nothing is installable yet. Step 0 (feasibility) passed its gate on
 4 Nov 2026. The spike kits are in [spikes/](spikes/), and their results are in the go/no-go note,
-[spikes/RESULTS.md](spikes/RESULTS.md). Phase 1, the walking skeleton, is next. The
+[spikes/RESULTS.md](spikes/RESULTS.md). Phase 1, the walking skeleton, passed its gate on
+8 Nov 2026: a Claude Code permission prompt was answered by voice through AirPods, end to end,
+under a safety stub. Phase 2, the safety layer, is next. Until it fixes how the recogniser hears
+non-speech (P-20 in [decisions.md](decisions.md)), use voice only in a scratch project. The
 [build plan](docs/design/earshot-technical-design-build-plan.pdf) lays out the road to v1.0.
 
 ## Documents

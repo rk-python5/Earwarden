@@ -19,18 +19,17 @@ AirPods, with confirmation strength set by risk tier. Tier 3 is never approvable
 Step 0 (week 1, feasibility) passed its gate on 4 Nov 2026 (D-014). Its results are in
 `spikes/RESULTS.md`, and the decisions taken at the gate are D-014 to D-018.
 
-**Start with `docs/next-steps.md`:** where things stand, how to run the Phase 1 gate on the Mac,
-and what Phase 2 needs first.
+Phase 1 (weeks 2–3, the walking skeleton) passed its gate on 8 Nov 2026 (D-026) and was released
+as 0.1.0. A real Claude Code session on rehaan's subscription was approved by voice end to end. Its
+milestones are in `docs/phase-1-plan.md`; the LaunchAgent's checks at login are still open.
 
-Phase 1 (weeks 2–3, the walking skeleton) has its code complete; its gate is still to run. Its gate: a real Claude Code session on
-rehaan's subscription, approved by voice end to end. Its scope is the plan's Phase 1 list, plus the
-helper app's mic capture and device changes (D-016) and two-stage recognition (D-017). The build
-order, milestones and the decisions each one needs are in `docs/phase-1-plan.md`. Mark milestones
-done there as they finish.
+Phase 2, the safety layer, is next. **Start with `docs/next-steps.md`.** It says how to run the
+voice on the Mac, and why P-20 (non-speech heard as an approval) comes first. Until P-20 is fixed,
+run `earshotd --voice` only with the hooks in a scratch project. Write `docs/phase-2-plan.md`
+before Phase 2's code, the way `docs/phase-1-plan.md` was written.
 
-A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build
-Phase 2 components (policy engine, resolvers, challenge words, voiceprint, nod detector and so on)
-before Phase 1's gate passes.
+A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
+later phase's components before the current phase's gate passes.
 
 ## Working rules (set by rehaan)
 
@@ -97,7 +96,7 @@ compiles when you work in the Linux container, so check the CI run after changin
   environments and model downloads in the git-ignored `.tools/` (D-013).
 - `docs/design/`: the spec (PDF).
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
-- `docs/next-steps.md`: the hand-over to local sessions: the gate run, likely fixes, Phase 2.
+- `docs/next-steps.md`: the hand-over to local sessions: running the voice, P-20, Phase 2.
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.
   - `contracts.py`: the five messages as Pydantic models, at version 1.

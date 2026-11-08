@@ -43,6 +43,7 @@ How this file works:
 | D-023 | Finish Phase 1 now: observe week optional, scope trimmed  | Accepted |
 | D-024 | Speakable summaries (P-03), strict intents (P-07, P-16)   | Accepted |
 | D-025 | A keyed audit chain (P-10, anchoring later)               | Accepted |
+| D-026 | The Phase 1 gate passed                                   | Accepted |
 
 ## Decisions
 
@@ -420,6 +421,45 @@ How this file works:
   Anchoring the head hash outside the file, from P-10, moves to Phase 4's hardening. Edits to
   Earshot's own files already go to the screen under the safety stub (D-019).
 
+### D-026 The Phase 1 gate passed
+
+- **Date:** 2026-11-08 · **Status:** Accepted · **By:** rehaan
+- **Decision:** Phase 1 passes its gate. A real Claude Code session on rehaan's subscription was
+  approved by voice end to end, so Phase 2, the safety layer, can start. Its first task is P-20.
+  - **The gate:** Claude Code ran in a scratch repo with `--permission-mode default` and was asked
+    to write `hello.txt`.
+    - The AirPods said "earshot scratch wants to write hello dot t x t. Approve?". Earshot heard
+      "Yes." (Parakeet, 662 ms) and allowed it.
+    - The dialog closed without a click and the file was written.
+    - It took 9.3 s from request to decision, 6.4 s of it speaking.
+  - **Tier 3 stays on the screen:** `curl -sI https://example.com` was announced ("…wants to fetch
+    from example dot com. It's on your screen.") and handed off without listening. rehaan pressed
+    No on screen.
+  - **`earshot test`:**
+    - "approve" allowed, and "no" denied.
+    - "no, call it readme instead" denied, with "call it Read Me instead" passed back as the
+      message.
+    - One run went to the screen after two unclear answers (see P-20).
+  - **Checks:** `earshot audit verify` found the chain intact. `earshot doctor` passed everything
+    except the optional LaunchAgent.
+- **Measured on the Mac:**
+  - The AirPods mic runs at 24 kHz in headset mode, resampled to 16 kHz. The noise floor in
+    rehaan's room was 0.001–0.009 RMS, and replies peaked at 0.07–0.25.
+  - The models load in 5 s once cached, with the Hub offline. Before a fix at the gate, loading
+    checked the Hub for updates at every start and took 37 s.
+  - Kokoro's first audio took 195 ms for a short sentence and 409 ms for a full narration sentence,
+    against a 200 ms budget.
+  - Whisper loads at its first second listen, which took about 4.5 s, then 1.8 s warm.
+- **Not yet checked on hardware:**
+  - The LaunchAgent at login, and its restart after a crash. Milestone 8 stays open for these.
+  - Presence routing without `--pin-voice`.
+  - Barge-in on purpose. Playback was cut short once, which only barge-in does (see P-20).
+- **Carried into Phase 2:**
+  - P-20: non-speech and cut-off replies can be heard as approvals. Until it's fixed, run
+    `earshotd --voice` only with the hooks in a scratch project.
+  - Kokoro's first audio is over budget for long sentences.
+- **Consequences:** Release 0.1.0 closes Phase 1, and Phase 2's releases are `0.2.x` (D-006).
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -756,6 +796,45 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - **Secrets are redacted** by pattern before anything is spoken or logged. Phase 2 adds entropy
     detection.
 - **Status:** Accepted before Phase 1 as D-019.
+
+### P-20 Approve only a reply that was clearly said, inside the window
+
+- **Problem:** Found at the Phase 1 gate (D-026). Parakeet often transcribes non-speech as
+  "Yeah.", which is an approval under P-07's list. The test used Step 0's AirPods recordings of
+  rehaan, in the quiet, noisy and "you" conditions:
+  - **Room sound alone:** 38 of 134 clips of the room before or after a reply (0.4–1.7 s) were
+    heard as approvals, nearly all as "Yeah.".
+  - **Cut-off non-approvals:** each was cut every 50 ms from where its speech starts. 139 of 1,297
+    cuts were heard as approvals.
+    - Most were "Yeah." from the tail.
+    - Some were real words: "don't do it" became "Do it.".
+    - With Kokoro's voice, "Don't go ahead" became "Go ahead.", and "No, I said don't approve it"
+      became "Approve it.".
+  - **In the live path:**
+    - The energy endpointer sends a clip to Parakeet as soon as any sound beats its threshold, so a
+      cough, a bump or a breath can become an approval.
+    - A reply you start while Earshot speaks triggers barge-in. But the window opens only after
+      playback stops (D-015), so only the reply's tail is heard.
+    - In one `earshot test` run, the prompt was cut off 2.6 s in. The two answers that followed
+      were unclear, so it went to the screen.
+  - Step 0 measured recognition only on whole, trimmed replies (P-17), so it couldn't see this.
+- **Proposal:** fix this first in Phase 2, before anything else is built on the voice path.
+  - **Approve only when both recognisers agree.** Whisper listens again to every reply that
+    Parakeet hears as an approval, not only to unclear ones (this amends D-017). On the recordings,
+    measure the false approvals that survive, the real approvals lost, and the time added. Warm,
+    Whisper took about 1.8 s per listen.
+  - **A reply must start inside the window.** If speech is already under way when the window
+    opens, after a barge-in or an answer over the prompt's end:
+    - wait for that speech to end
+    - ask again ("Sorry, say yes or no")
+    - never parse its tail
+  - **Bring Silero VAD forward** (D-023 moved it to Phase 2), so non-speech never reaches the
+    recognisers. Test the voiceprint as a further gate.
+  - **Add this measurement to the recorded-audio test,** run through the live endpointer and
+    recognisers, with a target of zero false approvals.
+- **Until then:** run `earshotd --voice` only with the hooks in a scratch project. The safety stub
+  (D-019) already limits voice to edits inside the project and single test commands.
+- **Status:** Open. Needed before voice is used on real work.
 
 ## Open questions
 

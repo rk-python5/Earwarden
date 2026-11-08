@@ -70,6 +70,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - Decided to finish Phase 1 now (D-023 to D-025): the observe week is optional, the mic helper
   and Silero VAD move to Phase 2, summaries must be speakable, only exact answers count, and the
   audit chain is keyed.
+- Recorded the Phase 1 gate as passed (D-026), and P-20: non-speech and cut-off replies can be
+  heard as approvals. It's the first fix in Phase 2; until then, voice is for a scratch project
+  only.
 - `earshotd --voice` logs which mic it opened and at what rate, each listen's noise floor,
   threshold and loudest level, and which recognizer answered and how fast. It logs no audio
   and no transcripts.

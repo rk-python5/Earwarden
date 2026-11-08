@@ -72,11 +72,11 @@ rehaan's Mac and AirPods.
 | 2 | The daemon core                            | Cloud           | D-020        | Done                      |
 | 3 | Install, uninstall and observe mode        | Cloud, then Mac | D-021        | Built; observe week next  |
 | 4 | Narrator v0 and redaction                  | Cloud           | D-022, D-024 | Done                      |
-| 5 | Speech out and speech in                   | Mac             | D-022, D-023 | Built; Mac check pending  |
+| 5 | Speech out and speech in                   | Mac             | D-022, D-023 | Done                      |
 | 6 | Intent, presence and the decision path     | Cloud           | D-024        | Done                      |
 | 7 | The audit log                              | Cloud           | D-025        | Done                      |
-| 8 | The helper app, the LaunchAgent and doctor | Mac             | D-023        | Built; Mac check pending  |
-| 9 | End to end, and the gate                   | Cloud, then Mac | —            | Built; the gate is next   |
+| 8 | The helper app, the LaunchAgent and doctor | Mac             | D-023        | LaunchAgent unchecked     |
+| 9 | End to end, and the gate                   | Cloud, then Mac | —            | Done                      |
 
 ### 1. Contracts and the hook client (cloud)
 
@@ -177,6 +177,14 @@ rehaan's Mac and AirPods.
 - **Done when:** on the Mac, a scripted approval is spoken in the AirPods and hears "yes", "no"
   and an instruction correctly, with per-stage timings logged. The 100 Step 0 recordings run
   through voice detection, recognition and intent; P-14 decides where that test runs.
+- **Done (8 Nov):**
+  - On the Mac, `earshot test` heard "approve", "no" and "no, call it readme instead" correctly,
+    with speaking and recognition times in the audit log and listen levels in the daemon's log.
+  - The recorded-audio test waits for P-14 (deferred by D-023).
+  - Running the recordings by hand found P-20: non-speech and cut-off replies can be heard as
+    approvals. That's the first fix in Phase 2.
+  - Silero VAD and the memory work moved to Phase 2 (D-023). Kokoro's first audio is 195–409 ms
+    (D-026).
 
 ### 6. Intent, presence and the decision path (cloud)
 
@@ -216,6 +224,11 @@ rehaan's Mac and AirPods.
   - macOS asks for the mic once, in the helper's name.
   - The grant survives a rebuild and a Python update.
   - A killed daemon restarts.
+- **8 Nov:**
+  - The helper app moved to Phase 2 (D-023).
+  - `earshot doctor` ran on the Mac and found every piece.
+  - The LaunchAgent now passes on `HF_HOME`, but it hasn't run on the Mac yet. Still to check: it
+    starts at a real login, and it restarts a killed daemon.
 
 ### 9. End to end, and the gate (cloud, then Mac)
 
@@ -225,6 +238,7 @@ rehaan's Mac and AirPods.
 - `earshot test` runs one fake approval end to end on the Mac.
 - **The gate:** a real Claude Code session, in a scratch repo, approved by voice end to end.
 - **Then:** record the gate in `decisions.md`, and release 0.1.0.
+- **Done (8 Nov):** the gate passed (D-026), and 0.1.0 was released.
 
 ## Decisions Phase 1 needs
 
@@ -263,11 +277,14 @@ rehaan's Mac and AirPods.
 
 ## Running the gate (on the Mac)
 
-1. `uv sync --group voice`, then `uv run earshot init --home .tools/earshot`.
+1. `uv sync --group voice`, then
+   `uv run earshot init --home .tools/earshot --settings ~/earshot-scratch/.claude/settings.local.json`.
+   With the hooks in a scratch project, the Claude Code session you develop in isn't asked by
+   voice.
 2. `uv run earshotd --home .tools/earshot --voice --pin-voice` (pinned, because you'll be at the
    keyboard). The first run downloads the models.
-3. `uv run earshot doctor --home .tools/earshot`, then `uv run earshot test --home .tools/earshot`:
-   answer "yes" in the AirPods.
+3. `uv run earshot doctor --home .tools/earshot --settings ~/earshot-scratch/.claude/settings.local.json`,
+   then `uv run earshot test --home .tools/earshot`: answer "yes" in the AirPods.
 4. In a scratch repo, start `claude --permission-mode default` and ask it to edit a file. Answer
    "yes" by voice; then ask for a `git push` and check it's only announced.
 5. `uv run earshot audit verify --home .tools/earshot` and `audit tail`.

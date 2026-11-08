@@ -1,34 +1,42 @@
 # Next steps: picking up in a local session
 
 Written 8 Nov 2026, when work moved from cloud sessions to Claude Code in VS Code on rehaan's Mac.
-Read this after CLAUDE.md. Update or delete sections as they're done.
+Updated the same day, after the Phase 1 gate. Read this after CLAUDE.md, and update or delete
+sections as they're done.
 
 ## Where things stand
 
 - **Step 0** passed its gate (D-014) and was released as 0.0.2.
-- **Phase 1** code is complete on `main` (0.1.0.dev0): milestones 1–9 in `docs/phase-1-plan.md`.
-  395 tests pass. What's left is the **gate**: a real Claude Code session approved by voice.
-- **Never run on hardware yet:** `src/earshot/voice/mac.py` (Kokoro, the AirPods mic, Parakeet and
-  Whisper), `voice/presence.py` (keyboard idle time) and `service.py` (the LaunchAgent). Everything
-  else is tested with the real hook against the real daemon.
+- **Phase 1** passed its gate on 8 Nov (D-026) and was released as 0.1.0: a real Claude Code
+  session, approved by voice through the AirPods. `main` is at 0.2.0.dev0.
+- **The gate found a safety hole (P-20):** Parakeet hears non-speech, or the tail of a cut-off
+  reply, as "Yeah." or another approval. Fix it first (section 2). Until then, run
+  `earshotd --voice` only with the hooks in a scratch project.
+- **Never run on hardware yet:**
+  - the LaunchAgent (`service.py`) at a real login, and its restart after a crash
+  - presence routing without `--pin-voice`
 - **CI** runs as one macOS job, but GitHub's Mac runners were unreliable in early November. A local
   `uv run pytest` on the Mac is the dependable check.
 
-## What changes in a local session
+## Working in a local session
 
 - Claude can run commands on the Mac itself, including the voice stack. rehaan still has to wear
   the AirPods and speak.
 - Tags can be pushed from the Mac, so a release no longer needs the separate tag step.
-- **Careful with hooks.** `earshot init` with no `--settings` edits `~/.claude/settings.json`, which
-  also governs the Claude Code session doing the development. While `earshotd --voice --pin-voice`
-  runs, that session's own prompts would be asked by voice. For development, install the hooks into
-  a scratch project instead:
-  `uv run earshot init --home .tools/earshot --settings ~/earshot-scratch/.claude/settings.local.json`.
-  If the hooks are already global, `uv run earshot uninstall` restores the backup.
+- **Careful with hooks.**
+  - `earshot init` with no `--settings` edits `~/.claude/settings.json`. That file also governs
+    the Claude Code session doing the development, so while `earshotd --voice --pin-voice` runs,
+    that session's own prompts would be asked by voice.
+  - Keep the hooks in the scratch project, `~/earshot-scratch`, set up on 8 Nov.
+  - If the hooks ever end up global, `uv run earshot uninstall` restores the backup.
+- `earshotd` runs under `uv run`, which holds uv's cache lock. Stop the daemon before running
+  `uv cache prune`.
+- The disk is tight (about 7 GB free on 8 Nov). `.tools/huggingface/` holds only the three models
+  the daemon uses, plus ECAPA for the voiceprint; Step 0's other candidates were deleted.
 - Set the commit author first (D-012): `git config author.name "rehaan"` and
   `git config author.email "108854279+rk-python5@users.noreply.github.com"`.
 
-## 1. Set up (about 5 minutes)
+## 1. Set up and run the voice (about 5 minutes)
 
 ```sh
 source dev/activate
@@ -37,35 +45,32 @@ uv sync --group voice     # the Mac-only voice libraries; plain `uv sync` leaves
 uv run pytest             # expect everything to pass on macOS
 ```
 
-## 2. Run the Phase 1 gate (about 20 minutes)
+The hooks are already in `~/earshot-scratch/.claude/settings.local.json`. To try the voice:
 
-1. Make a scratch project (`mkdir -p ~/earshot-scratch && cd ~/earshot-scratch && git init`) and
-   install the hooks there, as above.
-2. In one terminal at the repo: `uv run earshotd --home .tools/earshot --voice --pin-voice`. The
-   models load first; macOS asks for the microphone the first time it listens.
-3. In another: `uv run earshot doctor --home .tools/earshot`, then
-   `uv run earshot test --home .tools/earshot`, and answer "yes" in the AirPods.
-4. In the scratch project: `claude --permission-mode default`. Ask it to create `hello.txt` and say
-   "yes" by voice, without clicking the dialog. Then ask for a `git push` or `curl` and check it's
-   only announced, with "it's on your screen".
-5. `uv run earshot audit verify --home .tools/earshot` and `uv run earshot audit tail …`.
+1. **Terminal A, at the repo:**
+   `uv run earshotd --home .tools/earshot --voice --pin-voice 2>&1 | tee .tools/earshot/gate.log`.
+   The models load in about 5 s. Each listen logs its noise floor, threshold and loudest level.
+2. **Terminal B:**
+   `uv run earshot doctor --home .tools/earshot --settings ~/earshot-scratch/.claude/settings.local.json`.
+   Then run `uv run earshot test --home .tools/earshot` and answer in the AirPods.
+3. **In `~/earshot-scratch`:** `claude --permission-mode default`.
 
-**Likely first fixes in `voice/mac.py`**, since none of it has run yet:
+## 2. Fix P-20 first (before anything else on the voice path)
 
-- mlx-audio internals: `_get_pipeline("a").g2p` and what calling the G2P returns (`can_say`).
-- Picking the AirPods' input device and its 24 kHz rate; the resampling to 16 kHz.
-- The energy endpointing thresholds (`_capture`) and the barge-in level (0.05), against real
-  room noise. Step 0 measured playback leaking 16.7 dB below the noise floor.
-- `sd.play` while an `InputStream` is open, and stopping playback on cancellation.
-- Kokoro's first audio was 237 ms against a 200 ms budget; measure it in the daemon.
-- `presence.idle_seconds()` parsing `ioreg` output on macOS 27.
+P-20 in `decisions.md` has the numbers and the proposal. It amends D-017, so ask rehaan to accept
+it, or change it, before writing code. In short:
 
-Add tests for anything fixed that can be tested without hardware.
-
-**When the gate passes:** add a decision (the next free D number) recording it, as D-014 did for
-Step 0, with the evidence. Mark milestones 5, 8 and 9 done in `docs/phase-1-plan.md`. Then release
-**0.1.0** by CLAUDE.md's release steps, and start `0.2.0.dev0`. Optionally,
-`uv run earshot service install --home … --voice` starts the daemon at login.
+- Approve only when Whisper agrees with Parakeet that the reply is an approval.
+- Never parse a reply that began before the window opened, after a barge-in or an answer over the
+  prompt. Wait for it to end, then ask again.
+- Consider bringing Silero VAD forward, so non-speech never reaches the recognisers.
+- **Measure it with a script, before and after the fix.** The input is Step 0's recordings in
+  `spikes/speech/out/replies/` (`labels.csv`, 16 kHz mono, 3 s each).
+  - Feed the room sound before and after each reply through the live path: the endpointer, the
+    recognisers and `intents.parse`.
+  - Do the same for each non-approval, cut every 50 ms from where its speech starts.
+  - Count the approvals. The target is zero, with every real approval still heard.
+  - On 8 Nov, Parakeet alone gave 38 of 134 and 139 of 1,297.
 
 ## 3. Plan Phase 2, the safety layer (before writing its code)
 
@@ -87,10 +92,10 @@ spec's Phase 2 list plus what earlier decisions moved into it:
 - Silero VAD in place of energy endpointing (D-023)
 - property tests for rules and resolvers
 
-**Decisions due before Phase 2**, each with a recommendation in `decisions.md`: P-01 (tier 3 per
-effect), P-02 (tier 0 and default tiers), P-08 (challenge-word matching, revised), P-09 (lookalike
-thresholds), P-11 (repo policy only raises tiers). Ask rehaan for each, as the Phase 1 decisions
-were asked.
+**Decisions due before Phase 2**, each with a recommendation in `decisions.md`: P-20 (false
+approvals, first), P-01 (tier 3 per effect), P-02 (tier 0 and default tiers), P-08 (challenge-word
+matching, revised), P-09 (lookalike thresholds), P-11 (repo policy only raises tiers). Ask rehaan
+for each, as the Phase 1 decisions were asked.
 
 ## 4. Later, and loose ends
 
@@ -101,4 +106,8 @@ were asked.
 - Anchor the audit chain's head outside the file (P-10's second half, Phase 4).
 - P-14, the self-hosted runner for recorded-audio tests, is deferred (D-023).
 - Observe mode (D-021) is optional; its counts would help tune Phase 2's tiers.
+- Milestone 8: install the LaunchAgent (`uv run earshot service install --home … --voice`), then
+  check it starts at a real login and restarts a killed daemon.
+- Kokoro's first audio is 195 ms for a short sentence but 409 ms for a full narration sentence,
+  against a 200 ms budget. Whisper's first second listen also loads it (about 4.5 s).
 - Open questions: Q-3 (is "Earshot" clear enough as a name), Q-4, Q-5 (which friends), Q-6.
