@@ -11,6 +11,8 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
   of quiet or at 6 s (D-023). Talking while Earshot speaks stops playback (barge-in).
 - Recognition: Parakeet hears every answer; only when its answer is unclear does Whisper listen
   again to the same audio (D-017).
+- Models download the first time. Once all of them are cached, loading runs with the Hub offline,
+  so nothing leaves the Mac, not even an update check.
 """
 
 from __future__ import annotations
@@ -18,9 +20,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
+import os
 import threading
 import time
 from collections import deque
+from pathlib import Path
 from typing import Any
 
 from earshot.voice import intents
@@ -53,6 +57,22 @@ def chime(index: int, rate: int = TTS_RATE) -> list[float]:
     return samples
 
 
+def hub_cache() -> Path:
+    """Where huggingface_hub keeps models: HF_HUB_CACHE, else HF_HOME/hub (dev/activate sets it)."""
+    if os.environ.get("HF_HUB_CACHE"):
+        return Path(os.environ["HF_HUB_CACHE"])
+    cache_home = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+    return Path(os.environ.get("HF_HOME") or cache_home / "huggingface") / "hub"
+
+
+def models_cached(cache: Path) -> bool:
+    """Whether every model's weights are downloaded, so loading needn't ask the Hub for updates."""
+    return all(
+        any((cache / f"models--{model.replace('/', '--')}" / "snapshots").glob("*/*.safetensors"))
+        for model in (TTS_MODEL, ASR_MODEL, SECOND_MODEL)
+    )
+
+
 class MacVoice:
     def __init__(self, headset: str = "AirPods", voice: str = "af_heart", speed: float = 1.1):
         self.headset = headset
@@ -66,6 +86,7 @@ class MacVoice:
         self._mic_rate = 0
         self._frames: deque[tuple[float, Any]] = deque(maxlen=int(30 / FRAME_S))
         self._lock = threading.Lock()
+        self._audio = threading.Lock()  # PortAudio isn't thread-safe: one stream change at a time
         self._playing = threading.Event()
         self._barge = threading.Event()
 
@@ -73,6 +94,8 @@ class MacVoice:
 
     def load(self) -> None:
         """Load and warm the models. Slow the first time: they download into .tools/."""
+        if models_cached(hub_cache()):  # read at import, so before mlx_audio brings in the Hub
+            os.environ.setdefault("HF_HUB_OFFLINE", "1")
         import mlx.core as mx  # noqa: F401 - fail early off Apple Silicon
         from mlx_audio.stt.utils import load as load_stt
         from mlx_audio.tts.utils import load as load_tts
@@ -99,9 +122,15 @@ class MacVoice:
         import sounddevice as sd
 
         try:
-            if self._mic is None:  # PortAudio lists devices only at start; refresh when idle
-                sd._terminate()
-                sd._initialize()
+            # PortAudio lists devices only at start, so refresh it, but never under a live
+            # stream: only while the mic is closed and nothing is speaking.
+            if self._audio.acquire(blocking=False):
+                try:
+                    if self._mic is None:
+                        sd._terminate()
+                        sd._initialize()
+                finally:
+                    self._audio.release()
             output: Any = sd.query_devices(kind="output")
         except Exception:
             log.exception("couldn't read the output device")
@@ -137,11 +166,6 @@ class MacVoice:
         import numpy as np
         import sounddevice as sd
 
-        if self._mic is not None:
-            return
-        device = self._input_device()
-        rate = int(sd.query_devices(device)["default_samplerate"])
-
         def callback(data: Any, frames: int, when: Any, status: Any) -> None:
             chunk = np.array(data[:, 0], dtype=np.float32)
             with self._lock:
@@ -149,25 +173,31 @@ class MacVoice:
             if self._playing.is_set() and float(np.sqrt(np.mean(chunk**2))) > 0.05:
                 self._barge.set()  # you started talking over Earshot
 
-        self._mic = sd.InputStream(
-            device=device,
-            channels=1,
-            samplerate=rate,
-            dtype="float32",
-            blocksize=int(rate * FRAME_S),
-            callback=callback,
-        )
-        self._mic_rate = rate
-        self._mic.start()
+        with self._audio:
+            if self._mic is not None:
+                return
+            device = self._input_device()
+            rate = int(sd.query_devices(device)["default_samplerate"])
+            self._mic = sd.InputStream(
+                device=device,
+                channels=1,
+                samplerate=rate,
+                dtype="float32",
+                blocksize=int(rate * FRAME_S),
+                callback=callback,
+            )
+            self._mic_rate = rate
+            self._mic.start()
 
     async def close_mic(self) -> None:
         await asyncio.to_thread(self._close_mic)
 
     def _close_mic(self) -> None:
-        if self._mic is not None:
-            self._mic.stop()
-            self._mic.close()
-            self._mic = None
+        with self._audio:
+            if self._mic is not None:
+                self._mic.stop()
+                self._mic.close()
+                self._mic = None
         with self._lock:
             self._frames.clear()
 
@@ -185,22 +215,27 @@ class MacVoice:
         import numpy as np
         import sounddevice as sd
 
-        if self._tts is None:
-            self.load()
-        self._barge.clear()
-        self._playing.set()
-        try:
-            if chime_index is not None:
-                self._play(np.array(chime(chime_index), dtype=np.float32), stop)
-            for result in self._tts.generate(
-                text, voice=self.voice_name, speed=self.speed, split_pattern=r"(?<=[.?!])\s+"
-            ):
-                if stop.is_set() or self._barge.is_set():
-                    break
-                self._play(np.array(result.audio, dtype=np.float32), stop)
-        finally:
-            self._playing.clear()
-            sd.stop()
+        # One voice at a time: a cancelled one finishes, and its final sd.stop() runs, before
+        # the next starts, or that stop would cut off the next request's speech.
+        with self._audio:
+            if stop.is_set():
+                return
+            if self._tts is None:
+                self.load()
+            self._barge.clear()
+            self._playing.set()
+            try:
+                if chime_index is not None:
+                    self._play(np.array(chime(chime_index), dtype=np.float32), stop)
+                for result in self._tts.generate(
+                    text, voice=self.voice_name, speed=self.speed, split_pattern=r"(?<=[.?!])\s+"
+                ):
+                    if stop.is_set() or self._barge.is_set():
+                        break
+                    self._play(np.array(result.audio, dtype=np.float32), stop)
+            finally:
+                self._playing.clear()
+                sd.stop()
 
     def _play(self, audio: Any, stop: threading.Event) -> None:
         import sounddevice as sd

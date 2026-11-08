@@ -77,6 +77,15 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - CI runs as one macOS job instead of two: GitHub's Mac runners kept leaving one of the two
   waiting until its timeout. The Swift build still runs even when a Python check fails.
 
+### Fixed
+
+- The voice no longer asks Hugging Face for model updates at every start. Once all three models
+  are cached, they load with the Hub offline, so nothing leaves the Mac, and loading takes 5 s
+  instead of 37 s.
+- A voice cancelled because you answered on screen now stops before the next request speaks.
+  Before, its final stop could cut off the next request's speech. The device list is no longer
+  refreshed while Earshot is speaking.
+
 ## [0.0.2] - 2026-11-04
 
 Step 0's results. All four week-1 tests ran on rehaan's Mac and passed, and the Step 0 gate passed
