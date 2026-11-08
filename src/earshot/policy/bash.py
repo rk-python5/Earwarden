@@ -125,6 +125,7 @@ class Assessment(NamedTuple):
     parts: tuple[str, ...]  # each simple command, as rules see it
     limits: tuple[Limit, ...]  # minimums and floor effects found
     pushes: tuple[git.Push, ...]  # every git push, resolved
+    commands: tuple[tuple[str, ...], ...] = ()  # each part's words, for the narrator
 
 
 class _Found:
@@ -134,14 +135,17 @@ class _Found:
         self.parts: list[str] = []
         self.limits: list[Limit] = []
         self.pushes: list[git.Push] = []
+        self.commands: list[tuple[str, ...]] = []
 
     def add(self, other: Assessment) -> None:
         self.parts += other.parts
         self.limits += other.limits
         self.pushes += other.pushes
+        self.commands += other.commands
 
     def done(self) -> Assessment:
-        return Assessment(tuple(self.parts), tuple(dict.fromkeys(self.limits)), tuple(self.pushes))
+        limits = tuple(dict.fromkeys(self.limits))
+        return Assessment(tuple(self.parts), limits, tuple(self.pushes), tuple(self.commands))
 
 
 def assess(command: str, cwd: str, project: str | None = None, depth: int = 0) -> Assessment:
@@ -220,18 +224,18 @@ def _judge(
     found: _Found,
 ) -> None:
     """One simple command: its text for rules, its limits, and any command it runs in turn."""
-    text: str | None = " ".join((program, *args))  # None: a wrapper, judged by what it runs
+    words: tuple[str, ...] | None = (program, *args)  # None: a wrapper, judged by what it runs
     limits: list[Limit] = []
     if program in INTERPRETERS:
         code = _code_argument(program, args)
         if code is not None and program in SHELLS:
             found.add(assess(code, cwd, project, depth + 1))
-            text = None
+            words = None
         elif code is None and simple.stdin and not _script_argument(args):
             limits.append((3, "floor: pipe_to_shell"))
     elif program == "git":
         invocation = git.resolve(args, cwd)
-        text = " ".join(("git", *invocation.words))
+        words = ("git", *invocation.words)
         if invocation.config_override:
             limits.append((3, "minimum: git -c, or git pointed at another repository (P-01)"))
         if invocation.shell_alias is not None:
@@ -255,8 +259,9 @@ def _judge(
         agent = places.agent_files(places.absolute(arg, cwd)) if not arg.startswith("-") else None
         if agent is not None and program not in READERS:
             limits.append((3, f"floor: change_agent_permissions ({agent})"))
-    if text is not None:
-        found.parts.append(text)
+    if words is not None:
+        found.parts.append(" ".join(words))
+        found.commands.append(words)
     found.limits += limits
 
 

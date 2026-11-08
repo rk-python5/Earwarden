@@ -1,7 +1,8 @@
 """Secret redaction, before anything is spoken or logged (an invariant; D-019 for Phase 1).
 
-Pattern detectors catch the common token formats and credentials in URLs and assignments; an
-entropy check catches long random strings. Phase 2 tunes it against a corpus.
+Pattern detectors catch the common token formats, and credentials in URLs, assignments and
+`--password VALUE` options; an entropy check catches long random strings. A corpus of real-looking
+keys and near-misses (`tests/test_redaction.py`) keeps both honest (Phase 2, milestone 3).
 """
 
 from __future__ import annotations
@@ -25,11 +26,26 @@ PATTERNS = [
         r"(?P<s>-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$))"
     ),
     re.compile(r"(?i)\bbearer\s+(?P<s>[A-Za-z0-9._~+/=-]{16,})"),
+    re.compile(r"(?P<s>\bglpat-[A-Za-z0-9_-]{20,})"),  # GitLab
+    re.compile(r"(?P<s>\bxapp-[0-9]-[A-Za-z0-9-]{10,})"),  # Slack app-level
+    re.compile(r"(?P<s>\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{16,})"),  # Stripe
+    re.compile(r"(?P<s>\bAIza[0-9A-Za-z_-]{35})"),  # Google API key
+    re.compile(r"(?P<s>\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,})"),  # SendGrid
+    re.compile(r"(?P<s>\bnpm_[A-Za-z0-9]{36})"),  # npm
+    re.compile(r"(?P<s>\bpypi-[A-Za-z0-9_-]{50,})"),  # PyPI
+    re.compile(r"(?P<s>\bhf_[A-Za-z0-9]{30,})"),  # Hugging Face
+    re.compile(r"(?P<s>\bSK[0-9a-fA-F]{32}\b)"),  # Twilio API key
     re.compile(r"://[^/\s:@]+:(?P<s>[^/\s@]+)@"),  # the password in user:password@host
+    # NAME=value where NAME holds a secret word: password, AWS_SECRET_ACCESS_KEY, GITHUB_TOKEN.
+    # Not max_tokens=1000: the secret word must end the name or be followed by _ or -.
     re.compile(
-        r"(?i)\b(?:password|passwd|pwd|secret|token|api_key|apikey|access_key)\s*[=:]\s*"
-        r"(?P<s>[^\s&\"']{4,})"
+        r"(?i)(?<![A-Za-z0-9])(?:[A-Za-z0-9]+[_-])*"
+        r"(?:password|passwd|pwd|passphrase|secret|token|api[_-]?key|apikey|access[_-]?key|"
+        r"private[_-]?key|account[_-]?key|client[_-]?secret|auth[_-]?token|session[_-]?key)"
+        r"(?:[_-][A-Za-z0-9_-]*)?[\"']?\s*[=:]\s*[\"']?(?P<s>(?!\d+\b)[^\s&\"'\\,;]{4,})"
     ),
+    re.compile(r"(?i)--(?:password|passwd|token|api-key|secret)[ =](?P<s>[^\s\"']{4,})"),
+    re.compile(r"(?i)aws_secret_access_key[\"']?\s+[\"']?(?P<s>[A-Za-z0-9/+=]{40})"),
 ]
 # No slash: a long path is not a key, and paths are full of mixed-case and digits.
 CANDIDATE = re.compile(r"[A-Za-z0-9+_=-]{32,}")

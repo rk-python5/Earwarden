@@ -25,7 +25,15 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     are tier 3.
   - Once build or test config is edited in a session, later commands are at least tier 2 (P-01).
 
-  `hypothesis` joins the dev tools, for property tests that disguise dangerous commands. `earshot policy
+  `hypothesis` joins the dev tools, for property tests that disguise dangerous commands.
+- Critical fields and the fidelity checker (Phase 2, milestone 3).
+  - Each request's critical fields come from the policy engine's reading: the branch a push
+    really sends, every package and version, the file and folder, delete targets, and a network
+    call's domain and method.
+  - The narrator says one clause per command, and the checker refuses any sentence that drops a
+    field or invents a word. A refused sentence sends the request to the screen.
+- Redaction knows more token formats (GitLab, Stripe, Google, SendGrid, npm, PyPI, Hugging Face,
+  Twilio), and secrets named by assignments and `--password` options. A corpus test covers it. `earshot policy
   trust` lets a repo's policy lower tiers until the file changes. PyYAML is a new dependency.
 - The Phase 2 plan (`docs/phase-2-plan.md`): nine milestones in build order, the gate's targets
   and how each is measured, and the decisions each milestone needs. rehaan accepted the five

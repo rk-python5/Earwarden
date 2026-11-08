@@ -216,6 +216,8 @@ def test_trust_pins_the_file_and_a_change_undoes_it(tmp_path: Path) -> None:
         "version: 1\nrules: [{id: x, match: {command: '(['}, tier: 1}]\n",
         "version: 1\nrules: [{id: x, match: {tool: Bash}, tier: 4}]\n",
         "version: [1\n",
+        "version: 1\nrules: [{id: x, match: {tool: Bash}, tier: 2, critical: [brnach]}]\n",
+        "version: 1\nrules: [{id: x, match: {tool: Bash}, tier: 2, resolve: git_pull}]\n",
     ],
 )
 def test_a_broken_policy_file_is_an_error(text: str, tmp_path: Path) -> None:

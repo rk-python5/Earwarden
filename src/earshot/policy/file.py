@@ -56,12 +56,55 @@ class Match(Strict):
         return pattern
 
 
+# The spec's field names for `critical:`, and the extractors' own (`policy.fields`).
+CRITICAL_FIELDS = frozenset(
+    {
+        "package_names",
+        "versions",
+        "index_url",
+        "remote",
+        "branch",
+        "force",
+        "package",
+        "index",
+        "file",
+        "folder",
+        "outside",
+        "target",
+        "recursive",
+        "domain",
+        "method",
+        "server",
+        "tool",
+        "argument",
+        "command",
+        "deletes",
+    }
+)
+RESOLVERS = frozenset({"git_push"})
+
+
 class Rule(Strict):
     id: Annotated[str, Field(min_length=1, max_length=80)]
     match: Match
     tier: Tier
     critical: tuple[str, ...] = ()
     resolve: str | None = None
+
+    @field_validator("critical")
+    @classmethod
+    def _known_fields(cls, names: tuple[str, ...]) -> tuple[str, ...]:
+        unknown = sorted(set(names) - CRITICAL_FIELDS)
+        if unknown:
+            raise ValueError(f"unknown critical fields: {', '.join(unknown)}")
+        return names
+
+    @field_validator("resolve")
+    @classmethod
+    def _known_resolver(cls, name: str | None) -> str | None:
+        if name is not None and name not in RESOLVERS:
+            raise ValueError(f"unknown resolver: {name}")
+        return name
 
 
 class Defaults(Strict):

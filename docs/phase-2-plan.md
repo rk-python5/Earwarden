@@ -61,8 +61,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | - | -------------------------------------------- | --------- | ------------------- | ------ |
 | 1 | The policy engine and `earshot policy check` | Code      | D-029 (P-02, P-11)  | Done   |
 | 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Done   |
-| 3 | Critical fields, the checker, redaction      | Code      | D-024               | Next   |
-| 4 | Lookalike packages                           | Code      | D-029 (P-09)        |        |
+| 3 | Critical fields, the checker, redaction      | Code      | D-024               | Done   |
+| 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Next   |
 | 5 | Challenge words                              | Code, Mac | D-029 (P-08)        |        |
 | 6 | The voiceprint                               | Code, Mac | D-014, Q-5          |        |
 | 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 |        |
@@ -156,6 +156,18 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
   near-misses checks it never speaks or logs a secret.
 - **Done when:** every template passes the checker on a corpus of real requests, and the redaction
   corpus has no misses.
+- **Done (8 Nov):**
+  - `policy/fields.py` extracts each action's critical fields from the engine's reading, so a
+    bare `git push` names the branch it really pushes. `pip install -r` lists the file's
+    packages.
+  - The narrator says one clause per command ("run the tests, then push feature to origin").
+  - `narrator/checker.py` refuses a sentence that drops a field or uses a word the request and
+    the narrator's own vocabulary don't give it. A refused sentence sends the request to the
+    screen.
+  - Redaction knows GitLab, Stripe, Google, SendGrid, npm, PyPI, Hugging Face and Twilio tokens.
+    It also catches secrets named by assignments (`AWS_SECRET_ACCESS_KEY=`) and options
+    (`--password`), and leaves `max_tokens=1000` alone.
+  - A policy rule's `critical:` and `resolve:` must name known fields and resolvers.
 
 ### 4. Lookalike packages (code)
 

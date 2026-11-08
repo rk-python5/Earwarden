@@ -116,9 +116,10 @@ compiles when you work in the Linux container, so check the CI run after changin
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
     every request, from rules alone. Bash goes through `shell.py` (a parser), `bash.py` (each
     command it runs) and `git.py` (aliases and where a push goes); `places.py` holds the path
-    checks.
+    checks, and `fields.py` the critical fields the narrator must say.
   - `audit.py`: the keyed, hash-chained audit log (D-025) behind `earshot audit verify`.
-  - `narrator/`: the template narrator, spoken forms, and secret redaction.
+  - `narrator/`: the template narrator, spoken forms, secret redaction, and the fidelity
+    checker (`checker.py`), which refuses a sentence that drops or invents a detail.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
     settings file, with a byte-for-byte backup.
   - `voice/`: the voice decider, intent rules and endpointer (testable anywhere), presence by

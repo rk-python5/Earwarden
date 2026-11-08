@@ -81,13 +81,13 @@ class VoiceDecider:
         else:
             judgement = engine.judge_request(self.where, request, edited)
         narration = narrate(
-            pending.session.name, request.cwd, request.tool_name, request.tool_input
+            pending.session.name, request.cwd, request.tool_name, request.tool_input, judgement
         )
         notes = pending.notes
         notes["tier"] = judgement.tier
         notes["rules"] = list(judgement.rules)
         if not narration.fits:
-            notes["rules"].append("narrator: too long to say faithfully")
+            notes["rules"].append(narration.problem or "narrator: can't be said faithfully")
         voice_ok = judgement.tier in engine.VOICE_TIERS and narration.fits
         if not self.presence.away():
             notes["rules"].append("presence: at the keyboard")

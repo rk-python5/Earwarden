@@ -101,9 +101,9 @@ Planned on 8 Nov in `docs/phase-2-plan.md`. rehaan accepted P-01, P-02, P-08, P-
 D-029. The plan has nine milestones, the gate's targets, and the decisions still open: Q-5
 (which friends), and whether tier 1 also checks the voiceprint.
 
-Milestones 1 and 2, the policy engine and its resolvers, were done on 8 Nov. They replaced the
-safety stub, and tier 2 stays on the screen until challenge words and the voiceprint are both in.
-Next is milestone 3: critical fields, the fidelity checker and redaction.
+Milestones 1 to 3 (the policy engine, its resolvers, critical fields and the fidelity checker)
+were done on 8 Nov. They replaced the safety stub, and tier 2 stays on the screen until challenge
+words and the voiceprint are both in. Next is milestone 4: lookalike packages.
 
 ## 4. Later, and loose ends
 
