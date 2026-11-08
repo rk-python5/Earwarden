@@ -16,6 +16,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ### Fixed
 
+- Barge-in stops Earshot only when Silero hears speech. It used to fire on any sound over 0.05,
+  and in a live check a noise in the room, or a click as the AirPods switched into headset mode,
+  cut most questions off within a second or two, before anything could be heard.
 - Noise and cut-off replies are no longer heard as approvals (P-20, D-027).
   - Silero VAD must hear speech in a reply before Parakeet does.
   - A reply that began before the listening window, for example while you talked over Earshot,

@@ -9,7 +9,8 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
 - Listening: the mic opens when an approval starts and stays warm while it's asked (Q-2). Only
   audio from after playback ends, plus a short guard, counts (D-015). `endpoint.py` finds the
   reply; one that began before the window is never parsed, and Silero VAD must hear speech in
-  it, or it's ignored as noise (P-20). Talking while Earshot speaks stops playback (barge-in).
+  it, or it's ignored as noise (P-20). Talking while Earshot speaks stops playback (barge-in),
+  but only once Silero hears speech: a noise or a click in the headset doesn't.
 - Recognition: Parakeet hears every answer; only when its answer is unclear does Whisper listen
   again to the same audio (D-017).
 - With `keep_audio` (`earshotd --keep-audio`), each reply's clip is saved with what became of
@@ -48,6 +49,8 @@ FRAME_S = 0.02
 GUARD_S = 0.15  # output delay after playback ends (D-015)
 PRE_ROLL_S = 0.25
 MIN_SPEECH_MS = 100  # Silero's default of 250 ms is longer than a quick "no"
+BARGE_LEVEL = 0.05  # this loud while Earshot speaks, and Silero checks for speech
+BARGE_LOOK_S = 0.5  # how much of the mic Silero hears for that check
 CUT_OFF = object()  # what _capture returns for a reply that began before the window (P-20)
 CHIME_NOTES = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77, 1046.5]
 
@@ -104,7 +107,9 @@ class MacVoice:
         self._lock = threading.Lock()
         self._audio = threading.Lock()  # PortAudio isn't thread-safe: one stream change at a time
         self._playing = threading.Event()
-        self._barge = threading.Event()
+        self._loud = threading.Event()  # something loud while Earshot speaks: speech or noise?
+        self._barge = threading.Event()  # it was speech: you're talking over Earshot
+        self._ignored = 0  # noises heard while speaking, for the log
 
     # Loading
 
@@ -188,8 +193,8 @@ class MacVoice:
             chunk = np.array(data[:, 0], dtype=np.float32)
             with self._lock:
                 self._frames.append((time.monotonic(), chunk))
-            if self._playing.is_set() and float(np.sqrt(np.mean(chunk**2))) > 0.05:
-                self._barge.set()  # you started talking over Earshot
+            if self._playing.is_set() and float(np.sqrt(np.mean(chunk**2))) > BARGE_LEVEL:
+                self._loud.set()  # _talked_over() decides whether it's you
 
         with self._audio:
             if self._mic is not None:
@@ -242,7 +247,9 @@ class MacVoice:
                 return
             if self._tts is None:
                 self.load()
+            self._loud.clear()
             self._barge.clear()
+            self._ignored = 0
             self._playing.set()
             try:
                 if chime_index is not None:
@@ -250,12 +257,14 @@ class MacVoice:
                 for result in self._tts.generate(
                     text, voice=self.voice_name, speed=self.speed, split_pattern=r"(?<=[.?!])\s+"
                 ):
-                    if stop.is_set() or self._barge.is_set():
+                    if stop.is_set() or self._talked_over():
                         break
                     self._play(np.array(result.audio, dtype=np.float32), stop)
             finally:
                 self._playing.clear()
                 sd.stop()
+                if self._ignored:
+                    log.info("ignored %d noises while speaking", self._ignored)
 
     def _play(self, audio: Any, stop: threading.Event) -> None:
         import sounddevice as sd
@@ -263,10 +272,34 @@ class MacVoice:
         sd.play(audio, TTS_RATE)
         end = time.monotonic() + len(audio) / TTS_RATE + 0.05
         while time.monotonic() < end:
-            if stop.is_set() or self._barge.is_set():
+            if stop.is_set() or self._talked_over():
                 sd.stop()
                 return
             time.sleep(0.01)
+
+    def _talked_over(self) -> bool:
+        """Whether you're talking over Earshot: the mic was loud, and Silero hears speech in it."""
+        if self._barge.is_set() or not self._loud.is_set():
+            return self._barge.is_set()
+        import numpy as np
+
+        self._loud.clear()
+        with self._lock:
+            since = time.monotonic() - BARGE_LOOK_S
+            recent = [c for t, c in self._frames if t >= since]
+        if not recent:
+            return False
+        clip = self._resample(np.concatenate(recent), self._mic_rate)
+        loudest = round(float(np.max(np.abs(clip))), 4)
+        if self.is_speech(clip):
+            log.info("barge-in: speech over Earshot, peak %.4f", loudest)
+            self._keep(clip, verdict="barge-in", peak=loudest)
+            self._barge.set()
+            return True
+        self._ignored += 1
+        if self._ignored == 1:
+            self._keep(clip, verdict="noise while speaking", peak=loudest)
+        return False
 
     # Listening
 

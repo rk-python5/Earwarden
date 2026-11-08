@@ -157,3 +157,27 @@ def test_keep_audio_saves_each_clip_and_what_became_of_it(tmp_path: Path) -> Non
         (name, "speech", None),
         (name, None, "Yeah."),
     ]
+
+
+def loud_while_speaking(monkeypatch: pytest.MonkeyPatch, speech: bool) -> MacVoice:
+    np = pytest.importorskip("numpy")  # the voice group, on the Mac
+    voice = MacVoice()
+    voice._mic_rate = mac.ASR_RATE
+    voice._frames.append((time.monotonic(), np.full(320, 0.1, dtype=np.float32)))
+    monkeypatch.setattr(voice, "is_speech", lambda clip: speech)
+    voice._loud.set()  # what the mic callback does on a frame over BARGE_LEVEL
+    return voice
+
+
+def test_a_noise_while_speaking_doesnt_stop_earshot(monkeypatch: pytest.MonkeyPatch) -> None:
+    voice = loud_while_speaking(monkeypatch, speech=False)
+    assert not voice._talked_over()
+    assert not voice._barge.is_set()
+    assert voice._ignored == 1
+
+
+def test_talking_over_earshot_stops_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    voice = loud_while_speaking(monkeypatch, speech=True)
+    assert voice._talked_over()
+    assert voice._talked_over()  # it stays stopped without asking Silero again
+    assert voice._barge.is_set()
