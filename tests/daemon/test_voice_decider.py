@@ -15,7 +15,7 @@ from harness import finish, fixture, run_hook, start_hook
 from earshot import contracts, wire
 from earshot.daemon.state import Pending, Sessions
 from earshot.voice import challenge
-from earshot.voice.decider import CUT_OFF, Heard, Speaker, VoiceDecider
+from earshot.voice.decider import CUT_OFF, NOD, SHAKE, Heard, Speaker, VoiceDecider
 
 TOO_EARLY = Heard("", CUT_OFF, 0)  # an answer begun before the listening tone
 
@@ -186,6 +186,23 @@ def test_tier_2_waits_for_an_enrolled_voiceprint(monkeypatch: pytest.MonkeyPatch
     assert decision.outcome == "handoff"
     assert voice.said[-1].endswith("It's on your screen.")
     assert "voice: tier 2 waits for an enrolled voiceprint" in item.notes["rules"]
+
+
+def test_a_shake_hands_off_and_never_denies() -> None:
+    voice = FakeVoice([Heard("", SHAKE, 0)])
+    item = pending()
+    assert decide(voice, item).outcome == "handoff"
+    assert voice.said[-1] == "Okay, it's on your screen."
+    assert item.notes["gesture"] == "shake"
+
+
+def test_a_nod_approves_tier_1_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    item = pending()
+    assert decide(FakeVoice([Heard("", NOD, 0)]), item).outcome == "allow"
+    assert item.notes["gesture"] == "nod"
+    voice, decision, _ = tier_two(monkeypatch, [Heard("", NOD, 0), Heard("", NOD, 0)])
+    assert decision.outcome == "handoff"  # a nod never answers a challenge
+    assert "Sorry, say: approve harbor." in voice.said
 
 
 def test_two_unclear_answers_go_to_the_screen() -> None:

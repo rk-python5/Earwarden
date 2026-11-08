@@ -307,6 +307,7 @@ class Daemon:
                 recognizer=notes.get("recognizer"),
                 challenge=notes.get("challenge"),
                 voiceprint=notes.get("voiceprint"),
+                gesture=notes.get("gesture"),
                 outcome=outcome,
                 reason=reason,
                 timings_ms=notes.get("timings_ms", {}),
@@ -352,8 +353,15 @@ class Daemon:
         return answer
 
 
-def run_forever(where: paths.Paths, observe: bool = False, decider: Decider = hand_off) -> None:
-    """Run the daemon in this process until SIGTERM or SIGINT."""
+def run_forever(
+    where: paths.Paths,
+    observe: bool = False,
+    decider: Decider = hand_off,
+    on_start: Callable[[], Awaitable[None]] | None = None,
+    on_stop: Callable[[], Awaitable[None]] | None = None,
+) -> None:
+    """Run the daemon in this process until SIGTERM or SIGINT. `on_start` runs on its loop first,
+    and `on_stop` after it stops: the helper link (milestone 7) lives there."""
     import signal
 
     async def main() -> None:
@@ -366,7 +374,13 @@ def run_forever(where: paths.Paths, observe: bool = False, decider: Decider = ha
         loop = asyncio.get_running_loop()
         for signum in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(signum, daemon.stop)
-        await daemon.serve()
+        if on_start is not None:
+            await on_start()
+        try:
+            await daemon.serve()
+        finally:
+            if on_stop is not None:
+                await on_stop()
 
     os.umask(0o077)  # anything the daemon writes is private
     asyncio.run(main())

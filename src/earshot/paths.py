@@ -49,6 +49,10 @@ class Paths(NamedTuple):
         return self.config_dir / "trusted-policies.json"  # repo policies pinned by hash (P-11)
 
     @property
+    def helper_socket(self) -> Path:
+        return self.state_dir / "helper.sock"  # where earshot-motion connects (milestone 7)
+
+    @property
     def voiceprint(self) -> Path:
         return self.config_dir / "voiceprint.json"  # your enrolled profile, readable only by you
 

@@ -65,8 +65,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Done   |
 | 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Code   |
 | 6 | The voiceprint                               | Code, Mac | D-014, Q-5          | Code   |
-| 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 | Next   |
-| 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        |        |
+| 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 | Code   |
+| 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        | Next   |
 | 9 | The gate                                     | Mac       | —                   |        |
 
 ### 1. The policy engine and `earshot policy check` (code)
@@ -282,6 +282,26 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
   - macOS asks for the mic once, in the helper's name
   - the grant survives a rebuild
   - the hour-long count shows under 1% of answer windows with a false nod
+- **Code done (8 Nov):**
+  - `helpers/earshot-motion/`, a Swift app (`EarshotMotion.app`, `dev.earshot.motion`, no Dock
+    icon), built and signed by `build.sh`. It's signed with `$EARSHOT_SIGNING_IDENTITY`, or ad
+    hoc, and CI builds it.
+  - It captures the headset mic at 16 kHz while asked, streams Core Motion rotation rates while
+    asked, and reports device changes and permissions.
+  - `voice/helper.py` is the daemon's end: a private Unix socket and the shared token, in JSON
+    lines. `earshotd --voice` always serves it, and `--helper PATH` launches the app through
+    Launch Services. The Mac voice uses it whenever it's connected, and sounddevice otherwise.
+  - `voice/gestures.py`:
+    - A shake in the answer window hands off.
+    - Nods are off unless `earshotd --nods`. Then a strict double nod approves tier 1 only:
+      two nods within 2 s, pitch at least twice yaw and roll, a second of stillness first.
+    - The audit records the gesture.
+  - `dev/count_false_nods.py` runs the hour-long count.
+  - **Left for the Mac (rehaan):**
+    - full Xcode and a free Apple Development certificate, then
+      `EARSHOT_SIGNING_IDENTITY=… build.sh`
+    - check macOS asks for the mic once, in Earshot's name, and keeps it after a rebuild
+    - the hour-long count
 
 ### 8. Close P-20, memory and latency (code, then Mac)
 

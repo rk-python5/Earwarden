@@ -16,6 +16,9 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
   again to the same audio (D-017).
 - The voiceprint (`voiceprint.py`) scores every answer once a profile is enrolled (`earshot
   enroll`); tier 2 needs a match, and tier 1's scores go to the audit log (milestone 6).
+- With the signed helper connected (`helper.py`, milestone 7), the mic comes from it, at 16 kHz,
+  and so does head motion: a shake in the answer window hands the request to the screen, and with
+  `nods` on, a strict double nod approves at tier 1 (D-018). Without it, sounddevice captures.
 - With `keep_audio` (`earshotd --keep-audio`), each reply's clip is saved with what became of
   it, to tune the guards on real failures. Off by default: audio isn't stored (P-20).
 - Models download the first time. Once all of them are cached, loading runs with the Hub offline,
@@ -37,8 +40,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from earshot.voice import endpoint, intents, voiceprint
+from earshot.voice import endpoint, gestures, intents, voiceprint
 from earshot.voice.decider import CUT_OFF, Heard, Speaker
+from earshot.voice.helper import HelperLink
 
 log = logging.getLogger("earshot.voice")
 
@@ -105,8 +109,14 @@ class MacVoice:
         keep_audio: Path | None = None,
         profile: Path | None = None,
         models: Path | None = None,
+        helper: HelperLink | None = None,
+        nods: bool = False,
     ):
         self.headset = headset
+        self.helper = helper  # the signed helper's link, used whenever it's connected
+        self.nods = nods  # D-018: off unless switched on
+        if helper is not None:
+            helper.on_audio = self._helper_audio
         self.keep_audio = keep_audio
         self.profile_path = profile  # the enrolled voiceprint, if there is one
         self.models = models  # where the voiceprint's model is
@@ -197,6 +207,8 @@ class MacVoice:
     # Devices
 
     def headset_ready(self) -> bool:
+        if self.helper is not None and self.helper.connected and self.helper.devices:
+            return self.headset.lower() in str(self.helper.devices.get("output", "")).lower()
         import sounddevice as sd
 
         try:
@@ -240,7 +252,27 @@ class MacVoice:
     async def open_mic(self) -> None:
         await asyncio.to_thread(self._open_mic)
 
+    def _helper_audio(self, data: bytes) -> None:
+        """16-bit samples at 16 kHz from the helper, on the daemon's event loop."""
+        import numpy as np
+
+        chunk = np.frombuffer(data, dtype="<i2").astype(np.float32) / 32768
+        if not chunk.size:
+            return
+        with self._lock:
+            self._frames.append((time.monotonic(), chunk))
+        if self._playing.is_set() and float(np.sqrt(np.mean(chunk**2))) > BARGE_LEVEL:
+            self._loud.set()
+
     def _open_mic(self) -> None:
+        if self.helper is not None and self.helper.connected:
+            with self._audio:
+                if self._mic is None:
+                    self.helper.want(mic=True, motion=True)
+                    self.helper.motion.clear()
+                    self._mic, self._mic_rate = "helper", ASR_RATE
+                    log.info("mic open: through the helper, at %d Hz", ASR_RATE)
+            return
         import numpy as np
         import sounddevice as sd
 
@@ -274,7 +306,11 @@ class MacVoice:
 
     def _close_mic(self) -> None:
         with self._audio:
-            if self._mic is not None:
+            if self._mic == "helper":
+                if self.helper is not None:
+                    self.helper.want(mic=False, motion=False)
+                self._mic = None
+            elif self._mic is not None:
                 self._mic.stop()
                 self._mic.close()
                 self._mic = None
@@ -364,7 +400,16 @@ class MacVoice:
             return None
         if clip is CUT_OFF:
             return Heard("", CUT_OFF, 0)  # never parsed; the decider asks again
+        if isinstance(clip, str):  # a gesture: "shake", or "nod" with nods on
+            return Heard("", clip, 0)
         return await asyncio.to_thread(self._recognize, clip)
+
+    def _gesture(self, since: float) -> str | None:
+        """A shake, or a nod with nods on, in the head motion since `since` (D-018)."""
+        if self.helper is None or not self.helper.connected:
+            return None
+        samples = [s for s in list(self.helper.motion) if s.t >= since]
+        return gestures.detect(samples, nods=self.nods) if samples else None
 
     def _capture(self, seconds: float) -> Any:
         """One reply as 16 kHz audio, None if nobody spoke in the window, or CUT_OFF."""
@@ -375,9 +420,13 @@ class MacVoice:
         self._tone()
         opened = time.monotonic() + GUARD_S  # nothing from before the window counts (D-015)
         deadline = opened + seconds
+        motion_since = self._motion_clock()
         while True:
             time.sleep(FRAME_S)
             now = time.monotonic()
+            if (gesture := self._gesture(motion_since)) is not None:
+                log.info("gesture: %s", gesture)
+                return gesture
             with self._lock:
                 frames = [(t, c) for t, c in self._frames if t >= opened - endpoint.LEAD_QUIET_S]
             levels = [(t, float(np.sqrt(np.mean(c**2)))) for t, c in frames]
@@ -431,6 +480,12 @@ class MacVoice:
         with self._audio:
             sd.play(np.array(listening_tone(), dtype=np.float32), TTS_RATE)
             sd.wait()
+
+    def _motion_clock(self) -> float:
+        """The helper's motion time for "now": its clock isn't the daemon's."""
+        if self.helper is None or not self.helper.motion:
+            return 0.0
+        return self.helper.motion[-1].t
 
     def is_speech(self, clip: Any) -> bool:
         """Whether Silero hears speech in a 16 kHz clip: a cough, bump or breath isn't (P-20)."""

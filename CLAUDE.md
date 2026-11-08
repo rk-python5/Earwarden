@@ -89,11 +89,14 @@ uv run pytest                  # tests
 ```
 
 Run all four before every push. CI (`.github/workflows/ci.yml`, macOS 15 on Apple Silicon) runs
-the same checks on every push to `main`. It also builds the Swift spike in `spikes/motion`. That's the only place it
-compiles when you work in the Linux container, so check the CI run after changing Swift code.
+the same checks on every push to `main`. It also builds the Swift spike in `spikes/motion` and the helper in
+`helpers/earshot-motion`. That's the only place they compile when you work in the Linux container, so check
+the CI run after changing Swift code.
 
 ## Layout
 
+- `helpers/earshot-motion/`: the signed helper app (Swift, D-016): the mic, device changes and
+  head motion, for `earshotd --helper`. `build.sh` builds and signs it; CI builds it too.
 - `dev/activate`: sourced per terminal on the Mac. It keeps uv, its Python, caches, spike
   environments and model downloads in the git-ignored `.tools/` (D-013).
 - `dev/false_approvals.py`: the recorded-audio check for false approvals (D-027), run by hand on
@@ -102,7 +105,7 @@ compiles when you work in the Linux container, so check the CI run after changin
 - `dev/refresh_package_lists.py`: rebuilds the popular-package lists at release time.
 - `dev/export_ecapa.py` (PEP 723; PyTorch and SpeechBrain) exports the voiceprint model and checks
   the numpy features against SpeechBrain's. `dev/calibrate_voiceprint.py` sets the threshold from
-  other voices' phrases.
+  other voices' phrases. `dev/count_false_nods.py` runs the hour-long false-nod count.
 - `docs/design/`: the spec (PDF).
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `docs/phase-2-plan.md`: the Phase 2 build plan, the same way, with its gate's targets.
@@ -130,7 +133,8 @@ compiles when you work in the Linux container, so check the CI run after changin
     settings file, with a byte-for-byte backup.
   - `voice/`: the voice decider, intent rules, endpointer and challenge words (`challenge.py`,
     built by `dev/build_challenge_words.py`), all testable anywhere; the voiceprint
-    (`voiceprint.py`, `enroll.py`; ECAPA on onnxruntime, numpy features); presence by
+    (`voiceprint.py`, `enroll.py`; ECAPA on onnxruntime, numpy features); the link to the signed
+    helper (`helper.py`) and nods and shakes (`gestures.py`, D-018); presence by
     keyboard idle time, and `mac.py`, which speaks and listens with Kokoro, Silero VAD, Parakeet
     and Whisper (macOS only; `uv sync --group voice`).
   - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`

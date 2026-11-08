@@ -103,8 +103,8 @@ D-029. The plan has nine milestones, the gate's targets, and the decisions still
 
 Milestones 1 to 3 (the policy engine, its resolvers, critical fields and the fidelity checker)
 and lookalike packages (milestone 4) were done on 8 Nov, and challenge words and the voiceprint
-(milestones 5 and 6) in code. Tier 2 stays on the screen until rehaan enrolls (`earshot enroll`).
-Next is milestone 7: the signed helper.
+(milestones 5 and 6) and the signed helper (milestone 7) in code. Tier 2 stays on the screen
+until rehaan enrolls (`earshot enroll`). Next is milestone 8: memory and latency.
 
 ## 4. Later, and loose ends
 

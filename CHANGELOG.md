@@ -32,6 +32,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     call's domain and method.
   - The narrator says one clause per command, and the checker refuses any sentence that drops a
     field or invents a word. A refused sentence sends the request to the screen.
+- The signed helper, `earshot-motion` (Phase 2, milestone 7).
+  - It's a small Swift app that captures the AirPods mic (so macOS grants the mic to it, once),
+    streams head motion, and reports device changes, over a private, token-checked socket.
+  - `earshotd --voice --helper PATH` uses it. A shake hands a request to the screen.
+  - Nods stay off unless `--nods`, and then need a strict double nod, at tier 1 only (D-018).
+  - `dev/count_false_nods.py` runs the hour-long count.
 - The voiceprint (Phase 2, milestone 6).
   - ECAPA runs on onnxruntime, with its features computed in numpy, so the daemon needs no
     PyTorch. They match SpeechBrain's to a cosine of 1.000000.

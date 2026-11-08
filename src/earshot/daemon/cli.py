@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 import logging
+import subprocess
 import sys
+from collections.abc import Awaitable, Callable
 
-from earshot import paths
+from earshot import auth, paths
 from earshot.daemon.server import AlreadyRunningError, Decider, hand_off, run_forever
 
 
@@ -40,11 +42,23 @@ def main(argv: list[str] | None = None) -> int:
         help="save each reply's audio, and what became of it, in the home's audio folder "
         "(for tuning; off by default, as audio isn't stored)",
     )
+    parser.add_argument(
+        "--helper",
+        help="start the signed helper app (EarshotMotion.app) for the mic and head motion",
+    )
+    parser.add_argument(
+        "--nods",
+        action="store_true",
+        help="let a strict double nod approve tier 1 (off by default, D-018); shakes always count",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s earshotd %(levelname)s %(message)s")
     decider: Decider = hand_off
+    on_start: Callable[[], Awaitable[None]] | None = None
+    on_stop: Callable[[], Awaitable[None]] | None = None
     if args.voice:
         from earshot.voice.decider import VoiceDecider
+        from earshot.voice.helper import HelperLink
         from earshot.voice.mac import MacVoice
         from earshot.voice.presence import KeyboardPresence
 
@@ -52,18 +66,57 @@ def main(argv: list[str] | None = None) -> int:
         keep = where.audio_dir if args.keep_audio else None
         if keep is not None:
             print(f"Keeping each reply's audio in {keep}", file=sys.stderr)
+        link = HelperLink(where.helper_socket, auth.ensure_token(where.token))
         voice = MacVoice(
-            headset=args.headset, keep_audio=keep, profile=where.voiceprint, models=where.models_dir
+            headset=args.headset,
+            keep_audio=keep,
+            profile=where.voiceprint,
+            models=where.models_dir,
+            helper=link,
+            nods=args.nods,
         )
+
+        async def start_link() -> None:
+            await link.start()
+            if args.helper:
+                launch_helper(args.helper, where, args.headset)
+
+        on_start, on_stop = start_link, link.stop
         print("Loading the voice models (the first time, they download)…", file=sys.stderr)
         voice.load()  # until this finishes, there's no socket, so prompts go to the screen
         decider = VoiceDecider(voice, KeyboardPresence(pinned=args.pin_voice), where=where)
     try:
-        run_forever(paths.resolve(args.home), observe=args.observe, decider=decider)
+        run_forever(
+            paths.resolve(args.home),
+            observe=args.observe,
+            decider=decider,
+            on_start=on_start,
+            on_stop=on_stop,
+        )
     except AlreadyRunningError as exc:
         print(f"earshotd: {exc}", file=sys.stderr)
         return 1
     return 0
+
+
+def launch_helper(app: str, where: paths.Paths, headset: str) -> None:
+    """Open the helper app through Launch Services, so macOS asks for the mic in its name."""
+    command = [
+        "/usr/bin/open",
+        "-g",
+        "-a",
+        app,
+        "--args",
+        "--socket",
+        str(where.helper_socket),
+        "--token-file",
+        str(where.token),
+        "--headset",
+        headset,
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, check=False)  # noqa: S603
+    if result.returncode != 0:
+        logging.getLogger("earshotd").warning("couldn't open the helper: %s", result.stderr.strip())
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ from earshot.policy import engine
 from earshot.voice import challenge, intents
 
 CUT_OFF = "cut off"  # Heard.recognizer for a reply begun before the window: never parsed (P-20)
+SHAKE, NOD = "shake", "nod"  # Heard.recognizer for a head gesture in the window (D-018)
 
 
 class Speaker(NamedTuple):
@@ -163,6 +164,13 @@ class VoiceDecider:
                 pending.notes.setdefault("timings_ms", {})["recognize"] = heard.ms
                 if heard.speaker is not None:
                     pending.notes["voiceprint"] = heard.speaker.score
+                if heard.recognizer == SHAKE:  # never a deny on its own: to the screen (D-018)
+                    pending.notes["gesture"] = SHAKE
+                    await self._say(pending, "Okay, it's on your screen.")
+                    return _decision(pending, "handoff")
+                if heard.recognizer == NOD and word is None:  # tier 1 only, and only if switched on
+                    pending.notes["gesture"] = NOD
+                    return _decision(pending, "allow")
                 answer = intents.parse(heard.transcript)
                 if word is not None and heard.recognizer != CUT_OFF:
                     if challenge.matches(heard.transcript, word):
