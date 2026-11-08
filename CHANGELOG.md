@@ -32,6 +32,14 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
     call's domain and method.
   - The narrator says one clause per command, and the checker refuses any sentence that drops a
     field or invents a word. A refused sentence sends the request to the screen.
+- The voiceprint (Phase 2, milestone 6).
+  - ECAPA runs on onnxruntime, with its features computed in numpy, so the daemon needs no
+    PyTorch. They match SpeechBrain's to a cosine of 1.000000.
+  - `earshot enroll` records 12 phrases through the AirPods, plus 6 held out, and keeps only a
+    private template.
+  - Tier 2 needs a match. Every answer's score goes to the audit log.
+  - `dev/export_ecapa.py` makes the model, and `dev/calibrate_voiceprint.py` sets the threshold
+    from other voices (Q-5). onnxruntime (MIT) joins the voice group.
 - Challenge words for tier 2 (Phase 2, milestone 5).
   - 200 words, pronounceable by Kokoro, no two within one Double Metaphone edit (P-08).
   - A tier-2 request asks "To install, say: approve harbor." It's approved only when the reply

@@ -45,6 +45,7 @@ voice = [
     "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl ; sys_platform == 'darwin' and platform_machine == 'arm64'",
     "numpy>=1.26 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
     "sounddevice>=0.5 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "onnxruntime>=1.20 ; platform_machine == 'arm64' and sys_platform == 'darwin'",
 ]
 
 [build-system]
@@ -90,7 +91,7 @@ files = ["src", "tests", "spikes/hook_probe", "spikes/speech/speech_data.py", "s
 
 # The voice stack is installed only on the Mac (`uv sync --group voice`).
 [[tool.mypy.overrides]]
-module = ["mlx.*", "mlx_audio.*", "sounddevice", "numpy", "metaphone"]
+module = ["mlx.*", "mlx_audio.*", "sounddevice", "numpy", "metaphone", "onnxruntime"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

@@ -14,6 +14,8 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
   but only once Silero hears speech: a noise or a click in the headset doesn't.
 - Recognition: Parakeet hears every answer; only when its answer is unclear does Whisper listen
   again to the same audio (D-017).
+- The voiceprint (`voiceprint.py`) scores every answer once a profile is enrolled (`earshot
+  enroll`); tier 2 needs a match, and tier 1's scores go to the audit log (milestone 6).
 - With `keep_audio` (`earshotd --keep-audio`), each reply's clip is saved with what became of
   it, to tune the guards on real failures. Off by default: audio isn't stored (P-20).
 - Models download the first time. Once all of them are cached, loading runs with the Hub offline,
@@ -35,8 +37,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from earshot.voice import endpoint, intents
-from earshot.voice.decider import CUT_OFF, Heard
+from earshot.voice import endpoint, intents, voiceprint
+from earshot.voice.decider import CUT_OFF, Heard, Speaker
 
 log = logging.getLogger("earshot.voice")
 
@@ -101,9 +103,15 @@ class MacVoice:
         voice: str = "af_heart",
         speed: float = 1.1,
         keep_audio: Path | None = None,
+        profile: Path | None = None,
+        models: Path | None = None,
     ):
         self.headset = headset
         self.keep_audio = keep_audio
+        self.profile_path = profile  # the enrolled voiceprint, if there is one
+        self.models = models  # where the voiceprint's model is
+        self._profile: voiceprint.Profile | None = None
+        self._embedder: voiceprint.Embedder | None = None
         self._kept: str | None = None  # the last clip saved, for its transcript
         self.voice_name = voice
         self.speed = speed
@@ -142,6 +150,42 @@ class MacVoice:
         self._asr = load_stt(ASR_MODEL)
         self._vad = load_vad(VAD_MODEL)
         log.info("voice ready: %s, %s and %s", TTS_MODEL, ASR_MODEL, VAD_MODEL)
+        self._load_voiceprint()
+
+    def _load_voiceprint(self) -> None:
+        if self.profile_path is None or self.models is None:
+            return
+        profile = voiceprint.load(self.profile_path)
+        model = self.models / voiceprint.MODEL
+        if profile is None or not model.exists():
+            log.info("no voiceprint enrolled: tier 2 stays on the screen")
+            return
+        self._embedder = voiceprint.Embedder(model)
+        self._profile = profile
+        log.info(
+            "voiceprint ready: %d phrases, threshold %.2f%s",
+            profile.phrases,
+            profile.threshold,
+            "" if profile.calibrated else " (not yet calibrated)",
+        )
+
+    def speaker_ready(self) -> bool:
+        """Whether a voiceprint is enrolled, so tier 2 can be asked by voice."""
+        return self._profile is not None and self._embedder is not None
+
+    def speaker(self, clip: Any) -> Speaker | None:
+        """How much a 16 kHz clip sounds like you, once a voiceprint is enrolled."""
+        if self._profile is None or self._embedder is None:
+            return None
+        score = voiceprint.cosine(self._embedder.embed(clip), self._profile.embedding)
+        return Speaker(round(score, 4), voiceprint.verdict(score, self._profile))
+
+    def record_phrase(self, prompt: str, seconds: float = 8.0) -> Any:
+        """Say `prompt`, then capture one reply: 16 kHz audio, or None. For `earshot enroll`."""
+        self._open_mic()
+        self._say(prompt, None, threading.Event())
+        clip = self._capture(seconds)
+        return None if clip is None or clip is CUT_OFF else clip
 
     def _second_model(self) -> Any:
         if self._second is None:
@@ -151,10 +195,6 @@ class MacVoice:
         return self._second
 
     # Devices
-
-    def speaker_ready(self) -> bool:
-        """Whether a voiceprint is enrolled, so tier 2 can be asked by voice (milestone 6)."""
-        return False
 
     def headset_ready(self) -> bool:
         import sounddevice as sd
@@ -424,11 +464,26 @@ class MacVoice:
             recognizer = "parakeet+whisper"
         ms = int((time.monotonic() - start) * 1000)
         kind = intents.parse(text).kind
-        log.info("recognized: %s, by %s in %d ms", kind, recognizer, ms)
+        speaker = self.speaker(clip)
+        log.info(
+            "recognized: %s, by %s in %d ms%s",
+            kind,
+            recognizer,
+            ms,
+            f"; voiceprint {speaker.score:.2f}, {speaker.verdict}" if speaker else "",
+        )
         if self._kept is not None:
-            self._keep(None, file=self._kept, transcript=text, recognizer=recognizer, intent=kind)
+            score = speaker.score if speaker else None
+            self._keep(
+                None,
+                file=self._kept,
+                transcript=text,
+                recognizer=recognizer,
+                intent=kind,
+                voiceprint=score,
+            )
             self._kept = None
-        return Heard(text, recognizer, ms)
+        return Heard(text, recognizer, ms, speaker)
 
     def _keep(self, clip: Any, **fields: Any) -> str | None:
         """With keep_audio, save a clip as 16 kHz WAV, and a line about it in clips.jsonl."""

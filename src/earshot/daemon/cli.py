@@ -48,13 +48,15 @@ def main(argv: list[str] | None = None) -> int:
         from earshot.voice.mac import MacVoice
         from earshot.voice.presence import KeyboardPresence
 
-        keep = paths.resolve(args.home).audio_dir if args.keep_audio else None
+        where = paths.resolve(args.home)
+        keep = where.audio_dir if args.keep_audio else None
         if keep is not None:
             print(f"Keeping each reply's audio in {keep}", file=sys.stderr)
-        voice = MacVoice(headset=args.headset, keep_audio=keep)
+        voice = MacVoice(
+            headset=args.headset, keep_audio=keep, profile=where.voiceprint, models=where.models_dir
+        )
         print("Loading the voice models (the first time, they download)…", file=sys.stderr)
         voice.load()  # until this finishes, there's no socket, so prompts go to the screen
-        where = paths.resolve(args.home)
         decider = VoiceDecider(voice, KeyboardPresence(pinned=args.pin_voice), where=where)
     try:
         run_forever(paths.resolve(args.home), observe=args.observe, decider=decider)

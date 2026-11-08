@@ -64,8 +64,8 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | 3 | Critical fields, the checker, redaction      | Code      | D-024               | Done   |
 | 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Done   |
 | 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Code   |
-| 6 | The voiceprint                               | Code, Mac | D-014, Q-5          | Next   |
-| 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 |        |
+| 6 | The voiceprint                               | Code, Mac | D-014, Q-5          | Code   |
+| 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 | Next   |
 | 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        |        |
 | 9 | The gate                                     | Mac       | —                   |        |
 
@@ -245,6 +245,25 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
   P-20's faint "Yeah.", but a one-word "yes" may be too short to verify. Measure it first.
 - **Done when:** impostors are accepted at most 2% of the time, and rehaan's voice at least 95%
   of the time on the first try.
+- **Code done (8 Nov):**
+  - `voice/voiceprint.py`: ECAPA's filterbank in numpy, ECAPA on onnxruntime (MIT, in the
+    voice group), the profile (0600, a template, no audio) and the verdicts.
+    - The threshold starts at 0.50, from Step 0's mid-point, with 0.45–0.50 borderline.
+    - `dev/export_ecapa.py` exports the model (83.8 MB) into the home's `models/`.
+    - Parity: features within 0.0012 dB of SpeechBrain's, and embeddings at cosine 1.000000
+      with PyTorch's on every Step 0 recording.
+  - `earshot enroll`: 12 phrases plus 6 held out, spoken as challenge phrases in headset mode.
+    `--impostor NAME` records a friend's phrases for calibration.
+  - `dev/calibrate_voiceprint.py` gives the equal error rate and the threshold at no more than
+    2% impostors, and `--write` saves it.
+    - On Step 0's recordings (one friend), rehaan's lowest was 0.535 and the friend's highest
+      0.438, a gap of +0.097.
+    - It trims with Silero, as the live path effectively does, and an energy trim had kept
+      the Enter key's click.
+  - The daemon scores every answer once a profile exists. Tier 2 needs a match, and tier 1's
+    scores go to the audit log, as data for P-20's question.
+  - **Left for the Mac:** rehaan enrolls. 3–5 friends record impostor phrases (Q-5), then
+    calibrate.
 
 ### 7. The helper: mic, devices and head motion (Mac)
 

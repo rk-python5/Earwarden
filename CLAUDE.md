@@ -100,6 +100,9 @@ compiles when you work in the Linux container, so check the CI run after changin
   the Mac, since P-14's runner is deferred (D-023). It sends Step 0's recordings in
   `spikes/speech/out/` through the daemon's own listening path. Run it after any change there.
 - `dev/refresh_package_lists.py`: rebuilds the popular-package lists at release time.
+- `dev/export_ecapa.py` (PEP 723; PyTorch and SpeechBrain) exports the voiceprint model and checks
+  the numpy features against SpeechBrain's. `dev/calibrate_voiceprint.py` sets the threshold from
+  other voices' phrases.
 - `docs/design/`: the spec (PDF).
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `docs/phase-2-plan.md`: the Phase 2 build plan, the same way, with its gate's targets.
@@ -112,7 +115,7 @@ compiles when you work in the Linux container, so check the CI run after changin
   - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
     imports.
   - `cli.py`: the `earshot` command (`init`, `uninstall`, `observe`, `audit`, `service`, `doctor`,
-    `test`, `policy`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
+    `test`, `policy`, `enroll`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
     Phase 1's safety stub (D-019), kept as the reference the policy engine must never be looser
     than.
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
@@ -126,7 +129,8 @@ compiles when you work in the Linux container, so check the CI run after changin
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
     settings file, with a byte-for-byte backup.
   - `voice/`: the voice decider, intent rules, endpointer and challenge words (`challenge.py`,
-    built by `dev/build_challenge_words.py`), all testable anywhere; presence by
+    built by `dev/build_challenge_words.py`), all testable anywhere; the voiceprint
+    (`voiceprint.py`, `enroll.py`; ECAPA on onnxruntime, numpy features); presence by
     keyboard idle time, and `mac.py`, which speaks and listens with Kokoro, Silero VAD, Parakeet
     and Whisper (macOS only; `uv sync --group voice`).
   - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`

@@ -49,6 +49,14 @@ class Paths(NamedTuple):
         return self.config_dir / "trusted-policies.json"  # repo policies pinned by hash (P-11)
 
     @property
+    def voiceprint(self) -> Path:
+        return self.config_dir / "voiceprint.json"  # your enrolled profile, readable only by you
+
+    @property
+    def models_dir(self) -> Path:
+        return self.state_dir / "models"  # the voiceprint's ONNX model (dev/export_ecapa.py)
+
+    @property
     def audio_dir(self) -> Path:
         return self.state_dir / "audio"  # only with earshotd --keep-audio
 

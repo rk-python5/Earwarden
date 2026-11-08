@@ -188,6 +188,19 @@ def doctor(args: argparse.Namespace) -> int:
                 f"the output isn't your {args.headset}: connect it to the Mac",
             )
         )
+        from earshot.voice import voiceprint
+
+        profile = voiceprint.load(where.voiceprint)
+        model = (where.models_dir / voiceprint.MODEL).exists()
+        state = "calibrated" if profile and profile.calibrated else "not yet calibrated"
+        results.append(
+            _check(
+                profile is not None and model,
+                f"your voiceprint is enrolled ({state}): tier 2 can be asked by voice",
+                "no voiceprint: tier 2 stays on the screen until you run earshot enroll"
+                + ("" if model else " (first: uv run dev/export_ecapa.py)"),
+            )
+        )
     if sys.platform == "darwin":
         results.append(
             _check(
@@ -235,6 +248,51 @@ def test_approval(args: argparse.Namespace) -> int:
         + (f": {decision['message']}" if decision.get("message") else "")
     )
     return 0
+
+
+def enroll(args: argparse.Namespace) -> int:
+    """Record your voiceprint, or a friend's phrases for calibration (Phase 2, milestone 6)."""
+    from earshot.voice import voiceprint
+
+    if sys.platform != "darwin":
+        print("earshot enroll needs the Mac's voice (macOS on Apple Silicon).", file=sys.stderr)
+        return 1
+    where = paths.resolve(args.home)
+    model = where.models_dir / voiceprint.MODEL
+    if not model.exists():
+        home = f" --home {shlex.quote(args.home)}" if args.home else ""
+        print(f"No voiceprint model at {model}. Make it with: uv run dev/export_ecapa.py{home}")
+        return 1
+    from earshot.voice import challenge
+    from earshot.voice import enroll as enrolling
+    from earshot.voice.mac import MacVoice
+
+    voice = MacVoice(headset=args.headset)
+    if not voice.headset_ready():
+        print(f"Connect your {args.headset} and make them the sound output first.")
+        return 1
+    print("Loading the voice models…")
+    voice.load()
+    embedder = voiceprint.Embedder(model)
+    keep = Path(args.save_clips) if args.save_clips else None
+    if args.impostor:
+        keep = (keep or where.state_dir / "calibration") / args.impostor
+        print(f"Recording {args.phrases} phrases from {args.impostor}, for calibration only.")
+        words = challenge.words()[: args.phrases]
+        enrolling.collect(voice.record_phrase, embedder.embed, list(words), print, keep)
+        print(f"Saved to {keep}. No profile was made.")
+        return 0
+    print(f"After each prompt and its tone, say the phrase. {args.phrases + args.held_out} in all.")
+    profile = enrolling.enroll(
+        voice.record_phrase,
+        embedder.embed,
+        where.voiceprint,
+        print,
+        args.phrases,
+        args.held_out,
+        keep,
+    )
+    return 0 if profile else 1
 
 
 def policy_check(args: argparse.Namespace) -> int:
@@ -319,6 +377,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--settings", default=str(DEFAULT_SETTINGS), help="the settings file")
     p.add_argument("--headset", default="AirPods", help="part of the headset's device name")
     p.set_defaults(run=doctor)
+
+    p = commands.add_parser("enroll", help="record your voiceprint through the AirPods (macOS)")
+    p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.add_argument("--headset", default="AirPods", help="part of the headset's device name")
+    p.add_argument("--phrases", type=int, default=12, help="phrases for the profile (default 12)")
+    p.add_argument("--held-out", type=int, default=6, help="phrases to check it with (default 6)")
+    p.add_argument("--save-clips", help="also keep the phrases as WAV files here, for calibration")
+    p.add_argument("--impostor", help="record a friend's phrases for calibration; no profile")
+    p.set_defaults(run=enroll)
 
     p = commands.add_parser("policy", help="check requests against your policy, or trust a repo's")
     policy_commands = p.add_subparsers(dest="policy_command", required=True)

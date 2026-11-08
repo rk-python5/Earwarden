@@ -188,3 +188,27 @@ def test_the_listening_tone_is_short_soft_and_above_every_chime() -> None:
     assert len(tone) == int(mac.TTS_RATE * mac.LISTEN_TONE_S)
     assert max(abs(sample) for sample in tone) <= 0.15
     assert max(mac.CHIME_NOTES) * 1.25 < mac.LISTEN_TONE_HZ  # a chime's second note is 1.25x
+
+
+def test_answers_are_scored_against_the_voiceprint_once_enrolled() -> None:
+    from earshot.voice import voiceprint
+
+    voice = MacVoice()
+    assert not voice.speaker_ready()
+    assert voice.speaker([0.0]) is None
+
+    class Fixed:
+        def __init__(self, vector: list[float]) -> None:
+            self.vector = vector
+
+        def embed(self, clip: object) -> list[float]:
+            return self.vector
+
+    voice._profile = voiceprint.build_profile([[1.0, 0.0]])
+    voice._embedder = Fixed([1.0, 0.1])  # type: ignore[assignment]
+    assert voice.speaker_ready()
+    speaker = voice.speaker([0.0])
+    assert speaker is not None
+    assert speaker.verdict == "match"
+    voice._embedder = Fixed([0.0, 1.0])  # type: ignore[assignment]
+    assert voice.speaker([0.0]) == (0.0, "mismatch")
