@@ -177,7 +177,9 @@ class MacVoice:
             if self._mic is not None:
                 return
             device = self._input_device()
-            rate = int(sd.query_devices(device)["default_samplerate"])
+            info: Any = sd.query_devices(device)
+            rate = int(info["default_samplerate"])
+            log.info("mic open: %s at %d Hz", info["name"], rate)
             self._mic = sd.InputStream(
                 device=device,
                 channels=1,
@@ -274,6 +276,7 @@ class MacVoice:
                 frames = [(t, c) for t, c in self._frames if t >= opened]
             if not frames:
                 if now > deadline:
+                    log.info("heard nothing: no audio came from the mic")
                     return None
                 continue
             levels = [(t, float(np.sqrt(np.mean(c**2)))) for t, c in frames]
@@ -285,11 +288,25 @@ class MacVoice:
                 if level > threshold:
                     started = started or t
                     last_voice = t
+            loudest = max(level for _, level in levels)
             if started is None and now > deadline:
+                log.info(
+                    "heard nothing: noise %.4f, threshold %.4f, loudest %.4f",
+                    noise,
+                    threshold,
+                    loudest,
+                )
                 return None
             if started is not None and (
                 now - last_voice >= END_SILENCE_S or now - started >= MAX_SPEECH_S
             ):
+                log.info(
+                    "speech for %.1f s: noise %.4f, threshold %.4f, loudest %.4f",
+                    last_voice - started,
+                    noise,
+                    threshold,
+                    loudest,
+                )
                 keep = [c for t, c in frames if started - PRE_ROLL_S <= t <= last_voice + 0.25]
                 return self._resample(np.concatenate(keep), self._mic_rate)
 
@@ -314,4 +331,6 @@ class MacVoice:
             second = self._second_model()
             text = str(second.generate(mx.array(clip), language="en", temperature=0.0).text).strip()
             recognizer = "parakeet+whisper"
-        return Heard(text, recognizer, int((time.monotonic() - start) * 1000))
+        ms = int((time.monotonic() - start) * 1000)
+        log.info("recognized: %s, by %s in %d ms", intents.parse(text).kind, recognizer, ms)
+        return Heard(text, recognizer, ms)
