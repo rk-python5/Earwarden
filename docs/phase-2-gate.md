@@ -23,27 +23,20 @@ The voiceprint model is already exported to `.tools/earshot/models/` (8 Nov). If
 missing, `uv run dev/export_ecapa.py --home .tools/earshot` makes it again, in about 5 minutes,
 and checks it against SpeechBrain.
 
-## 2. Give the helper a fixed signature (10 minutes, once)
-
-macOS ties the mic permission to an app's signature. An ad-hoc signature changes with every
-build, so macOS would ask again each time. A certificate of your own keeps it stable (D-016).
-Xcode would need about 15 GB of disk, so use a self-signed one instead; it works the same way for
-this:
-
-1. Open **Keychain Access**. Choose **Keychain Access > Certificate Assistant > Create a
-   Certificate…**
-2. **Name:** `Earshot Dev`. **Identity Type:** Self-Signed Root. **Certificate Type:** Code
-   Signing. Click **Create**, then **Done**.
-3. Build and sign the helper:
+## 2. Build the helper (2 minutes)
 
 ```sh
-EARSHOT_SIGNING_IDENTITY="Earshot Dev" helpers/earshot-motion/build.sh
+helpers/earshot-motion/build.sh
 ```
 
-- `build.sh` compiles the Swift helper, wraps it as `EarshotMotion.app`, and signs it with the
-  certificate. It takes about a minute the first time.
-- Watch for "Built …, signed as Earshot Dev". If macOS asks whether `codesign` may use the key,
-  choose **Always Allow**.
+- It compiles the Swift helper and wraps it as `EarshotMotion.app`, signed ad hoc. It takes about
+  a minute the first time.
+- **A fixed signature is deferred** (rehaan, 9 Nov). An ad-hoc signature changes with every build,
+  so macOS asks for the mic and motion again after each rebuild of the helper. That's harmless,
+  just a prompt. To fix it later, make a self-signed "Code Signing" certificate in Keychain
+  Access (Certificate Assistant > Create a Certificate, named `Earshot Dev`), then build with
+  `EARSHOT_SIGNING_IDENTITY="Earshot Dev" helpers/earshot-motion/build.sh`. Other users' Macs
+  need an Apple Developer ID (Phase 5).
 
 ## 3. Start the daemon with the helper (5 minutes)
 
@@ -61,8 +54,8 @@ uv run earshotd --home .tools/earshot --voice --pin-voice --keep-audio \
 - Watch the log for "helper connected" and "helper permissions: {'mic': 'granted', 'motion':
   'granted'}".
 
-**The rebuild check** (2 minutes): press Ctrl-C in terminal A. Run step 2's `build.sh` line
-again, then step 3's command. **macOS shouldn't ask again.** If it does, tell Claude.
+There's no rebuild check this time: with an ad-hoc signature, macOS asks again after a rebuild,
+as expected. It's deferred with the fixed signature (step 2).
 
 ## 4. Enroll your voice (3 minutes)
 

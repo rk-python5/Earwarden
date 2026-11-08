@@ -297,11 +297,13 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
       two nods within 2 s, pitch at least twice yaw and roll, a second of stillness first.
     - The audit records the gesture.
   - `dev/count_false_nods.py` runs the hour-long count.
-  - **Left for the Mac (rehaan):**
-    - full Xcode and a free Apple Development certificate, then
-      `EARSHOT_SIGNING_IDENTITY=… build.sh`
-    - check macOS asks for the mic once, in Earshot's name, and keeps it after a rebuild
-    - the hour-long count
+  - **Left for the Mac (rehaan):** check macOS asks for the mic once, in Earshot's name; and the
+    hour-long count.
+  - **Deferred (rehaan, 9 Nov): the fixed signature.** The helper is signed ad hoc for now, so
+    macOS asks again after each rebuild, and the "grant survives a rebuild" check stays open.
+    - The fix for this Mac: a self-signed code-signing certificate from Keychain Access, used by
+      `EARSHOT_SIGNING_IDENTITY=… build.sh`. No Xcode is needed.
+    - For other users: an Apple Developer ID and notarisation, in Phase 5.
 
 ### 8. Close P-20, memory and latency (code, then Mac)
 

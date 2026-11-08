@@ -70,6 +70,9 @@ the red-team suite and the 8-hour soak). Plan it the way `docs/phase-2-plan.md` 
 - Anchor the audit chain's head outside the file (P-10's second half, Phase 4).
 - P-14, the self-hosted runner for recorded-audio tests, is deferred (D-023).
 - Observe mode (D-021) is optional; its counts would help tune Phase 2's tiers.
+- **The helper's fixed signature is deferred** (rehaan, 9 Nov). It's signed ad hoc, so macOS asks
+  again after each rebuild. The way to fix it is in `docs/phase-2-gate.md`, step 2, and in P-21.
+  Shipping to others needs an Apple Developer ID (Phase 5).
 - Phase 1's milestone 8: the LaunchAgent at a real login, and its restart after a kill. This is
   step 8 of the gate session, optional.
 - A narration whose first clause is long and has no comma, such as "earshot scratch wants to
