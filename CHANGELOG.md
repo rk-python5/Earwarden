@@ -6,6 +6,20 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+### Added
+
+- `dev/false_approvals.py`, the recorded-audio check for false approvals, run by hand on the Mac
+  (D-023). It sends Step 0's recordings through the daemon's own listening path.
+
+### Fixed
+
+- Noise and cut-off replies are no longer heard as approvals (P-20, D-027).
+  - Silero VAD must hear speech in a reply before Parakeet does.
+  - A reply that began before the listening window, for example while you talked over Earshot,
+    is never parsed; Earshot asks again.
+  - On Step 0's recordings, Parakeet alone approved 38 of 134 room-sound clips and 139 of 1,297
+    cut-off non-approvals. Now none get through, and every real approval is still heard.
+
 ## [0.1.0] - 2026-11-08
 
 Phase 1, the walking skeleton. A real Claude Code session was approved by voice through AirPods,

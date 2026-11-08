@@ -9,9 +9,10 @@ sections as they're done.
 - **Step 0** passed its gate (D-014) and was released as 0.0.2.
 - **Phase 1** passed its gate on 8 Nov (D-026) and was released as 0.1.0: a real Claude Code
   session, approved by voice through the AirPods. `main` is at 0.2.0.dev0.
-- **The gate found a safety hole (P-20):** Parakeet hears non-speech, or the tail of a cut-off
-  reply, as "Yeah." or another approval. Fix it first (section 2). Until then, run
-  `earshotd --voice` only with the hooks in a scratch project.
+- **The gate found a safety hole (P-20):** Parakeet heard non-speech, or the tail of a cut-off
+  reply, as "Yeah." or another approval. It's fixed on Step 0's recordings (D-027): Silero VAD
+  checks every reply, and a reply that began before the window is never parsed. Check it live
+  (section 2); until then, run `earshotd --voice` only with the hooks in a scratch project.
 - **Never run on hardware yet:**
   - the LaunchAgent (`service.py`) at a real login, and its restart after a crash
   - presence routing without `--pin-voice`
@@ -55,22 +56,21 @@ The hooks are already in `~/earshot-scratch/.claude/settings.local.json`. To try
    Then run `uv run earshot test --home .tools/earshot` and answer in the AirPods.
 3. **In `~/earshot-scratch`:** `claude --permission-mode default`.
 
-## 2. Fix P-20 first (before anything else on the voice path)
+## 2. Check P-20's fix live (about 5 minutes)
 
-P-20 in `decisions.md` has the numbers and the proposal. It amends D-017, so ask rehaan to accept
-it, or change it, before writing code. In short:
+D-027 has the numbers from the recordings. What's left is the AirPods in a real room. Start the
+daemon as in section 1 and watch its log, then run `uv run earshot test --home .tools/earshot`
+three times:
 
-- Approve only when Whisper agrees with Parakeet that the reply is an approval.
-- Never parse a reply that began before the window opened, after a barge-in or an answer over the
-  prompt. Wait for it to end, then ask again.
-- Consider bringing Silero VAD forward, so non-speech never reaches the recognisers.
-- **Measure it with a script, before and after the fix.** The input is Step 0's recordings in
-  `spikes/speech/out/replies/` (`labels.csv`, 16 kHz mono, 3 s each).
-  - Feed the room sound before and after each reply through the live path: the endpointer, the
-    recognisers and `intents.parse`.
-  - Do the same for each non-approval, cut every 50 ms from where its speech starts.
-  - Count the approvals. The target is zero, with every real approval still heard.
-  - On 8 Nov, Parakeet alone gave 38 of 134 and 139 of 1,297.
+1. **Say "yes".** It should allow.
+2. **Cough or tap an AirPod during the answer window, then say "yes".** The log should show
+   `not speech: ignored` for the noise, and it should still allow.
+3. **Talk over the question ("no, don't do it").** Playback stops, the log shows `began before
+   the window`, and Earshot says "Sorry, say yes or no". Say "no": it should deny.
+
+If those hold, record the result in D-027 and drop the scratch-project-only rule from this file,
+CLAUDE.md and the README. After any change to the listening path, run
+`uv run python dev/false_approvals.py` (about 10 minutes); it must report 0 false approvals.
 
 ## 3. Plan Phase 2, the safety layer (before writing its code)
 
@@ -92,10 +92,10 @@ spec's Phase 2 list plus what earlier decisions moved into it:
 - Silero VAD in place of energy endpointing (D-023)
 - property tests for rules and resolvers
 
-**Decisions due before Phase 2**, each with a recommendation in `decisions.md`: P-20 (false
-approvals, first), P-01 (tier 3 per effect), P-02 (tier 0 and default tiers), P-08 (challenge-word
-matching, revised), P-09 (lookalike thresholds), P-11 (repo policy only raises tiers). Ask rehaan
-for each, as the Phase 1 decisions were asked.
+**Decisions due before Phase 2**, each with a recommendation in `decisions.md`: P-01 (tier 3 per
+effect), P-02 (tier 0 and default tiers), P-08 (challenge-word matching, revised), P-09 (lookalike
+thresholds), P-11 (repo policy only raises tiers). Ask rehaan for each, as the Phase 1 decisions
+were asked.
 
 ## 4. Later, and loose ends
 

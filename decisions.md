@@ -44,6 +44,7 @@ How this file works:
 | D-024 | Speakable summaries (P-03), strict intents (P-07, P-16)   | Accepted |
 | D-025 | A keyed audit chain (P-10, anchoring later)               | Accepted |
 | D-026 | The Phase 1 gate passed                                   | Accepted |
+| D-027 | Only speech, begun inside the window, is parsed (P-20)    | Accepted |
 
 ## Decisions
 
@@ -460,6 +461,41 @@ How this file works:
   - Kokoro's first audio is over budget for long sentences.
 - **Consequences:** Release 0.1.0 closes Phase 1, and Phase 2's releases are `0.2.x` (D-006).
 
+### D-027 Only speech, begun inside the window, is parsed
+
+- **Date:** 2026-11-08 · **Status:** Accepted · **By:** rehaan (accepts P-20, with VAD in place of
+  Whisper agreement)
+- **Decision:** two guards on the listening path, in `voice/endpoint.py` and `voice/mac.py`:
+  - **Silero VAD must hear speech** in a reply before Parakeet does.
+    - Anything else is ignored as noise, and listening goes on until the window ends.
+    - Silero runs through mlx-audio, so it needs no new library.
+    - It moves forward from Phase 2 (this amends D-023) as a check on each reply. Energy still
+      ends speech.
+  - **A reply must follow 400 ms of quiet**, counting the moments just before the window opened.
+    - That's the same pause that ends a reply, so a pause too short to end a reply can't start
+      one either.
+    - A reply that doesn't follow it began before the window, after a barge-in or over the
+      prompt's end. It's never parsed, and Earshot asks again.
+  - Whisper still listens only when Parakeet's answer is unclear (D-017 stands).
+- **Evidence:** `dev/false_approvals.py` on Step 0's recordings of rehaan:
+  - **Room sound:** 0 of 130 clips passed VAD. Parakeet alone had approved 38 of 134.
+  - **Cut-off non-approvals:** 0 approvals in 2,232 windows. Parakeet alone had approved 139
+    of 1,297.
+  - **Real replies:**
+    - All 18 approvals were heard.
+    - 108 of 110 replies were heard as labelled. Both misses were safe: "no, use poetry instead"
+      lost its instruction at the pause after "no", and "API, yes" became a deny.
+  - **Cost:** Silero adds about 8 ms per reply.
+  - **Choosing 400 ms:**
+    - At 300 ms, "deploy, yes" approved when the window opened in its 0.38 s pause.
+    - At 500 ms, 6–7 of 110 real replies would have been wrongly cut off and asked again.
+    - At 400 ms, 1–2 are.
+- **Why not Whisper agreement:** it would add 1–2 s to every approval, against the spec's 1 s
+  target, and VAD with the window rule reached zero without it.
+- **Still open:**
+  - a live check with the AirPods: a cough, and talking over the prompt
+  - the voiceprint (Phase 2), for voices other than rehaan's
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -834,7 +870,8 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     recognisers, with a target of zero false approvals.
 - **Until then:** run `earshotd --voice` only with the hooks in a scratch project. The safety stub
   (D-019) already limits voice to edits inside the project and single test commands.
-- **Status:** Open. Needed before voice is used on real work.
+- **Status:** Accepted as D-027, with Silero VAD and the window rule in place of Whisper
+  agreement.
 
 ## Open questions
 

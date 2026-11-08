@@ -7,8 +7,9 @@ lazily, so the daemon starts without it and the rest of Earshot runs anywhere.
   fallback is switched off, so words Kokoro can't pronounce are reported by `can_say` and
   spelled out by the narrator (D-022, D-024). Before speaking, the output must be the headset.
 - Listening: the mic opens when an approval starts and stays warm while it's asked (Q-2). Only
-  audio from after playback ends, plus a short guard, counts (D-015). Speech ends after 400 ms
-  of quiet or at 6 s (D-023). Talking while Earshot speaks stops playback (barge-in).
+  audio from after playback ends, plus a short guard, counts (D-015). `endpoint.py` finds the
+  reply; one that began before the window is never parsed, and Silero VAD must hear speech in
+  it, or it's ignored as noise (P-20). Talking while Earshot speaks stops playback (barge-in).
 - Recognition: Parakeet hears every answer; only when its answer is unclear does Whisper listen
   again to the same audio (D-017).
 - Models download the first time. Once all of them are cached, loading runs with the Hub offline,
@@ -27,7 +28,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
-from earshot.voice import intents
+from earshot.voice import endpoint, intents
 from earshot.voice.decider import Heard
 
 log = logging.getLogger("earshot.voice")
@@ -36,12 +37,13 @@ TTS_MODEL = "mlx-community/Kokoro-82M-bf16"
 TTS_RATE = 24_000
 ASR_MODEL = "mlx-community/parakeet-tdt-0.6b-v2"
 SECOND_MODEL = "mlx-community/whisper-large-v3-turbo-asr-fp16"
+VAD_MODEL = "mlx-community/silero-vad"
 ASR_RATE = 16_000
 FRAME_S = 0.02
-END_SILENCE_S = 0.4
-MAX_SPEECH_S = 6.0
 GUARD_S = 0.15  # output delay after playback ends (D-015)
 PRE_ROLL_S = 0.25
+MIN_SPEECH_MS = 100  # Silero's default of 250 ms is longer than a quick "no"
+CUT_OFF = object()  # what _capture returns for a reply that began before the window (P-20)
 CHIME_NOTES = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77, 1046.5]
 
 
@@ -69,7 +71,7 @@ def models_cached(cache: Path) -> bool:
     """Whether every model's weights are downloaded, so loading needn't ask the Hub for updates."""
     return all(
         any((cache / f"models--{model.replace('/', '--')}" / "snapshots").glob("*/*.safetensors"))
-        for model in (TTS_MODEL, ASR_MODEL, SECOND_MODEL)
+        for model in (TTS_MODEL, ASR_MODEL, SECOND_MODEL, VAD_MODEL)
     )
 
 
@@ -82,6 +84,7 @@ class MacVoice:
         self._g2p: Any = None
         self._asr: Any = None
         self._second: Any = None
+        self._vad: Any = None
         self._mic: Any = None
         self._mic_rate = 0
         self._frames: deque[tuple[float, Any]] = deque(maxlen=int(30 / FRAME_S))
@@ -99,6 +102,7 @@ class MacVoice:
         import mlx.core as mx  # noqa: F401 - fail early off Apple Silicon
         from mlx_audio.stt.utils import load as load_stt
         from mlx_audio.tts.utils import load as load_tts
+        from mlx_audio.vad import load as load_vad
 
         self._tts = load_tts(TTS_MODEL)
         for _ in self._tts.generate("Ready.", voice=self.voice_name, speed=self.speed):
@@ -107,7 +111,8 @@ class MacVoice:
         pipeline.g2p.fallback = None  # no espeak at runtime (D-022)
         self._g2p = pipeline.g2p
         self._asr = load_stt(ASR_MODEL)
-        log.info("voice ready: %s and %s", TTS_MODEL, ASR_MODEL)
+        self._vad = load_vad(VAD_MODEL)
+        log.info("voice ready: %s, %s and %s", TTS_MODEL, ASR_MODEL, VAD_MODEL)
 
     def _second_model(self) -> Any:
         if self._second is None:
@@ -256,59 +261,64 @@ class MacVoice:
         clip = await asyncio.to_thread(self._capture, seconds)
         if clip is None:
             return None
+        if clip is CUT_OFF:
+            return Heard("", "cut off", 0)  # never parsed: it's unclear, so it's asked again
         return await asyncio.to_thread(self._recognize, clip)
 
     def _capture(self, seconds: float) -> Any:
-        """One answer, endpointed by energy, or None if nobody spoke in the window."""
+        """One reply as 16 kHz audio, None if nobody spoke in the window, or CUT_OFF."""
         import numpy as np
 
         if self._mic is None:
             self._open_mic()
         opened = time.monotonic() + GUARD_S  # nothing from before the window counts (D-015)
         deadline = opened + seconds
-        started: float | None = None
-        last_voice = 0.0
-        noise = 0.003
         while True:
             time.sleep(FRAME_S)
             now = time.monotonic()
             with self._lock:
-                frames = [(t, c) for t, c in self._frames if t >= opened]
-            if not frames:
+                frames = [(t, c) for t, c in self._frames if t >= opened - endpoint.LEAD_QUIET_S]
+            levels = [(t, float(np.sqrt(np.mean(c**2)))) for t, c in frames]
+            reply = endpoint.find_reply(levels, opened, now)
+            if reply is None:
                 if now > deadline:
-                    log.info("heard nothing: no audio came from the mic")
+                    inside = [level for t, level in levels if t >= opened]
+                    log.info("heard nothing: loudest %.4f", max(inside, default=0.0))
                     return None
                 continue
-            levels = [(t, float(np.sqrt(np.mean(c**2)))) for t, c in frames]
-            if started is None:
-                quiet = sorted(level for _, level in levels)[: max(1, len(levels) // 10)]
-                noise = max(min(quiet) if quiet else noise, 0.001)
-            threshold = max(noise * 4, 0.01)
-            for t, level in levels:
-                if level > threshold:
-                    started = started or t
-                    last_voice = t
-            loudest = max(level for _, level in levels)
-            if started is None and now > deadline:
-                log.info(
-                    "heard nothing: noise %.4f, threshold %.4f, loudest %.4f",
-                    noise,
-                    threshold,
-                    loudest,
-                )
+            if reply.end is None:
+                continue  # still talking, even past the deadline
+            log.info(
+                "speech for %.1f s: noise %.4f, threshold %.4f, loudest %.4f%s",
+                reply.end - reply.start,
+                reply.noise,
+                reply.threshold,
+                reply.loudest,
+                ", began before the window" if reply.cut_off else "",
+            )
+            if reply.cut_off:
+                return CUT_OFF
+            keep = [
+                c
+                for t, c in frames
+                if t >= opened and reply.start - PRE_ROLL_S <= t <= reply.end + 0.25
+            ]
+            clip = self._resample(np.concatenate(keep), self._mic_rate)
+            if self.is_speech(clip):
+                return clip
+            log.info("not speech: ignored")
+            if now > deadline:
                 return None
-            if started is not None and (
-                now - last_voice >= END_SILENCE_S or now - started >= MAX_SPEECH_S
-            ):
-                log.info(
-                    "speech for %.1f s: noise %.4f, threshold %.4f, loudest %.4f",
-                    last_voice - started,
-                    noise,
-                    threshold,
-                    loudest,
-                )
-                keep = [c for t, c in frames if started - PRE_ROLL_S <= t <= last_voice + 0.25]
-                return self._resample(np.concatenate(keep), self._mic_rate)
+            opened = reply.end + FRAME_S  # listen on, after the noise
+
+    def is_speech(self, clip: Any) -> bool:
+        """Whether Silero hears speech in a 16 kHz clip: a cough, bump or breath isn't (P-20)."""
+        import mlx.core as mx
+
+        found = self._vad.get_speech_timestamps(
+            mx.array(clip), sample_rate=ASR_RATE, min_speech_duration_ms=MIN_SPEECH_MS
+        )
+        return bool(found)
 
     @staticmethod
     def _resample(audio: Any, rate: int) -> Any:

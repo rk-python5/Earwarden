@@ -94,6 +94,9 @@ compiles when you work in the Linux container, so check the CI run after changin
 
 - `dev/activate`: sourced per terminal on the Mac. It keeps uv, its Python, caches, spike
   environments and model downloads in the git-ignored `.tools/` (D-013).
+- `dev/false_approvals.py`: the recorded-audio check for false approvals (D-027), run by hand on
+  the Mac, since P-14's runner is deferred (D-023). It sends Step 0's recordings in
+  `spikes/speech/out/` through the daemon's own listening path. Run it after any change there.
 - `docs/design/`: the spec (PDF).
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `docs/next-steps.md`: the hand-over to local sessions: running the voice, P-20, Phase 2.
@@ -111,9 +114,9 @@ compiles when you work in the Linux container, so check the CI run after changin
   - `narrator/`: the template narrator, spoken forms, and secret redaction.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
     settings file, with a byte-for-byte backup.
-  - `voice/`: the voice decider and intent rules (testable anywhere), presence by keyboard idle
-    time, and `mac.py`, which speaks and listens with Kokoro, Parakeet and Whisper (macOS only;
-    `uv sync --group voice`).
+  - `voice/`: the voice decider, intent rules and endpointer (testable anywhere), presence by
+    keyboard idle time, and `mac.py`, which speaks and listens with Kokoro, Silero VAD, Parakeet
+    and Whisper (macOS only; `uv sync --group voice`).
   - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`
     the sessions and waiting requests, `cli.py` the command. `auth.py` keeps the shared token.
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in

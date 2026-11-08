@@ -28,6 +28,8 @@ def test_models_cached_needs_every_models_weights(tmp_path: Path) -> None:
     cache_model(tmp_path, mac.ASR_MODEL)
     assert not mac.models_cached(tmp_path)  # Whisper is loaded later, but must be there too
     cache_model(tmp_path, mac.SECOND_MODEL)
+    assert not mac.models_cached(tmp_path)
+    cache_model(tmp_path, mac.VAD_MODEL)
     assert mac.models_cached(tmp_path)
 
 
