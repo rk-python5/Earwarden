@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import subprocess
 import sys
 from collections.abc import Awaitable, Callable
 
@@ -100,23 +99,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def launch_helper(app: str, where: paths.Paths, headset: str) -> None:
-    """Open the helper app through Launch Services, so macOS asks for the mic in its name."""
-    command = [
-        "/usr/bin/open",
-        "-g",
-        "-a",
-        app,
-        "--args",
-        "--socket",
-        str(where.helper_socket),
-        "--token-file",
-        str(where.token),
-        "--headset",
-        headset,
-    ]
-    result = subprocess.run(command, capture_output=True, text=True, check=False)  # noqa: S603
-    if result.returncode != 0:
-        logging.getLogger("earshotd").warning("couldn't open the helper: %s", result.stderr.strip())
+    from earshot.voice import helper
+
+    problem = helper.launch(app, where.helper_socket, where.token, headset)
+    if problem:
+        logging.getLogger("earshotd").warning("couldn't open the helper: %s", problem)
 
 
 if __name__ == "__main__":

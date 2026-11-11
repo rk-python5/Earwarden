@@ -94,5 +94,6 @@ def enroll(
                 "with other voices sets it properly (dev/calibrate_voiceprint.py)."
             )
     voiceprint.save(profile, profile_path)
-    report(f"Saved your voiceprint to {profile_path}, readable only by you. No audio was kept.")
+    kept = f"The phrases are in {keep}, for calibration." if keep else "No audio was kept."
+    report(f"Saved your voiceprint to {profile_path}, readable only by you. {kept}")
     return profile

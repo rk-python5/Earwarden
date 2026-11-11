@@ -103,6 +103,21 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   - A live check with the AirPods still found one false approval: VAD dropped a short "no", then
     let a faint sound through that Parakeet heard as "Yeah.". P-20 stays open, and voice is for
     a scratch project only.
+- The helper's first run on the Mac, at the Phase 2 gate session (11 Nov):
+  - `earshotd --helper` with a relative path couldn't open the app; every path is now absolute.
+  - Earshot heard nothing through the helper: it sends 100 ms of audio at a time, and the
+    endpointer was tuned on 20 ms frames. Its audio is now cut into 20 ms frames, timed by their
+    samples.
+  - The helper asks for motion when it starts, so the prompt doesn't arrive mid-request, and
+    starts the mic again if the audio setup changes. Its notes reach the daemon's log.
+  - Its hello now always goes first; a permissions message could beat it, and the connection was
+    refused until the retry 2 seconds later.
+  - `earshot enroll --helper APP` records through the helper, the same channel the daemon checks
+    the voiceprint on.
+- `earshot test` used a random folder name, which Earshot spelled out letter by letter, so tier-2
+  questions took up to 23 seconds and answers came before the tone. It's now "earshot test", in a
+  new session each run, and the folder is removed afterwards.
+- The daemon logs how long each question took to say, and a late listening tone.
 
 ## [0.1.0] - 2026-11-08
 

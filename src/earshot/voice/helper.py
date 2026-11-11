@@ -15,6 +15,7 @@ proves itself with the same token the hook uses. Messages are JSON lines both wa
                       {"motion": [t, x, y, z]}                              while motion is on
                       {"devices": {"output": "...", "input": "...", "headset": true}}
                       {"permission": {"mic": "granted", "motion": "denied"}}
+                      {"log": "mic on: 16000 Hz, 1 channel(s)"}             for the daemon's log
     daemon to helper  {"mic": true}  {"motion": false}
 
 The daemon asks for the mic and motion only while an approval is being asked, so the AirPods stay
@@ -30,6 +31,9 @@ import contextlib
 import hmac
 import json
 import logging
+import subprocess
+import threading
+import time
 from collections import deque
 from collections.abc import Callable
 from pathlib import Path
@@ -42,6 +46,7 @@ log = logging.getLogger("earshot.helper")
 HELLO_TIMEOUT_S = 5.0
 MAX_LINE = 64 * 1024
 MOTION_KEPT = 50 * 30  # 30 seconds at 50 Hz
+MAX_NOTE = 200  # of a helper's log line
 
 
 class HelperLink:
@@ -142,5 +147,82 @@ class HelperLink:
             self.devices = devices
             log.info("devices: output %s, input %s", devices.get("output"), devices.get("input"))
         elif isinstance(permission := message.get("permission"), dict):
-            self.permission = {str(k): str(v) for k, v in permission.items()}
+            self.permission.update({str(k): str(v) for k, v in permission.items()})
             log.info("helper permissions: %s", self.permission)
+        elif isinstance(note := message.get("log"), str):
+            log.info("helper: %s", note[:MAX_NOTE])
+
+
+def launch(app: str | Path, socket_path: Path, token_file: Path, headset: str) -> str | None:
+    """Open the helper app through Launch Services, so macOS asks for the mic in its name.
+
+    Returns what went wrong, or None. Every path is made absolute: `open -a` takes a relative
+    path for an app's name, and the helper starts in `/`, not in the caller's folder. A helper
+    that's already running isn't started again; it reconnects to the same socket by itself.
+    """
+    command = [
+        "/usr/bin/open",
+        "-g",
+        "-a",
+        str(Path(app).expanduser().resolve()),
+        "--args",
+        "--socket",
+        str(socket_path.resolve()),
+        "--token-file",
+        str(token_file.resolve()),
+        "--headset",
+        headset,
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, check=False)  # noqa: S603
+    return None if result.returncode == 0 else result.stderr.strip() or "open failed"
+
+
+class LinkThread:
+    """A HelperLink on an event loop of its own, for commands that aren't the daemon.
+
+    `earshot enroll` records through the helper this way, so a voiceprint is made on the same
+    channel the daemon later checks it on.
+    """
+
+    def __init__(self, link: HelperLink) -> None:
+        self.link = link
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+
+    def start(self) -> None:
+        """Serve the helper's socket. Raises AlreadyRunningError if earshotd is serving it."""
+        self._thread.start()
+        try:
+            asyncio.run_coroutine_threadsafe(self.link.start(), self._loop).result(timeout=5)
+        except BaseException:
+            self._end()
+            raise
+
+    def wait(self, seconds: float = 10.0) -> bool:
+        """Whether the helper connected and reported its devices within `seconds`."""
+        end = time.monotonic() + seconds
+        while time.monotonic() < end and not (self.link.connected and self.link.devices):
+            time.sleep(0.05)
+        return self.link.connected
+
+    def allowed(self, seconds: float = 60.0) -> bool:
+        """Whether the helper may use the mic, waiting while macOS's prompt is answered."""
+        end = time.monotonic() + seconds
+        while time.monotonic() < end and self.link.permission.get("mic") == "not asked":
+            time.sleep(0.1)
+        return self.link.permission.get("mic") == "granted"
+
+    def stop(self) -> None:
+        self.link.want(mic=False, motion=False)
+        asyncio.run_coroutine_threadsafe(self.link.stop(), self._loop).result(timeout=5)
+        self._end()
+
+    def _end(self) -> None:
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._thread.join(timeout=5)
+        pending = asyncio.all_tasks(self._loop)  # the connection's reader, if a helper was there
+        for task in pending:
+            task.cancel()
+        if pending:
+            self._loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+        self._loop.close()

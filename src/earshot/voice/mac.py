@@ -62,6 +62,7 @@ ASR_RATE = 16_000
 FRAME_S = 0.02
 GUARD_S = 0.15  # output delay after playback ends (D-015)
 PRE_ROLL_S = 0.25
+HELPER_GAP_S = 0.25  # a later chunk than this starts the helper's clock again
 CLAUSES = r"(?<=[.?!,:;])\s+"  # Kokoro speaks clause by clause: short first clauses start sooner
 MIN_SPEECH_MS = 100  # Silero's default of 250 ms is longer than a quick "no"
 BARGE_LEVEL = 0.05  # this loud while Earshot speaks, and Silero checks for speech
@@ -152,6 +153,7 @@ class MacVoice:
         self._mic: Any = None
         self._mic_rate = 0
         self._frames: deque[tuple[float, Any]] = deque(maxlen=int(30 / FRAME_S))
+        self._helper_end = 0.0  # when the helper's last chunk ended, by its own samples
         self._lock = threading.Lock()
         self._audio = threading.Lock()  # PortAudio isn't thread-safe: one stream change at a time
         self._mlx = threading.RLock()  # nor is MLX: one model runs at a time, across threads
@@ -273,15 +275,31 @@ class MacVoice:
         await asyncio.to_thread(self._open_mic)
 
     def _helper_audio(self, data: bytes) -> None:
-        """16-bit samples at 16 kHz from the helper, on the daemon's event loop."""
+        """16-bit samples at 16 kHz from the helper, on the daemon's event loop.
+
+        The helper sends about 100 ms at a time. They're cut into the 20 ms frames the endpointer
+        and the window rule were tuned on (D-027), each stamped with when it ended. The samples
+        themselves keep the time, so a chunk that arrives late isn't heard late; the clock starts
+        again from the arrival after a gap, or when a chunk comes sooner than it says.
+        """
         import numpy as np
 
         chunk = np.frombuffer(data, dtype="<i2").astype(np.float32) / 32768
         if not chunk.size:
             return
+        now = time.monotonic()
+        end = self._helper_end + chunk.size / ASR_RATE
+        if not now - HELPER_GAP_S <= end <= now:
+            end = now
+        self._helper_end = end
+        size = int(ASR_RATE * FRAME_S)
+        pieces = [chunk[i : i + size] for i in range(0, chunk.size, size)]
         with self._lock:
-            self._frames.append((time.monotonic(), chunk))
-        if self._playing.is_set() and float(np.sqrt(np.mean(chunk**2))) > BARGE_LEVEL:
+            for n, piece in enumerate(pieces):
+                self._frames.append((end - (len(pieces) - 1 - n) * FRAME_S, piece))
+        if self._playing.is_set() and any(
+            float(np.sqrt(np.mean(piece**2))) > BARGE_LEVEL for piece in pieces
+        ):
             self._loud.set()
 
     def _open_mic(self) -> None:
@@ -290,6 +308,7 @@ class MacVoice:
                 if self._mic is None:
                     self.helper.want(mic=True, motion=True)
                     self.helper.motion.clear()
+                    self._helper_end = 0.0
                     self._mic, self._mic_rate = "helper", ASR_RATE
                     log.info("mic open: through the helper, at %d Hz", ASR_RATE)
             return
@@ -368,16 +387,22 @@ class MacVoice:
                 target=self._produce, args=(text, chunks, halt), daemon=True
             )
             producer.start()  # Kokoro works on the first clause while the chime plays
+            began = time.monotonic()
+            spoken = waited = 0.0
             try:
                 if chime_index is not None:
                     self._play(np.array(chime(chime_index), dtype=np.float32), stop)
                 while not (stop.is_set() or self._talked_over()):
+                    asked = time.monotonic()
                     try:
                         chunk = chunks.get(timeout=0.05)  # short, so a cancel stops it at once
                     except queue.Empty:
+                        waited += time.monotonic() - asked
                         continue
+                    waited += time.monotonic() - asked
                     if chunk is None or stop.is_set() or self._talked_over():
                         break
+                    spoken += len(chunk) / TTS_RATE
                     self._play(chunk, stop)
             finally:
                 halt.set()
@@ -389,6 +414,12 @@ class MacVoice:
                 sd.stop()
                 if self._ignored:
                     log.info("ignored %d noises while speaking", self._ignored)
+                log.info(
+                    "spoke %.1f s of speech in %.1f s, %.1f s of it waiting for speech to be made",
+                    spoken,
+                    time.monotonic() - began,
+                    waited,
+                )
 
     def _produce(self, text: str, chunks: queue.Queue[Any], halt: threading.Event) -> None:
         """Make the speech clause by clause, ahead of playback; None marks the end."""
@@ -491,7 +522,11 @@ class MacVoice:
             if reply is None:
                 if now > deadline:
                     inside = [level for t, level in levels if t >= opened]
-                    log.info("heard nothing: loudest %.4f", max(inside, default=0.0))
+                    log.info(
+                        "heard nothing: loudest %.4f in %d frames",
+                        max(inside, default=0.0),
+                        len(inside),
+                    )
                     return None
                 continue
             if reply.end is None:
@@ -534,9 +569,12 @@ class MacVoice:
         import numpy as np
         import sounddevice as sd
 
+        started = time.monotonic()
         with self._audio:
             sd.play(np.array(listening_tone(), dtype=np.float32), TTS_RATE)
             sd.wait()
+        if (late := time.monotonic() - started - LISTEN_TONE_S) > 0.5:
+            log.info("the listening tone came %.1f s late", late)
 
     def _motion_clock(self) -> float:
         """The helper's motion time for "now": its clock isn't the daemon's."""

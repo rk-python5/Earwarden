@@ -101,3 +101,28 @@ def test_a_reconnecting_helper_is_told_what_is_wanted(short: Path) -> None:
         await link.stop()
 
     asyncio.run(scenario())
+
+
+def test_the_helpers_notes_reach_the_log_and_permissions_add_up(
+    short: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    async def scenario() -> None:
+        link = HelperLink(short / "helper.sock", TOKEN)
+        await link.start()
+        _, writer = await connect(link.socket_path)
+        for message in (
+            {"permission": {"mic": "granted", "motion": "granted"}},
+            {"permission": {"mic": "unavailable"}},  # one part changes: the other stays
+            {"log": "mic on: 16000 Hz, 1 channel(s)" + "!" * 500},
+        ):
+            writer.write((json.dumps(message) + "\n").encode())
+        await writer.drain()
+        await until(lambda: link.permission.get("mic") == "unavailable")
+        await until(lambda: "mic on" in caplog.text)
+        assert link.permission == {"mic": "unavailable", "motion": "granted"}
+        assert "!" * 201 not in caplog.text  # a note is cut short
+        writer.close()
+        await link.stop()
+
+    with caplog.at_level("INFO", logger="earshot.helper"):
+        asyncio.run(scenario())

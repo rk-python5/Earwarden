@@ -217,3 +217,45 @@ def test_answers_are_scored_against_the_voiceprint_once_enrolled() -> None:
     assert speaker.verdict == "match"
     voice._embedder = Fixed([0.0, 1.0])  # type: ignore[assignment]
     assert voice.speaker([0.0]) == (0.0, "mismatch")
+
+
+def test_the_helpers_chunks_become_frames_timed_by_their_samples(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    np = pytest.importorskip("numpy")
+    clock = [100.0]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    voice = MacVoice()
+    chunk = (np.ones(1600) * 3277).astype("<i2").tobytes()  # 100 ms, as the helper sends it
+    voice._helper_audio(chunk)
+    stamps = [t for t, _ in voice._frames]
+    assert len(stamps) == 5  # 20 ms frames, as the endpointer was tuned on
+    assert stamps == pytest.approx([99.92, 99.94, 99.96, 99.98, 100.0])
+    assert all(len(frame) == 320 for _, frame in voice._frames)
+
+    clock[0] = 100.13  # the next chunk arrives 30 ms late: its samples keep the time
+    voice._helper_audio(chunk)
+    assert [t for t, _ in voice._frames][5:] == pytest.approx(
+        [100.02, 100.04, 100.06, 100.08, 100.1]
+    )
+
+    clock[0] = 100.15  # one that comes sooner than it says moves the clock back to the arrival
+    voice._helper_audio(chunk)
+    assert voice._frames[-1][0] == pytest.approx(100.15)
+
+    clock[0] = 101.0  # after a gap, the clock starts again
+    voice._helper_audio(chunk)
+    assert voice._frames[-1][0] == pytest.approx(101.0)
+    assert not voice._loud.is_set()  # Earshot wasn't speaking
+
+
+def test_a_loud_helper_chunk_while_speaking_is_looked_at() -> None:
+    np = pytest.importorskip("numpy")
+    voice = MacVoice()
+    voice._playing.set()
+    quiet = np.zeros(1600, dtype="<i2")
+    voice._helper_audio(quiet.tobytes())
+    assert not voice._loud.is_set()
+    quiet[320:640] = 8000  # one loud 20 ms frame in an otherwise quiet chunk
+    voice._helper_audio(quiet.tobytes())
+    assert voice._loud.is_set()

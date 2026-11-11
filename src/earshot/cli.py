@@ -223,10 +223,13 @@ def test_approval(args: argparse.Namespace) -> int:
     import subprocess
     import tempfile
 
-    folder = tempfile.mkdtemp(prefix="earshot-test-")
+    # A plain folder name: Earshot says the project's name, and spells out a random one.
+    scratch = tempfile.TemporaryDirectory(prefix="earshot-")
+    folder = os.path.join(scratch.name, "earshot-test")  # noqa: PTH118
+    os.mkdir(folder)  # noqa: PTH102
     payload = {
         "hook_event_name": "PermissionRequest",
-        "session_id": "earshot-test",
+        "session_id": f"earshot-test-{wire.new_request_id()}",  # new each time: a fresh name
         "prompt_id": wire.new_request_id(),
         "cwd": folder,
         "permission_mode": "default",
@@ -240,9 +243,10 @@ def test_approval(args: argparse.Namespace) -> int:
     print(f"Sending a test request: {what}. Answer by voice, or wait for the screen.")
     script = Path(sys.executable).parent / "earshot-hook"
     command = [str(script)] + (["--home", args.home] if args.home else [])
-    result = subprocess.run(  # noqa: S603 - our own hook, with fixed arguments
-        command, input=json.dumps(payload).encode(), capture_output=True, check=False
-    )
+    with scratch:
+        result = subprocess.run(  # noqa: S603 - our own hook, with fixed arguments
+            command, input=json.dumps(payload).encode(), capture_output=True, check=False
+        )
     if not result.stdout:
         print("Result: handed to the screen (or no daemon is running).")
         return 0
@@ -267,11 +271,43 @@ def enroll(args: argparse.Namespace) -> int:
         home = f" --home {shlex.quote(args.home)}" if args.home else ""
         print(f"No voiceprint model at {model}. Make it with: uv run dev/export_ecapa.py{home}")
         return 1
-    from earshot.voice import challenge
+    thread = None
+    if args.helper:  # record through the helper, as earshotd --helper listens
+        from earshot.daemon.server import AlreadyRunningError
+        from earshot.voice import helper
+
+        thread = helper.LinkThread(
+            helper.HelperLink(where.helper_socket, auth.ensure_token(where.token))
+        )
+        try:
+            thread.start()
+        except AlreadyRunningError:
+            print("earshotd is running with the helper. Stop it first, then run this again.")
+            return 1
+        problem = helper.launch(args.helper, where.helper_socket, where.token, args.headset)
+        if problem or not thread.wait():
+            print(f"The helper didn't connect{': ' + problem if problem else ''}. Is it built?")
+            thread.stop()
+            return 1
+        if thread.link.permission.get("mic") != "granted":
+            print("macOS is asking to let Earshot use the microphone, and motion: allow both.")
+        if not thread.allowed():
+            print("The helper isn't allowed the microphone (System Settings > Privacy & Security).")
+            thread.stop()
+            return 1
+    try:
+        return _enroll(args, where, model, thread.link if thread else None)
+    finally:
+        if thread is not None:
+            thread.stop()
+
+
+def _enroll(args: argparse.Namespace, where: paths.Paths, model: Path, link: Any) -> int:
+    from earshot.voice import challenge, voiceprint
     from earshot.voice import enroll as enrolling
     from earshot.voice.mac import MacVoice
 
-    voice = MacVoice(headset=args.headset)
+    voice = MacVoice(headset=args.headset, helper=link)
     if not voice.headset_ready():
         print(f"Connect your {args.headset} and make them the sound output first.")
         return 1
@@ -390,6 +426,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--save-clips", help="also keep the phrases as WAV files here, for calibration")
     p.add_argument(
         "--record", metavar="NAME", help="only record NAME's phrases, for calibration; no profile"
+    )
+    p.add_argument(
+        "--helper",
+        metavar="APP",
+        help="record through the signed helper (EarshotMotion.app), as earshotd --helper listens",
     )
     p.set_defaults(run=enroll)
 

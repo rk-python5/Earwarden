@@ -7,6 +7,8 @@
 //   mic once, to this app, instead of to whichever Python runs the daemon
 // - streams the head's rotation rate from Core Motion while asked, for shakes and nods
 // - reports the default output and input devices whenever they change
+// - asks for both permissions when it starts, so neither prompt arrives in the middle of a request
+// - starts the mic again if the audio setup changes under it, and says so in a "log" message
 // Messages are JSON lines both ways; see src/earshot/voice/helper.py. If the daemon goes away,
 // it stops everything and reconnects every two seconds.
 
@@ -56,8 +58,13 @@ final class Link {
     func connectForever() {
         DispatchQueue.global().async {
             while true {
-                if self.fd < 0, self.connect() {
-                    self.send(["hello": "earshot-motion", "v": 1, "token": self.token])
+                if self.fd < 0, let sock = self.connect() {
+                    // The hello goes first: nothing else is written until the socket is shared.
+                    let hello: [String: Any] = ["hello": "earshot-motion", "v": 1, "token": self.token]
+                    self.writes.sync {
+                        self.fd = sock
+                        self.write(hello)
+                    }
                     DispatchQueue.main.async { self.onConnected?() }
                     self.readUntilClosed()
                     DispatchQueue.main.async { self.onDisconnected?() }
@@ -67,15 +74,15 @@ final class Link {
         }
     }
 
-    private func connect() -> Bool {
+    private func connect() -> Int32? {
         let sock = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard sock >= 0 else { return false }
+        guard sock >= 0 else { return nil }
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
         guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else {
             close(sock)
-            return false
+            return nil
         }
         withUnsafeMutableBytes(of: &address.sun_path) { raw in
             raw.copyBytes(from: bytes)
@@ -86,12 +93,11 @@ final class Link {
         }
         guard result == 0 else {
             close(sock)
-            return false
+            return nil
         }
         var on: Int32 = 1
         setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
-        fd = sock
-        return true
+        return sock
     }
 
     private func readUntilClosed() {
@@ -116,17 +122,19 @@ final class Link {
     }
 
     func send(_ message: [String: Any]) {
-        guard var data = try? JSONSerialization.data(withJSONObject: message) else { return }
+        writes.async { self.write(message) }
+    }
+
+    // On the writes queue only.
+    private func write(_ message: [String: Any]) {
+        guard fd >= 0, var data = try? JSONSerialization.data(withJSONObject: message) else { return }
         data.append(0x0A)
-        writes.async {
-            guard self.fd >= 0 else { return }
-            data.withUnsafeBytes { raw in
-                var offset = 0
-                while offset < raw.count {
-                    let written = write(self.fd, raw.baseAddress! + offset, raw.count - offset)
-                    if written <= 0 { return }
-                    offset += written
-                }
+        data.withUnsafeBytes { raw in
+            var offset = 0
+            while offset < raw.count {
+                let written = Darwin.write(fd, raw.baseAddress! + offset, raw.count - offset)
+                if written <= 0 { return }
+                offset += written
             }
         }
     }
@@ -186,6 +194,8 @@ final class Helper {
     let motion = CMHeadphoneMotionManager()
     let motionQueue = OperationQueue()
     var micOn = false
+    var motionWanted = false
+    var motionSeen = false
 
     init(options: Options, token: String) {
         self.options = options
@@ -217,7 +227,44 @@ final class Helper {
         AVCaptureDevice.requestAccess(for: .audio) { [weak self] _ in
             DispatchQueue.main.async { self?.reportPermissions() }
         }
+        NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
+        ) { [weak self] _ in self?.audioSetupChanged() }
+        askForMotion()
         link.connectForever()
+    }
+
+    // Core Motion asks for permission the first time it's read. Read it once now, so the prompt
+    // comes when the helper starts and not in the middle of a request. The headphones' motion
+    // takes a moment to appear after launch, so this tries for ten seconds.
+    func askForMotion(tries: Int = 20) {
+        guard CMHeadphoneMotionManager.authorizationStatus() == .notDetermined, !motionWanted
+        else { return }
+        guard motion.isDeviceMotionAvailable else {
+            if tries > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    self?.askForMotion(tries: tries - 1)
+                }
+            }
+            return
+        }
+        guard !motion.isDeviceMotionActive else { return }
+        motion.startDeviceMotionUpdates(to: motionQueue) { [weak self] _, _ in
+            DispatchQueue.main.async {
+                guard let self, !self.motionWanted else { return }
+                self.motion.stopDeviceMotionUpdates()
+                self.reportPermissions()
+            }
+        }
+    }
+
+    // A change of device or format stops the engine, and its tap with it: start the mic again.
+    func audioSetupChanged() {
+        guard micOn, !engine.isRunning else { return }
+        engine.inputNode.removeTap(onBus: 0)
+        micOn = false
+        setMic(true)
+        link.send(["log": "the audio setup changed: mic \(micOn ? "started again" : "lost")"])
     }
 
     func reportDevices() {
@@ -291,6 +338,7 @@ final class Helper {
         }
         do {
             try engine.start()
+            link.send(["log": "mic on: \(Int(input.sampleRate)) Hz, \(input.channelCount) channel(s)"])
         } catch {
             engine.inputNode.removeTap(onBus: 0)
             micOn = false
@@ -300,15 +348,17 @@ final class Helper {
 
     // Rotation rate, in rad/s: x is pitch (nodding), z is yaw (shaking), from Step 0.
     func setMotion(_ on: Bool) {
-        if !on {
-            motion.stopDeviceMotionUpdates()
-            return
-        }
-        guard motion.isDeviceMotionAvailable, !motion.isDeviceMotionActive else { return }
+        motionWanted = on
+        motion.stopDeviceMotionUpdates()  // also ends the read that only asked for permission
+        guard on, motion.isDeviceMotionAvailable else { return }
         motion.startDeviceMotionUpdates(to: motionQueue) { [weak self] sample, _ in
-            guard let sample else { return }
+            guard let self, let sample else { return }
             let rate = sample.rotationRate
-            self?.link.send(["motion": [sample.timestamp, rate.x, rate.y, rate.z]])
+            self.link.send(["motion": [sample.timestamp, rate.x, rate.y, rate.z]])
+            if !self.motionSeen {  // the first sample ever: the permission is settled now
+                self.motionSeen = true
+                DispatchQueue.main.async { self.reportPermissions() }
+            }
         }
     }
 }

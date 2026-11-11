@@ -62,9 +62,12 @@ as expected. It's deferred with the fixed signature (step 2).
 Stop the daemon (Ctrl-C), then:
 
 ```sh
-uv run earshot enroll --home .tools/earshot --save-clips .tools/earshot/enroll
+uv run earshot enroll --home .tools/earshot --save-clips .tools/earshot/enroll \
+  --helper helpers/earshot-motion/.build/EarshotMotion.app
 ```
 
+- `--helper` records through the helper, the channel Earshot later checks your voice on. Stop
+  the daemon first: both use the helper's socket.
 - It asks for 18 phrases, such as "Say: approve harbor", each after a tone. Say each one
   naturally, as you'd answer Earshot.
 - 12 build your voiceprint, and 6 more check it. It prints your lowest and middle scores against
@@ -75,7 +78,8 @@ uv run earshot enroll --home .tools/earshot --save-clips .tools/earshot/enroll
 **More of your voice** (a minute each, on other days and in other rooms, if you can):
 
 ```sh
-uv run earshot enroll --home .tools/earshot --record kitchen --save-clips .tools/earshot/enroll
+uv run earshot enroll --home .tools/earshot --record kitchen --save-clips .tools/earshot/enroll \
+  --helper helpers/earshot-motion/.build/EarshotMotion.app
 ```
 
 ## 5. Your friends' phrases (3 minutes each, Q-5)
@@ -83,7 +87,8 @@ uv run earshot enroll --home .tools/earshot --record kitchen --save-clips .tools
 3–5 friends, each wearing your AirPods:
 
 ```sh
-uv run earshot enroll --home .tools/earshot --record alex
+uv run earshot enroll --home .tools/earshot --record alex \
+  --helper helpers/earshot-motion/.build/EarshotMotion.app
 ```
 
 - It records 12 phrases from them, for calibration only, into `.tools/earshot/calibration/alex/`.
