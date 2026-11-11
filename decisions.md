@@ -643,6 +643,39 @@ How this file works:
   names list, the everyday-words reading of P-08, 8-bit models, logging every answer's voiceprint
   score, and the tier-2 verb.
 
+### D-031 Phase 3 is skipped for now; Phase 4 takes the 0.3.x releases
+
+- **Date:** 2026-11-11 · **Status:** Accepted · **By:** rehaan ("phase 3 we can skip for now, we
+  can do it in future plans")
+- **Decision:**
+  - **Phase 3 (the summarizer and EarshotBench) is postponed.** The spec allows it: v1.0 can ship
+    with templates only, and the fidelity checker already guarantees no detail is dropped. It
+    returns as a later plan, after 1.0.
+  - **Phase 4 is next,** and its releases take the `0.3.x` numbers. This amends D-006's table:
+    `0.3.x` is now Phase 4 (sessions, risk gate, hardening), and `1.0.0` is still Phase 5. The
+    summarizer, when it comes, is a `1.x` minor.
+  - Phase 4 starts on D-030, which recorded the Phase 2 gate as passed.
+- **Consequences:** Q-4 (which small model) and Q-6 (the summarizer's licence) stay open and don't
+  block 1.0.
+
+### D-032 Phase 4's answers: the AirPods stem, no voice-clone model
+
+- **Date:** 2026-11-11 · **Status:** Accepted · **By:** rehaan (answering Claude's three
+  questions, then "make all changes u need to")
+- **Decision:**
+  - **Push-to-talk is a press of the AirPods stem.** The helper listens for the play/pause media
+    command and tells the daemon, which opens a short listening window for a command. It's opt-in
+    (`earshotd --stem`), because the helper has to become macOS's "Now Playing" app to receive the
+    press, and then the stem no longer plays or pauses music. `earshot talk` does the same from a
+    keyboard shortcut, and works whether or not the stem does.
+  - **No voice-clone model is downloaded.** The red team tests other people's voices, a disguised
+    voice, and your own recordings played back. A clone of your voice stays a stated limit in the
+    threat model, as the spec says: tier 3 never relies on voice, and tier 2 needs a fresh
+    challenge word as well as the voiceprint.
+  - **Version numbers:** see D-031.
+  - Everything else in `docs/phase-4-plan.md` is Claude's to build, and the choices it makes along
+    the way are listed in P-22 to confirm at the gate.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -1049,6 +1082,14 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - **The tier-2 prompt's verb comes from the action** ("To install", "To push"), and "To allow"
     otherwise.
 - **Status:** Accepted at the Phase 2 gate (D-030).
+
+### P-22 Phase 4's choices to confirm at the gate
+
+- **Problem:** Building Phase 4 without stopping (rehaan, 11 Nov) means choosing details the
+  spec and D-032 leave open. None of them loosens a rule. They're listed here to confirm or change
+  at the gate, before 0.3.0.
+- **Proposal:** (filled in as the milestones land; see `docs/phase-4-plan.md`)
+- **Status:** Open, for the Phase 4 gate.
 
 ## Open questions
 

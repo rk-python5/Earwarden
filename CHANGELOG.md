@@ -6,6 +6,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+### Changed
+
+- Phase 3 (the summarizer) is postponed, and Phase 4 takes the 0.3.x releases (D-031).
+  `docs/phase-4-plan.md` is its plan. Push-to-talk will be the AirPods stem, and no voice-clone
+  model is used (D-032).
+
 ## [0.2.0] - 2026-11-11
 
 ### Added

@@ -49,11 +49,11 @@ sections as they're done.
 - `--keep-audio` keeps each answer for checking P-20; delete `.tools/earshot/audio/`,
   `enroll/normal-2` and `disguise/` when they're no longer needed.
 
-## 2. Next: Phase 3 or Phase 4
+## 2. Phase 4
 
-Phase 3 (summarizer and EarshotBench) is optional, since v1.0 can ship with templates only (the
-spec). Decide with rehaan whether to do it or go straight to Phase 4 (sessions, the risk gate,
-the red-team suite and the 8-hour soak). Plan it the way `docs/phase-2-plan.md` was written.
+Phase 3 is postponed (D-031). Phase 4 is in `docs/phase-4-plan.md`: build the floor manager,
+the risk-gate interface, the audit anchor and the red-team suite, then run the gate session with
+rehaan. Claude builds the code without stopping; rehaan's part comes after, in one batch.
 
 ## 3. Later, and loose ends
 
@@ -61,7 +61,6 @@ the red-team suite and the 8-hour soak). Plan it the way `docs/phase-2-plan.md` 
   templates only), 4 (sessions, the risk gate, hardening: the red-team suite and an 8-hour soak)
   and 5 (launch).
 - Remove `misaki[en]` from the voice install before any public release (D-022, D-023).
-- Anchor the audit chain's head outside the file (P-10's second half, Phase 4).
 - P-14, the self-hosted runner for recorded-audio tests, is deferred (D-023).
 - Observe mode (D-021) is optional; its counts would help tune Phase 2's tiers.
 - **The helper's fixed signature is deferred** (rehaan, 9 Nov). It's signed ad hoc, so macOS asks

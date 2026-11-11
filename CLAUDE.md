@@ -28,7 +28,9 @@ released as 0.2.0. Its milestones are in `docs/phase-2-plan.md`. Deferred to bef
 calibration of the voiceprint (Q-5), the hour-long nod count (nods stay off), the helper's fixed
 signature, and a longer stretch of voice use for P-20, which stays open. Until it closes, run
 `earshotd --voice` only with the hooks in a scratch project. **Start with `docs/next-steps.md`.**
-Next is choosing between Phase 3 (optional) and Phase 4.
+Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) is under way:
+`docs/phase-4-plan.md` has its milestones, and its gate is that the red-team suite gets no
+approval through. Its releases are 0.3.x.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
 later phase's components before the current phase's gate passes.
