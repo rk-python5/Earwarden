@@ -6,6 +6,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-11
+
 ### Added
 
 - The policy engine (Phase 2, milestone 1). Every request gets a tier from rules alone:
@@ -118,6 +120,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   questions took up to 23 seconds and answers came before the tone. It's now "earshot test", in a
   new session each run, and the folder is removed afterwards.
 - The daemon logs how long each question took to say, and a late listening tone.
+- Phase 2 passed its gate (D-030), with deferrals: friends' calibration, the hour-long nod count,
+  a longer stretch of use for P-20, and the helper's fixed signature.
 
 ## [0.1.0] - 2026-11-08
 
@@ -309,7 +313,8 @@ run on the Mac.
 - The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
   and lists what gets decided at the gate.
 
-[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/rk-python5/Earshot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rk-python5/Earshot/compare/v0.0.2...v0.1.0
 [0.0.2]: https://github.com/rk-python5/Earshot/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/rk-python5/Earshot/releases/tag/v0.0.1

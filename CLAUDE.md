@@ -23,12 +23,12 @@ Phase 1 (weeks 2–3, the walking skeleton) passed its gate on 8 Nov 2026 (D-026
 as 0.1.0. A real Claude Code session on rehaan's subscription was approved by voice end to end. Its
 milestones are in `docs/phase-1-plan.md`; the LaunchAgent's checks at login are still open.
 
-Phase 2, the safety layer, has its code done (8–9 Nov). Its gate needs rehaan:
-`docs/phase-2-gate.md` is the session, and `docs/phase-2-plan.md` has the targets and what each
-milestone did. **Start with `docs/next-steps.md`.** P-20 (non-speech heard as an approval) and
-P-21 (choices made while building) are settled at the gate. Until then, run `earshotd --voice`
-only with the hooks in a scratch project. Tier 2 stays on the screen until a voiceprint is
-enrolled.
+Phase 2 (the safety layer) passed its gate on 11 Nov 2026 (D-030), with deferrals, and was
+released as 0.2.0. Its milestones are in `docs/phase-2-plan.md`. Deferred to before 1.0: friends'
+calibration of the voiceprint (Q-5), the hour-long nod count (nods stay off), the helper's fixed
+signature, and a longer stretch of voice use for P-20, which stays open. Until it closes, run
+`earshotd --voice` only with the hooks in a scratch project. **Start with `docs/next-steps.md`.**
+Next is choosing between Phase 3 (optional) and Phase 4.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
 later phase's components before the current phase's gate passes.

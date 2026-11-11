@@ -63,11 +63,14 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 | 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Done   |
 | 3 | Critical fields, the checker, redaction      | Code      | D-024               | Done   |
 | 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Done   |
-| 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Code   |
-| 6 | The voiceprint                               | Code, Mac | D-014, Q-5          | Code   |
-| 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 | Code   |
-| 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        | Code   |
-| 9 | The gate                                     | Mac       | —                   | Ready  |
+| 5 | Challenge words                              | Code, Mac | D-029 (P-08)        | Done   |
+| 6 | The voiceprint                               | Code, Mac | D-014, Q-5          | Done*  |
+| 7 | The helper: mic, devices and head motion     | Mac       | D-016, D-018, D-023 | Done*  |
+| 8 | Close P-20, memory and latency               | Code, Mac | D-027, D-028        | Done*  |
+| 9 | The gate                                     | Mac       | —                   | Passed |
+
+\* Passed at the gate (11 Nov, D-030) with deferrals: friends' calibration (Q-5), the hour-long
+nod count (nods stay off), a longer stretch of use for P-20, and the helper's fixed signature.
 
 ### 1. The policy engine and `earshot policy check` (code)
 

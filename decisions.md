@@ -580,6 +580,69 @@ How this file works:
   stub sent every read to the screen, so this is the one way the policy engine is looser than
   the stub. It's deliberate, since reading your own project's files is low-risk.
 
+### D-030 The Phase 2 gate passed, with deferrals
+
+- **Date:** 2026-11-11 · **Status:** Accepted · **By:** rehaan ("move ahead", on Claude's
+  recommendation to pass with the deferrals below)
+- **Decision:** Phase 2, the safety layer, passes its gate. Release 0.2.0 closes it, and Phase 3's
+  work is `0.3.x` (D-006). Four checks are deferred, not passed; each is off by default or fails
+  toward the screen.
+- **The session on the Mac (11 Nov),** with the helper, `--pin-voice` and `--keep-audio`:
+  - **The helper's first run on hardware** needed four fixes before anything was heard (CHANGELOG):
+    the app's path had to be absolute; its 100 ms audio chunks are now cut into the endpointer's
+    20 ms frames; it asks for motion at start; and its hello now always goes first.
+  - macOS asked for the mic and for motion **in Earshot's name**, and the daemon heard both granted.
+  - **Tier 1, "yes":** allowed (Parakeet, 99 ms).
+  - **A shake:** handed to the screen with "Okay, it's on your screen."
+  - **Tier 2, "approve sombrero":** allowed. The word matched, and the voiceprint scored 0.62.
+  - **Tier 2, a bare "yes" first:** not completed live, since both attempts' "yes" came before the
+    tone (see below). Refusing a bare yes at tier 2 is covered by the decider's tests.
+  - **Two tier-2 answers went to the screen,** safely: "approve sphinx" was heard as "A Bruce
+    Pinks" by both recognisers. `sphinx` is a candidate to drop from the challenge words.
+  - **`earshot test` spelled out its random folder name,** so tier-2 questions took 17–23 s and
+    answers began in the pauses before the tone. Fixed: the folder is "earshot test", in a new
+    session each run. The daemon now logs each question's speaking time; after the fix, 4.1 s of
+    speech took 5.0 s.
+- **The voiceprint:** enrolled through the helper (`earshot enroll --helper`), 17 of 18 phrases
+  heard. Scores against it:
+
+  | Phrases                               | Scores      |
+  | ------------------------------------- | ----------- |
+  | rehaan, held out at enrollment        | 0.60 – 0.74 |
+  | rehaan, normal voice, later that hour | 0.50 – 0.65 |
+  | rehaan, Step 0 (another day and path) | 0.30 – 0.53 |
+  | the friend, Step 0 (10 phrases)       | 0.16 – 0.44 |
+  | rehaan, a heavy disguised voice       | 0.26 – 0.50 |
+
+  - **The threshold stays at 0.50, uncalibrated** (rehaan). Nothing from the friend or the
+    disguise reaches it, and all of rehaan's phrases that day do. A line at 0.44 would refuse
+    rehaan less often, but one impostor's 10 phrases can't show "at most 2%".
+  - A profile built from two sessions raised the friend's scores as much as rehaan's, so the
+    one-session profile stays.
+  - Live tier-2 answers scored 0.62 and 0.65 (match) and 0.40–0.47 (to the screen). A refusal
+    only sends the request to the screen.
+- **Against the gate's targets** (`docs/phase-2-plan.md`, milestone 9):
+  - **Tier 3 by voice, never:** met, by rule and property tests and P-01's two-step attacks.
+  - **Yes/no accuracy:** met on the recorded set, 109 of 110 heard as labelled, every guard on
+    (9 Nov).
+  - **No false approvals:** met on the recordings, 0 (9 Nov). Not rerun at the gate: the session's
+    listening change only cuts the helper's audio into frames, and the recordings don't come
+    through the helper. No false approval was seen live.
+  - **Summary fidelity:** met, by the checker on its corpus.
+  - **0 prompts lost when down:** met, by the end-to-end tests.
+  - **Impostors at tier 2 ≤ 2%:** deferred. One impostor, 0 of 10 accepted at 0.50. Needs 3–5
+    friends (Q-5).
+  - **rehaan at tier 2 ≥ 95%, first try:** met on the day (16 of 16 phrases at 0.50); not yet
+    shown across days.
+  - **False nods ≤ 1 an hour:** deferred. Nods stay off (D-018), so a false nod can't approve.
+    rehaan declined a second hour; Step 0's hour measured the old detector.
+- **Deferred to before 1.0:** friends' calibration (Q-5); the hour-long nod count, before nods
+  can be switched on; a longer stretch of real use for P-20, which stays open, so voice stays in a
+  scratch project; the helper's fixed signature (P-21).
+- **P-21 is accepted as written** (rehaan, with the gate): the ad-hoc signature for now, the PyPI
+  names list, the everyday-words reading of P-08, 8-bit models, logging every answer's voiceprint
+  score, and the tier-2 verb.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -957,6 +1020,8 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
 - **Status:** Open. D-027 added Silero VAD and the window rule, in place of Whisper agreement.
   They stop every false approval on the recordings, but the first live check still found one.
   D-028 adds a listening tone; rehaan declined a loudness rule for approvals.
+  At the Phase 2 gate (D-030), no false approval was seen live; it stays open for a longer
+  stretch of real use.
 
 ### P-21 Phase 2's choices to confirm at the gate
 
@@ -983,7 +1048,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     tier 1 check the voiceprint?) can be answered from data.
   - **The tier-2 prompt's verb comes from the action** ("To install", "To push"), and "To allow"
     otherwise.
-- **Status:** Open, for the Phase 2 gate.
+- **Status:** Accepted at the Phase 2 gate (D-030).
 
 ## Open questions
 
@@ -995,5 +1060,5 @@ From the plan's open-questions list.
 | Q-2 | How long does the AirPods mic take to switch on with the M2?                   | Step 0 audio spike             | **Answered 4 Nov 2026: 847 ms median, 931 ms max** (5 trials, `audio_io switch`). Long enough to clip the start of an answer, so the plan's fallback applies: keep the mic warm while an approval is pending, switching it on when the approval starts, while Earshot is still speaking. |
 | Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free, and D-008 adopts it. Whether the name is clear enough is still open. |
 | Q-4 | Which small model clears EarshotBench in under 300 ms?                         | Phase 3                        | Open                                                           |
-| Q-5 | Which 3–5 friends will record impostor and gesture data?                       | rehaan                         | Open                                                           |
+| Q-5 | Which 3–5 friends will record impostor and gesture data?                       | rehaan                         | Open. Deferred at the Phase 2 gate (D-030); one friend's Step 0 phrases are the only impostor data so far. |
 | Q-6 | Release the summarizer under Apache-2.0, or match its base model's license?    | rehaan, before Phase 5         | Open                                                           |

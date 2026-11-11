@@ -6,22 +6,18 @@ sections as they're done.
 
 ## Where things stand
 
-- **Step 0** passed its gate (D-014), released as 0.0.2. **Phase 1** passed its gate (D-026),
-  released as 0.1.0. `main` is at 0.2.0.dev0.
-- **Phase 2's code is done** (8 Nov): all nine milestones in `docs/phase-2-plan.md`, built
-  without stopping at rehaan's request.
-  - the policy engine, resolvers, critical fields and the fidelity checker, and redaction
-  - lookalike packages
-  - challenge words and the voiceprint
-  - the signed helper with nods and shakes
-  - 8-bit models and faster first words
-- **What's left needs rehaan:** one batched session, `docs/phase-2-gate.md`.
-  - sign the helper; enroll; friends' phrases and calibration
-  - the live checks and a longer stretch of voice use (P-20)
-  - the hour-long nod count
-  - confirming P-21, the choices made while building
-- **Until the gate passes:** tier 2 stays on the screen (no voiceprint is enrolled yet), and
-  `earshotd --voice` stays in the scratch project (P-20).
+- **Step 0** passed its gate (D-014), released as 0.0.2. **Phase 1** passed (D-026), released as
+  0.1.0. **Phase 2** passed on 11 Nov (D-030), with deferrals, released as 0.2.0. `main` is at
+  0.3.0.dev0.
+- **Deferred from Phase 2, before 1.0:**
+  - friends' phrases to calibrate the voiceprint (Q-5). The threshold stays at 0.50, uncalibrated.
+  - the hour-long nod count with the new detector. Nods stay off until it's done.
+  - a longer stretch of real voice use for P-20, which stays open. Until then `earshotd --voice`
+    stays in the scratch project.
+  - the helper's fixed signature (below).
+- **The helper's app predates its last fix** (the hello goes first). Rebuild it with
+  `helpers/earshot-motion/build.sh` before the next voice session; macOS asks for the mic and
+  motion once more.
 - **CI** runs as one macOS job, and builds the helper too. GitHub's Mac runners were unreliable in
   early November, so a local `uv run pytest` is the dependable check.
 
@@ -43,19 +39,17 @@ sections as they're done.
 - Set the commit author first (D-012): `git config author.name "rehaan"` and
   `git config author.email "108854279+rk-python5@users.noreply.github.com"`.
 
-## 1. Run the Phase 2 gate
+## 1. Day to day, and the deferred checks
 
-Everything is in `docs/phase-2-gate.md`, with each command explained. Afterwards Claude:
+- The voice runs as in `docs/phase-2-gate.md`, step 3. The hooks live in
+  `~/earshot-scratch/.claude/settings.local.json`. Enrolling and recording use `--helper`, with
+  the daemon stopped.
+- When friends are around: step 5 of that file, then calibrate with `--write`, then run 5 of
+  step 6. Each takes about 2 minutes per friend.
+- `--keep-audio` keeps each answer for checking P-20; delete `.tools/earshot/audio/`,
+  `enroll/normal-2` and `disguise/` when they're no longer needed.
 
-- reads `.tools/earshot/phase2.log`, the kept audio, the calibration and the nod count
-- runs `uv run python dev/false_approvals.py` and `--challenges` on the new recordings
-- records the gate in `decisions.md` (the next free D number), with P-21's answers
-- releases 0.2.0 if every target in the plan's gate table is met, then starts 0.3.0.dev0
-
-Day to day, the voice runs as in section 1 of that file. The hooks live in
-`~/earshot-scratch/.claude/settings.local.json`.
-
-## 2. After Phase 2
+## 2. Next: Phase 3 or Phase 4
 
 Phase 3 (summarizer and EarshotBench) is optional, since v1.0 can ship with templates only (the
 spec). Decide with rehaan whether to do it or go straight to Phase 4 (sessions, the risk gate,
@@ -78,4 +72,5 @@ the red-team suite and the 8-hour soak). Plan it the way `docs/phase-2-plan.md` 
 - A narration whose first clause is long and has no comma, such as "earshot scratch wants to
   write hello dot t x t", still takes about 1 s to its first word. Whisper's first second listen
   also loads it, in about 4.5 s.
+- `sphinx` was misheard twice live (D-030); consider dropping it from the challenge words.
 - Open questions: Q-3 (is "Earshot" clear enough as a name), Q-4, Q-5 (which friends), Q-6.
