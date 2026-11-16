@@ -95,11 +95,13 @@ def observe(args: argparse.Namespace) -> int:
 
 def audit_verify(args: argparse.Namespace) -> int:
     where = paths.resolve(args.home)
-    problems = audit.verify(where.audit_dir, audit.load_key(where))
+    anchor = audit.anchor_store(where).load()
+    problems = audit.verify(where.audit_dir, audit.load_key(where), anchor)
     if problems:
         print("The audit log has problems:\n" + "\n".join(f"  {p}" for p in problems))
         return 1
-    print(f"The audit log in {where.audit_dir} is intact.")
+    anchored = f", and matches its anchor ({anchor.length} records)" if anchor else ""
+    print(f"The audit log in {where.audit_dir} is intact{anchored}.")
     return 0
 
 
@@ -209,7 +211,8 @@ def doctor(args: argparse.Namespace) -> int:
                 "no LaunchAgent: earshot service install (optional)",
             )
         )
-    problems = audit.verify(where.audit_dir, audit.load_key(where))
+    anchor = audit.anchor_store(where).load()
+    problems = audit.verify(where.audit_dir, audit.load_key(where), anchor)
     intact = problems in ([], ["the log is empty"])
     results.append(_check(intact, "the audit log is intact", "; ".join(problems)))
     print("The microphone permission shows up the first time Earshot listens.")

@@ -850,7 +850,9 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
   - Anchor the head hash outside the file from time to time.
   - Make touching Earshot's own files tier 3: the audit directory, config, token, policies and
     `~/.claude/settings.json`.
-- **Status:** Accepted in part as D-025: the keyed chain now, anchoring in Phase 4.
+- **Status:** Accepted: the keyed chain as D-025 (Phase 1), and the anchor in Phase 4
+  (milestone 5, 16 Nov 2026): the head and length in the Keychain, or a 0600 file in
+  development, checked by `earshot audit verify`.
 
 ### P-11 Repo policy can only raise tiers
 

@@ -132,7 +132,8 @@ the CI run after changing Swift code.
     checks, and `fields.py` the critical fields the narrator must say. `risk.py` is the risk-gate
     interface: a score can only raise a tier (no gate ships). `lookalike.py` compares
     package names with the popular lists in `policy/data/` (D-029, P-09).
-  - `audit.py`: the keyed, hash-chained audit log (D-025) behind `earshot audit verify`.
+  - `audit.py`: the keyed, hash-chained audit log (D-025), with its head anchored outside the
+    file (Phase 4), behind `earshot audit verify`.
   - `narrator/`: the template narrator, spoken forms, secret redaction, and the fidelity
     checker (`checker.py`), which refuses a sentence that drops or invents a detail.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code

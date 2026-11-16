@@ -36,6 +36,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   the final tier is the higher of the rules' and the gate's. A gate can never lower a tier, a
   gate that fails, hangs (300 ms) or returns nonsense changes nothing, and reasons are spoken
   only from a closed list ("Raised, for secrets nearby."). No gate ships in 1.0.
+- The audit chain is anchored (Phase 4, milestone 5; P-10's second half). After every record,
+  the chain's head and length are saved outside the log: in the Keychain on a real install, in
+  a 0600 file beside the key in development. `earshot audit verify` and `earshot doctor` now
+  catch records cut off the end, an older copy of the log put back, and records written while
+  the daemon wasn't running.
 
 ### Changed
 

@@ -532,7 +532,9 @@ def run_forever(
             where,
             decider=decider,
             observe=observe,
-            audit_log=audit.AuditLog(where.audit_dir, audit.load_key(where)),
+            audit_log=audit.AuditLog(
+                where.audit_dir, audit.load_key(where), audit.anchor_store(where)
+            ),
             floor=floor,
             listener=listener,
         )
