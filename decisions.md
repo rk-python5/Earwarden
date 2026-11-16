@@ -716,6 +716,20 @@ How this file works:
 - **Evidence:** four tier-2 questions on the Mac: 7.4 s of speech played in 8.0 s, the tone
   included, with 0.3 s waiting for speech.
 
+### D-035 An approval gives the floor up while it holds between asks
+
+- **Date:** 2026-11-16 · **Status:** Accepted · **By:** Claude, from the Phase 4 gate, to confirm
+- **Decision:** when nobody answers, an approval closes the mic and holds for D-020's minute
+  before asking again. During that hold it gives the floor up, and takes it back in turn (counted
+  as waiting) to ask again. Meanwhile push-to-talk works, "details" spells out the waiting
+  request, other approvals can be asked, and announcements can be said. A request answered on the
+  screen during the hold just ends, without taking the floor back.
+- **Why:** at the gate, stem presses did nothing for minutes, and the gate's "details" run could
+  never pass: the approval held the floor through every re-ask and hold, up to four minutes, and
+  a command window never opens while an approval holds it.
+- **Safety:** unchanged. A command window still can't answer anything, and an answer window is
+  still never interrupted: the floor is only free while the mic is closed.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.

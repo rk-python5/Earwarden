@@ -89,6 +89,10 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   screen: with the mic open, a press is macOS's mute gesture, and an app that captures must
   handle it. The helper now does, and never mutes; with `--stem` the press is passed on like any
   other, and the daemon still ignores presses during an approval (D-032, D-033).
+- An unanswered approval kept the floor through its minute-long holds between asks (up to four
+  minutes), so for that time the stem did nothing, `earshot talk` was refused, other approvals
+  waited, and "details", which spells out a waiting request, could never run. The floor is now
+  free while it holds; the approval takes it back in turn to ask again (D-035).
 
 ## [0.2.0] - 2026-11-11
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 
 import pytest
 
@@ -183,6 +184,54 @@ def test_approvals_count_the_ones_waiting() -> None:
         await asyncio.gather(one(), one(), one())
         # The first took the floor before the others arrived; the second saw the third waiting.
         assert seen == [0, 1, 0]
+
+    asyncio.run(scenario())
+
+
+def test_an_approval_gives_the_floor_up_while_it_holds_between_asks() -> None:
+    # Found at the Phase 4 gate: the floor stayed taken for the whole approval, re-asks and
+    # minute-long holds included, so the stem did nothing for minutes and "details" never ran.
+    async def scenario() -> None:
+        made, _, _ = make()
+        order: list[str] = []
+
+        async def first() -> None:
+            async with made.approval() as turn:
+                order.append("first asks")
+                async with made.released(turn):
+                    assert not made.lock.locked()  # push-to-talk could take it now
+                    await asyncio.sleep(0.02)
+                assert made.lock.locked()
+                order.append("first asks again")
+
+        async def second() -> None:
+            await asyncio.sleep(0.005)  # arrives while the first one holds
+            async with made.approval():
+                order.append("second asks")
+
+        await asyncio.gather(first(), second())
+        assert order == ["first asks", "second asks", "first asks again"]
+        assert not made.lock.locked()
+
+    asyncio.run(scenario())
+
+
+def test_an_approval_answered_while_it_holds_leaves_the_floor_free() -> None:
+    async def scenario() -> None:
+        made, _, _ = make()
+
+        async def holding() -> None:
+            async with made.approval() as turn, made.released(turn):
+                await asyncio.sleep(10)
+
+        task = asyncio.ensure_future(holding())
+        await asyncio.sleep(0.01)
+        task.cancel()  # answered on the screen
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+        assert not made.lock.locked()
+        async with made.approval():  # and the next one gets it
+            pass
 
     asyncio.run(scenario())
 

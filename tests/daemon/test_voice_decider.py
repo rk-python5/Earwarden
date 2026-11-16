@@ -147,6 +147,23 @@ def test_a_question_asked_again_after_silence_ends_with_the_tone() -> None:
     assert len(voice.toned) == 2
 
 
+def test_the_floor_is_free_while_an_unanswered_approval_holds() -> None:
+    voice = FakeVoice([None, "yes"])
+    item = pending()
+    decider = VoiceDecider(voice, Away(), reannounce_s=0.05, reannounce_max=2)
+    free: list[bool] = []
+
+    async def scenario() -> contracts.Decision:
+        asking = asyncio.ensure_future(decider(item))
+        await asyncio.sleep(0.03)  # inside the hold after the silent first window
+        free.append(not decider.floor.lock.locked())
+        return await asking
+
+    assert asyncio.run(scenario()).outcome == "allow"
+    assert free == [True]
+    assert not decider.floor.lock.locked()
+
+
 def test_two_answers_begun_too_early_go_to_the_screen() -> None:
     voice = FakeVoice([TOO_EARLY, TOO_EARLY])
     assert decide(voice, pending()).outcome == "handoff"

@@ -65,6 +65,13 @@ class Announcement:
     names: list[str] = field(default_factory=list)  # a finish batch: who finished
 
 
+class Turn:
+    """One approval's hold on the floor. Between asks it can give the floor up for a while."""
+
+    def __init__(self) -> None:
+        self.held = False
+
+
 def _join(names: list[str]) -> str:
     if len(names) <= 2:
         return " and ".join(names)
@@ -100,17 +107,36 @@ class Floor:
         return self._queued
 
     @contextlib.asynccontextmanager
-    async def approval(self) -> AsyncIterator[None]:
+    async def approval(self) -> AsyncIterator[Turn]:
         """Take the floor for one approval. Spoken next, once the current sentence ends."""
+        turn = Turn()
+        await self._take(turn)
+        try:
+            yield turn
+        finally:
+            if turn.held:
+                turn.held = False
+                self.lock.release()
+
+    @contextlib.asynccontextmanager
+    async def released(self, turn: Turn) -> AsyncIterator[None]:
+        """Give the floor up inside an approval while it waits to ask again (D-020's hold), and
+        take it back after, in turn. Meanwhile push-to-talk works ("details" spells out this
+        request), and another approval or an announcement can be said. If the request is
+        answered meanwhile, the floor isn't taken back."""
+        if turn.held:
+            turn.held = False
+            self.lock.release()
+        yield
+        await self._take(turn)
+
+    async def _take(self, turn: Turn) -> None:
         self._queued += 1
         try:
             await self.lock.acquire()
         finally:
             self._queued -= 1
-        try:
-            yield
-        finally:
-            self.lock.release()
+        turn.held = True
 
     # Announcements
 

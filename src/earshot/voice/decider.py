@@ -22,7 +22,7 @@ import time
 from typing import Literal, NamedTuple, Protocol
 
 from earshot import contracts, paths, wire
-from earshot.daemon.floor import FAILURE, Floor
+from earshot.daemon.floor import FAILURE, Floor, Turn
 from earshot.daemon.state import Pending
 from earshot.narrator.spoken import speakable
 from earshot.narrator.templates import narrate
@@ -123,9 +123,9 @@ class VoiceDecider:
         if not self.voice.headset_ready():
             notes["rules"].append("presence: the headset isn't the output")
             return _decision(pending, "handoff")
-        async with self.floor.approval():  # one at a time; the rest wait their turn
+        async with self.floor.approval() as turn:  # one at a time; the rest wait their turn
             return await self._ask(
-                pending, narration.text, voice_ok, word, narration.verb, judgement.raised
+                pending, narration.text, voice_ok, word, narration.verb, judgement.raised, turn
             )
 
     async def _say(self, pending: Pending, text: str, tone: bool = False) -> None:
@@ -145,6 +145,7 @@ class VoiceDecider:
         word: str | None,
         verb: str,
         raised: str | None = None,
+        turn: Turn | None = None,
     ) -> contracts.Decision:
         if not listen:
             why = f" Raised, for {raised}." if raised else ""
@@ -169,7 +170,13 @@ class VoiceDecider:
                         self.floor.announce(FAILURE, f"{name} approval moved to your screen.")
                         return _decision(pending, "handoff")
                     await self.voice.close_mic()
-                    await asyncio.sleep(self.reannounce_s)  # hold, then ask again (D-020)
+                    if turn is None:
+                        await asyncio.sleep(self.reannounce_s)  # hold, then ask again (D-020)
+                    else:
+                        # The floor is free while it holds: the stem works, "details" spells
+                        # this request out, and other approvals can be asked meanwhile.
+                        async with self.floor.released(turn):
+                            await asyncio.sleep(self.reannounce_s)
                     await self.voice.open_mic()
                     await self._say(pending, question, tone=True)
                     continue
