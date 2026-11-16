@@ -65,6 +65,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   `docs/phase-4-plan.md` is its plan. Push-to-talk will be the AirPods stem, and no voice-clone
   model is used (D-032).
 
+### Fixed
+
+- `earshot talk` gave up after 5 seconds, before the daemon's listening window and reply were
+  done, and said the daemon wasn't running. It now waits up to 40 seconds for `talk` (and still 5
+  for `mode` and `status`).
+
 ## [0.2.0] - 2026-11-11
 
 ### Added

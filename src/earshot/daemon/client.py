@@ -15,6 +15,9 @@ from pydantic import ValidationError
 from earshot import auth, contracts, paths, wire
 
 TIMEOUT_S = 5.0
+TALK_TIMEOUT_S = (
+    40.0  # `talk` waits for a whole window: the tone, up to 5 s of listening, the reply
+)
 
 
 def send(where: paths.Paths, command: str, arg: str | None = None) -> contracts.CommandReply | None:
@@ -31,7 +34,7 @@ def send(where: paths.Paths, command: str, arg: str | None = None) -> contracts.
         message["arg"] = arg
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
-            conn.settimeout(TIMEOUT_S)
+            conn.settimeout(TALK_TIMEOUT_S if command == "talk" else TIMEOUT_S)
             conn.connect(str(where.socket))
             conn.sendall(wire.encode(message))
             data = b""
