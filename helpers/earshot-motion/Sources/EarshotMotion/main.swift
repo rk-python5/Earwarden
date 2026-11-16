@@ -285,6 +285,7 @@ final class Helper {
     var motionWanted = false
     var motionSeen = false
     var lastPress = Date.distantPast  // one physical press can arrive by both paths
+    var micStarted = Date.distantPast  // macOS sends a mute event as the mic starts: not a press
 
     init(options: Options, token: String) {
         self.options = options
@@ -354,6 +355,7 @@ final class Helper {
     // One stem press, from either path, passed on once.
     func pressed(by path: String) {
         let now = Date()
+        if path == "the mute gesture" && now.timeIntervalSince(micStarted) < 1.0 { return }
         guard now.timeIntervalSince(lastPress) > 0.7 else { return }
         lastPress = now
         guard options.stem else { return }
@@ -459,6 +461,7 @@ final class Helper {
             return
         }
         mic = new
+        micStarted = Date()
         new.start()
         if new.running {
             link.send(["log": "mic on: \(new.device), captured at 16000 Hz"])

@@ -155,10 +155,7 @@ def run_press_during_question(home: str, log: Log) -> Result:
 
 
 def run_details(home: str, log: Log) -> Result:
-    cue(
-        "Run 8. Don't answer the next question. When it goes quiet after the tone, wait a "
-        "few seconds, press the stem, and after the tone, say: details."
-    )
+    cue("Run 8. Say nothing at all to the next question. I'll tell you when to press.")
     test = subprocess.Popen(  # noqa: S603 - our own command
         [str(BIN / "earshot"), "test", "--tier", "2", "--home", home],
         stdout=subprocess.DEVNULL,
@@ -166,7 +163,13 @@ def run_details(home: str, log: Log) -> Result:
         start_new_session=True,  # its hook too, so both end together
     )
     try:
-        heard = log.wait_for(r"push-to-talk heard '(.*)': (\w+)", 90)
+        # The question, then its answer window passes in silence; the request waits, and the
+        # floor is free until it's asked again (D-035).
+        if log.wait_for(r"heard nothing", 45) is None:
+            return Result(8, "details while a request waits", False, "the window didn't pass")
+        time.sleep(1)
+        cue("Now press the stem. After the tone, say: details.")
+        heard = log.wait_for(r"push-to-talk heard '(.*)': (\w+)", 40)
         spelled = heard is not None and heard.group(2) == "details"
         time.sleep(8)  # let it spell the request out
     finally:
