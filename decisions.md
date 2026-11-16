@@ -1102,6 +1102,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     which one a press sends depends on the AirPods' settings. Each is one push-to-talk.
   - **"Details" is the narration again, then each critical field letter by letter,** from the
     policy engine's own fields, so a model never chooses the words.
+  - **The risk gate's thresholds:** a score of 0.5 raises to tier 2 and 0.85 to tier 3, with a
+    300 ms time limit on the call, and ten spoken reasons in a closed list. The interface takes
+    a Python object with `score(tool_name, tool_input, cwd)`; how a gate would be configured is
+    left until one exists.
 - **Status:** Open, for the Phase 4 gate.
 
 ## Open questions

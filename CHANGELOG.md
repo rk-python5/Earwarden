@@ -31,6 +31,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   approve or deny a request, and it never opens over an answer window.
   - `earshotd --stem` makes the helper the "Now Playing" app so the press reaches it (D-032);
     while it runs, the stem no longer plays or pauses music.
+- The risk-gate interface (Phase 4, milestone 4), `policy/risk.py`. A gate's `score()` gives a
+  number from 0 to 1 and reason codes; 0.5 raises a request to tier 2 and 0.85 to tier 3, and
+  the final tier is the higher of the rules' and the gate's. A gate can never lower a tier, a
+  gate that fails, hangs (300 ms) or returns nonsense changes nothing, and reasons are spoken
+  only from a closed list ("Raised, for secrets nearby."). No gate ships in 1.0.
 
 ### Changed
 

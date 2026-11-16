@@ -92,6 +92,7 @@ class Judgement(NamedTuple):
     rules: tuple[str, ...]  # what decided the tier, in order
     critical: tuple[str, ...]  # the fields the narrator must speak
     bash: bash.Assessment | None = None  # what a Bash command was read as
+    raised: str | None = None  # the risk gate's spoken reason, if it raised the tier (Phase 4)
 
 
 class Policies(NamedTuple):

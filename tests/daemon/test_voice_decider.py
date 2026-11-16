@@ -334,3 +334,20 @@ def test_decisions_are_audited_with_what_was_heard(answer: str) -> None:
     decide(FakeVoice([answer]), item)
     assert item.notes["recognizer"] == "parakeet"
     assert item.notes["timings_ms"]["recognize"] == 70
+
+
+def test_the_decider_says_why_the_risk_gate_raised_a_request() -> None:
+    class Scoring:
+        def score(self, tool_name: str, tool_input: dict[str, Any], cwd: str) -> Any:
+            return contracts.GateScore(score=0.6, reasons=("secrets_nearby",))
+
+    voice, item = FakeVoice(["yes"]), pending()
+    decider = VoiceDecider(voice, Away(), gate=Scoring())
+    answer = asyncio.run(decider(item))
+    assert answer.outcome == "handoff"  # raised to tier 2, and no voiceprint: the screen
+    assert item.notes["tier"] == 2
+    assert "gate: 0.60, secrets nearby: tier 1 raised to 2" in item.notes["rules"]
+    assert voice.said == [
+        "api wants to edit app dot p y, in the src folder. Raised, for secrets nearby. "
+        "It's on your screen."
+    ]

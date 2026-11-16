@@ -26,7 +26,7 @@ from earshot.daemon.floor import FAILURE, Floor
 from earshot.daemon.state import Pending
 from earshot.narrator.spoken import speakable
 from earshot.narrator.templates import narrate
-from earshot.policy import engine
+from earshot.policy import engine, risk
 from earshot.voice import challenge, intents
 
 CUT_OFF = "cut off"  # Heard.recognizer for a reply begun before the window: never parsed (P-20)
@@ -77,6 +77,7 @@ class VoiceDecider:
         reannounce_max: int = 3,
         where: paths.Paths | None = None,
         floor: Floor | None = None,
+        gate: risk.Gate | None = None,
     ) -> None:
         self.voice = voice
         self.where = where  # where the policy files are; None for the built-in rules alone
@@ -87,6 +88,7 @@ class VoiceDecider:
         # Who speaks when (Phase 4). The daemon shares its floor, so announcements wait for an
         # open answer window; on its own, the decider makes one.
         self.floor = floor if floor is not None else Floor(voice, presence)
+        self.gate = gate  # the optional risk gate (Phase 4): it can only raise a tier
 
     async def __call__(self, pending: Pending) -> contracts.Decision:
         request = pending.request
@@ -95,6 +97,9 @@ class VoiceDecider:
             judgement = engine.judge_built_in(request, edited)
         else:
             judgement = engine.judge_request(self.where, request, edited)
+        judgement = risk.apply(
+            self.gate, judgement, request.tool_name, request.tool_input, request.cwd
+        )
         narration = narrate(
             pending.session.name, request.cwd, request.tool_name, request.tool_input, judgement
         )
@@ -118,7 +123,9 @@ class VoiceDecider:
             notes["rules"].append("presence: the headset isn't the output")
             return _decision(pending, "handoff")
         async with self.floor.approval():  # one at a time; the rest wait their turn
-            return await self._ask(pending, narration.text, voice_ok, word, narration.verb)
+            return await self._ask(
+                pending, narration.text, voice_ok, word, narration.verb, judgement.raised
+            )
 
     async def _say(self, pending: Pending, text: str) -> None:
         said = speakable(text, self.voice.can_say)
@@ -130,10 +137,17 @@ class VoiceDecider:
         timings["speak"] = timings.get("speak", 0) + int((time.monotonic() - start) * 1000)
 
     async def _ask(
-        self, pending: Pending, text: str, listen: bool, word: str | None, verb: str
+        self,
+        pending: Pending,
+        text: str,
+        listen: bool,
+        word: str | None,
+        verb: str,
+        raised: str | None = None,
     ) -> contracts.Decision:
         if not listen:
-            await self._say(pending, f"{text} It's on your screen.")
+            why = f" Raised, for {raised}." if raised else ""
+            await self._say(pending, f"{text}{why} It's on your screen.")
             return _decision(pending, "handoff")
         answer_with = f"say: approve {word}" if word else "say yes or no"
         question = f"{text} To {verb}, {answer_with}." if word else f"{text} Approve?"

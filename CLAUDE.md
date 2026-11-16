@@ -129,7 +129,8 @@ the CI run after changing Swift code.
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
     every request, from rules alone. Bash goes through `shell.py` (a parser), `bash.py` (each
     command it runs) and `git.py` (aliases and where a push goes); `places.py` holds the path
-    checks, and `fields.py` the critical fields the narrator must say. `lookalike.py` compares
+    checks, and `fields.py` the critical fields the narrator must say. `risk.py` is the risk-gate
+    interface: a score can only raise a tier (no gate ships). `lookalike.py` compares
     package names with the popular lists in `policy/data/` (D-029, P-09).
   - `audit.py`: the keyed, hash-chained audit log (D-025) behind `earshot audit verify`.
   - `narrator/`: the template narrator, spoken forms, secret redaction, and the fidelity
