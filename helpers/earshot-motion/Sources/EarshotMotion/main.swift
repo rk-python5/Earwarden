@@ -214,6 +214,9 @@ final class Helper {
         link.onConnected = { [weak self] in
             self?.reportPermissions()
             self?.reportDevices()
+            if self?.options.stem == true {
+                self?.link.send(["log": "listening for the stem (play/pause) as the Now Playing app"])
+            }
         }
         link.onDisconnected = { [weak self] in
             self?.setMic(false)
@@ -262,7 +265,6 @@ final class Helper {
             MPNowPlayingInfoPropertyPlaybackRate: 0.0,
         ]
         MPNowPlayingInfoCenter.default().playbackState = .playing
-        link.send(["log": "listening for the stem (play/pause) as the Now Playing app"])
     }
 
     // Core Motion asks for permission the first time it's read. Read it once now, so the prompt
