@@ -28,9 +28,10 @@ released as 0.2.0. Its milestones are in `docs/phase-2-plan.md`. Deferred to bef
 calibration of the voiceprint (Q-5), the hour-long nod count (nods stay off), the helper's fixed
 signature, and a longer stretch of voice use for P-20, which stays open. Until it closes, run
 `earshotd --voice` only with the hooks in a scratch project. **Start with `docs/next-steps.md`.**
-Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) is under way:
-`docs/phase-4-plan.md` has its milestones, and its gate is that the red-team suite gets no
-approval through. Its releases are 0.3.x.
+Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) has its code
+done (16 Nov): `docs/phase-4-plan.md` has its milestones, and its gate is that the red-team
+suite gets no approval through. Its releases are 0.3.x. **Its gate needs rehaan:**
+`docs/phase-4-gate.md` is the session. P-22 (choices made while building) is settled at the gate.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
 later phase's components before the current phase's gate passes.
@@ -107,6 +108,7 @@ the CI run after changing Swift code.
   `spikes/speech/out/` through the daemon's own listening path. Run it after any change there.
 - `dev/refresh_package_lists.py`: rebuilds the popular-package lists at release time.
 - `dev/redteam_replay.py`: the replay attack on the Mac, your own recordings played at Earshot.
+- `dev/soak.py`: the hours-long soak beside a running daemon: memory, CPU, crashes, nods seen.
 - `dev/export_ecapa.py` (PEP 723; PyTorch and SpeechBrain) exports the voiceprint model and checks
   the numpy features against SpeechBrain's. `dev/calibrate_voiceprint.py` sets the threshold from
   other voices' phrases. `dev/count_false_nods.py` runs the hour-long false-nod count.
@@ -114,6 +116,8 @@ the CI run after changing Swift code.
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `docs/phase-2-plan.md`: the Phase 2 build plan, the same way, with its gate's targets.
 - `docs/phase-2-gate.md`: the session on the Mac that runs Phase 2's gate, step by step.
+- `docs/phase-4-plan.md` and `docs/phase-4-gate.md`: the same for Phase 4; `docs/redteam.md` is
+  the red-team table.
 - `docs/next-steps.md`: the hand-over to local sessions: running the voice, P-20, Phase 2.
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.

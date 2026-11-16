@@ -57,8 +57,10 @@ AirPods, friends or hours of wall time.
 | 4 | The risk-gate interface                            | Code      | the spec          | Done   |
 | 5 | Anchoring the audit chain                          | Code      | D-025, P-10       | Done   |
 | 6 | The red-team suite                                 | Code, Mac | D-030, D-032      | Code*  |
-| 7 | The soak tool, loose ends and the gate session     | Code, Mac | —                 | Code   |
+| 7 | The soak tool, loose ends and the gate session     | Code, Mac | —                 | Done   |
 | 8 | The gate                                           | Mac       | —                 | Ready  |
+
+\* Code done; the live part is in `docs/phase-4-gate.md`.
 
 ### 1. Session activity and briefings (code)
 

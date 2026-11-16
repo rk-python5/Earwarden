@@ -49,11 +49,14 @@ sections as they're done.
 - `--keep-audio` keeps each answer for checking P-20; delete `.tools/earshot/audio/`,
   `enroll/normal-2` and `disguise/` when they're no longer needed.
 
-## 2. Phase 4
+## 2. Run the Phase 4 gate
 
-Phase 3 is postponed (D-031). Phase 4 is in `docs/phase-4-plan.md`: build the floor manager,
-the risk-gate interface, the audit anchor and the red-team suite, then run the gate session with
-rehaan. Claude builds the code without stopping; rehaan's part comes after, in one batch.
+Phase 4's code is done (16 Nov): the floor manager, push-to-talk, the risk-gate interface, the
+audit anchor, the red-team suite (which runs with every `pytest`) and the soak tool.
+`docs/phase-4-gate.md` is the session on the Mac: push-to-talk and the floor, the replay attack,
+friends (Q-5), the soak over a working day, and the optional login check. Afterwards Claude reads
+`soak.log`, `soak.jsonl`, the kept audio and the results, records the gate in `decisions.md`
+with P-22's answers, and releases 0.3.0 if every target in the plan's gate table is met.
 
 ## 3. Later, and loose ends
 
@@ -71,5 +74,4 @@ rehaan. Claude builds the code without stopping; rehaan's part comes after, in o
 - A narration whose first clause is long and has no comma, such as "earshot scratch wants to
   write hello dot t x t", still takes about 1 s to its first word. Whisper's first second listen
   also loads it, in about 4.5 s.
-- `sphinx` was misheard twice live (D-030); consider dropping it from the challenge words.
 - Open questions: Q-3 (is "Earshot" clear enough as a name), Q-4, Q-5 (which friends), Q-6.

@@ -53,7 +53,7 @@ lichen limpet llama mackerel macaw magpie mammoth manatee marmot marshmallow mee
 metronome minnow mongoose moose nautilus nugget okapi omelet opal orca origami ostrich paprika
 parsnip peacock peanut penguin periscope persimmon petal pheasant piano pinecone pistachio
 platypus plum porcupine pudding quail quinoa raisin rhubarb saffron sardine scallop scooter
-seahorse sherbet skunk sloth snorkel sombrero spatula sphinx sundae swallow tamarind tangerine
+seahorse sherbet skunk sloth snorkel sombrero spatula sundae swallow tamarind tangerine
 tapestry tarragon termite toucan trombone trowel truffle tundra turnip ukulele vanilla vulture
 wasabi weasel wombat yak anaconda antelope barracuda buzzard caribou chameleon chimpanzee
 chinchilla cockatoo crocodile dalmatian dragonfly grasshopper hyena jackal ladybug leopard

@@ -1113,6 +1113,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     screen. `python -m module` and `python script.py` stay at the default (tier 2, no rule).
   - **The red-team suite is part of every `pytest` run,** not a separate step, so CI blocks a
     push that lets an attack through, not only a release.
+  - **`wilderness` replaces `sphinx`** in the challenge words, which two recognisers misheard at
+    the Phase 2 gate (D-030). The list stays at 200.
+  - **A nod is logged as seen while nods are off,** once per answer window, and never acts. It
+    gives the soak its false-nod count without switching nods on (D-018).
 - **Status:** Open, for the Phase 4 gate.
 
 ## Open questions

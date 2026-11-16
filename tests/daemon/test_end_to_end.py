@@ -148,3 +148,21 @@ def test_pending_requests_carry_their_notes() -> None:
     """The decider's notes default to empty, so the audit log never sees stale ones."""
     assert asyncio.iscoroutinefunction(VoiceDecider.__call__)
     assert Pending.__dataclass_fields__["notes"].default_factory is not None
+
+
+def test_service_install_passes_the_helper_and_stem_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    from earshot import cli
+
+    installed: list[list[str]] = []
+
+    def fake_install(args: list[str], log: Path) -> str:
+        installed.append(args)
+        return "ok"
+
+    monkeypatch.setattr(service, "install", fake_install)
+    home = "/Users/rehaan/eh"
+    flags = ["--voice", "--helper", "/x/E.app", "--stem"]
+    assert cli.main(["service", "install", "--home", home, *flags]) == 0
+    assert installed == [["--home", home, *flags]]
+    assert cli.main(["service", "install", "--home", home]) == 0
+    assert installed[-1] == ["--home", home]

@@ -259,3 +259,26 @@ def test_a_loud_helper_chunk_while_speaking_is_looked_at() -> None:
     quiet[320:640] = 8000  # one loud 20 ms frame in an otherwise quiet chunk
     voice._helper_audio(quiet.tobytes())
     assert voice._loud.is_set()
+
+
+def test_a_nod_with_nods_off_is_seen_logged_and_ignored(caplog: pytest.LogCaptureFixture) -> None:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from test_gestures import still, swing
+
+    class FakeHelper:
+        connected = True
+        on_audio: Any = None
+
+        def __init__(self) -> None:
+            self.motion = [*still(0, 1.5), *swing(1.5, "x"), *swing(2.1, "x"), *still(2.6, 1)]
+
+    helper = FakeHelper()
+    voice = MacVoice(helper=helper)  # type: ignore[arg-type]
+    with caplog.at_level("INFO", logger="earshot.voice"):
+        voice._nod_seen = False
+        assert voice._gesture(0.0) is None  # nods are off (D-018): never a gesture
+        assert voice._gesture(0.0) is None
+    assert caplog.text.count("nod seen, ignored") == 1  # once per answer window
+    assert MacVoice(helper=helper, nods=True)._gesture(0.0) == "nod"  # type: ignore[arg-type]
+    helper.motion = [*still(0, 1.5), *swing(1.5, "z"), *swing(2.1, "z")]
+    assert voice._gesture(0.0) == "shake"  # shakes always count

@@ -95,7 +95,6 @@ sardine
 scallop
 snorkel
 sombrero
-sphinx
 tamarind
 turnip
 ukulele
@@ -201,3 +200,4 @@ observatory
 peninsula
 rainforest
 stalactite
+wilderness

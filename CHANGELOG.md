@@ -46,12 +46,20 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   with every reply, replays, splices, other voices, forged socket messages and tampered audit
   logs. `docs/redteam.md` lists each attack, what stops it, and the result. It found four gaps,
   all fixed (below). `dev/redteam_replay.py` plays your own recordings at Earshot on the Mac.
+- The soak tool and the gate session (Phase 4, milestone 7). `dev/soak.py` samples the daemon's
+  and the helper's memory and CPU every minute for hours and counts reconnects, tracebacks, nods
+  seen inside answer windows and every decision from the log. `docs/phase-4-gate.md` is the
+  session on the Mac. `earshot service install` takes `--helper` and `--stem`.
+- With nods off, a nod inside an answer window is still logged as seen (once per window), so
+  the soak can count false nods without any of them approving anything (D-018).
 
 ### Changed
 
 - Found by the red team: a shell given a program made at run time (`bash -c "$(…)"`), and code
   given to an interpreter inline (`python -c`, `node -e`, `ruby -e`, `perl -E`), are tier 3,
   since they can't be read. They were tier 2.
+- The challenge word `sphinx`, misheard twice at the Phase 2 gate (D-030), is replaced by
+  `wilderness`.
 
 - Phase 3 (the summarizer) is postponed, and Phase 4 takes the 0.3.x releases (D-031).
   `docs/phase-4-plan.md` is its plan. Push-to-talk will be the AirPods stem, and no voice-clone

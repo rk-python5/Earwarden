@@ -124,6 +124,10 @@ def service_install(args: argparse.Namespace) -> int:
         daemon_args += ["--home", str(Path(args.home).expanduser().resolve())]
     if args.voice:
         daemon_args.append("--voice")
+    if args.helper:
+        daemon_args += ["--helper", str(Path(args.helper).expanduser().resolve())]
+    if args.stem:
+        daemon_args.append("--stem")
     print(service.install(daemon_args, where.state_dir / "earshotd.log"))
     return 0
 
@@ -437,6 +441,8 @@ def main(argv: list[str] | None = None) -> int:
     q = service_commands.add_parser("install", help="install and load the LaunchAgent")
     q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
     q.add_argument("--voice", action="store_true", help="run the daemon with --voice")
+    q.add_argument("--helper", metavar="APP", help="run the daemon with --helper APP")
+    q.add_argument("--stem", action="store_true", help="run the daemon with --stem")
     q.set_defaults(run=service_install)
     q = service_commands.add_parser("uninstall", help="stop and remove the LaunchAgent")
     q.set_defaults(run=service_uninstall)

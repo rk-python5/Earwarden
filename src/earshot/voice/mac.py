@@ -154,6 +154,7 @@ class MacVoice:
         self._mic_rate = 0
         self._frames: deque[tuple[float, Any]] = deque(maxlen=int(30 / FRAME_S))
         self._helper_end = 0.0  # when the helper's last chunk ended, by its own samples
+        self._nod_seen = False
         self._lock = threading.Lock()
         self._audio = threading.Lock()  # PortAudio isn't thread-safe: one stream change at a time
         self._mlx = threading.RLock()  # nor is MLX: one model runs at a time, across threads
@@ -493,11 +494,23 @@ class MacVoice:
         return await asyncio.to_thread(self._recognize, clip)
 
     def _gesture(self, since: float) -> str | None:
-        """A shake, or a nod with nods on, in the head motion since `since` (D-018)."""
+        """A shake, or a nod with nods on, in the head motion since `since` (D-018).
+
+        With nods off, a nod is still looked for and logged as seen, so the soak can count
+        false nods inside answer windows without any of them approving anything.
+        """
         if self.helper is None or not self.helper.connected:
             return None
         samples = [s for s in list(self.helper.motion) if s.t >= since]
-        return gestures.detect(samples, nods=self.nods) if samples else None
+        if not samples:
+            return None
+        found = gestures.detect(samples, nods=True)
+        if found == "nod" and not self.nods:
+            if not self._nod_seen:
+                log.info("nod seen, ignored: nods are off (D-018)")
+            self._nod_seen = True
+            return None
+        return found
 
     def _capture(self, seconds: float) -> Any:
         """One reply as 16 kHz audio, None if nobody spoke in the window, or CUT_OFF."""
@@ -509,6 +522,7 @@ class MacVoice:
         opened = time.monotonic() + GUARD_S  # nothing from before the window counts (D-015)
         deadline = opened + seconds
         motion_since = self._motion_clock()
+        self._nod_seen = False  # one log line per window, for the soak's count
         while True:
             time.sleep(FRAME_S)
             now = time.monotonic()
