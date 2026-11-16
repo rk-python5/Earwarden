@@ -30,6 +30,30 @@ class Session:
     last_seen: float = field(default_factory=time.time)
     last_message: str | None = None
     config_edited: bool = False  # build or test config changed: later commands rise (P-01)
+    # What the session is doing, from its events, for briefings and announcements (Phase 4).
+    working_since: float | None = None  # the first tool of the current run, until it stops
+    tools_run: int = 0  # tools run since `working_since`
+    finished_at: float | None = None  # when the agent last stopped
+    idle: bool = False  # Claude Code says it's waiting for your next message
+
+    def note_tool(self) -> None:
+        """A tool ran: the agent is working. A new run starts after each stop."""
+        now = time.time()
+        if self.working_since is None:
+            self.working_since, self.tools_run = now, 0
+        self.tools_run += 1
+        self.finished_at, self.idle, self.last_seen = None, False, now
+
+    def note_stop(self, message: str | None) -> None:
+        """The agent stopped: it finished what it was doing."""
+        self.working_since, self.finished_at, self.idle = None, time.time(), False
+        if message:
+            self.last_message = message
+
+    def note_idle(self) -> None:
+        """Claude Code's idle notification: it has been waiting for you for a while."""
+        if self.working_since is None:
+            self.idle = True
 
 
 class Sessions:

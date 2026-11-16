@@ -51,7 +51,7 @@ AirPods, friends or hours of wall time.
 
 | # | Milestone                                          | Where     | Rests on          | Status |
 | - | -------------------------------------------------- | --------- | ----------------- | ------ |
-| 1 | Session activity and briefings                     | Code      | D-020             | Code   |
+| 1 | Session activity and briefings                     | Code      | D-020             | Done   |
 | 2 | The floor manager, modes and announcements         | Code      | D-031, D-032      | Code   |
 | 3 | Push-to-talk: the stem, `earshot talk`, commands   | Code, Mac | D-016, D-032      | Code   |
 | 4 | The risk-gate interface                            | Code      | the spec          | Code   |

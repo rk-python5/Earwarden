@@ -6,6 +6,14 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+### Added
+
+- Session activity and briefings (Phase 4, milestone 1). Each session records whether it's
+  working (since when, and how many tools it has run), finished or idle, from its events.
+  `daemon/briefing.py` turns the registry into "Three sessions. api: running 12 minutes, 14
+  tools run. docs: waiting for you. deploy: finished 5 minutes ago.", five sessions at most, with
+  no file contents or messages read aloud.
+
 ### Changed
 
 - Phase 3 (the summarizer) is postponed, and Phase 4 takes the 0.3.x releases (D-031).

@@ -221,9 +221,12 @@ class Daemon:
         session = self.sessions.seen(event.session_id, event.cwd)
         if event.event == "SessionStart" and event.model:
             session.model = event.model
-        elif event.event == "Stop" and event.last_assistant_message:
-            session.last_message = event.last_assistant_message
+        elif event.event == "Stop":
+            session.note_stop(event.last_assistant_message)
+        elif event.event == "Notification" and event.notification_type == "idle_prompt":
+            session.note_idle()
         elif event.event == "PostToolUse":
+            session.note_tool()
             if event.file_path and PurePosixPath(event.file_path).name in places.CONFIG_FILES:
                 session.config_edited = True
             answered = self.pending.answered_by(event)
