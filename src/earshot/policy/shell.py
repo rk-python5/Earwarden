@@ -165,6 +165,9 @@ class _Lexer:
                     self.unchecked.append("an unterminated quote")
                 self.i += 1
             elif c == "\\":
+                if self.s.startswith("\n", self.i + 1):
+                    self.i += 2  # a line continuation inside a word: `gi\⏎t` is `git`
+                    continue
                 text.append(self.s[self.i + 1 : self.i + 2])
                 self.i += 2
             elif c in "$`":

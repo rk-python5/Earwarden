@@ -106,6 +106,7 @@ the CI run after changing Swift code.
   the Mac, since P-14's runner is deferred (D-023). It sends Step 0's recordings in
   `spikes/speech/out/` through the daemon's own listening path. Run it after any change there.
 - `dev/refresh_package_lists.py`: rebuilds the popular-package lists at release time.
+- `dev/redteam_replay.py`: the replay attack on the Mac, your own recordings played at Earshot.
 - `dev/export_ecapa.py` (PEP 723; PyTorch and SpeechBrain) exports the voiceprint model and checks
   the numpy features against SpeechBrain's. `dev/calibrate_voiceprint.py` sets the threshold from
   other voices' phrases. `dev/count_false_nods.py` runs the hour-long false-nod count.
@@ -156,7 +157,9 @@ the CI run after changing Swift code.
   pure-Python parts (`spikes/hook_probe`, `speech_data.py`, `speech/combine.py`,
   `launchd_mic/agent.py`) are
   type-checked and tested in CI, because the rest need macOS hardware.
-- `tests/`: pytest. Tests for spikes live in `tests/spikes/`.
+- `tests/`: pytest. Tests for spikes live in `tests/spikes/`. `tests/redteam/` is the red-team
+  suite (marker `redteam`; `docs/redteam.md` is its table): an approval through any of it blocks
+  a release.
   `tests/fixtures/claude_code/<version>/` holds real Claude Code hook payloads, with the home
   folder shortened. Capture a new set when Claude Code changes its hook format.
 

@@ -39,7 +39,8 @@ INTERPRETERS = SHELLS | {
     "tclsh",
     "Rscript",
 }
-CODE_FLAGS = {"-c", "-e", "-m", "--command", "--eval", "-E"}
+CODE_FLAGS = {"-c", "-e", "-m", "--command", "--eval", "-E", "-r"}
+INLINE_CODE = CODE_FLAGS - {"-m"}  # `python -m pytest` names a module; the rest pass code
 READERS = {
     "cat",
     "less",
@@ -228,9 +229,13 @@ def _judge(
     limits: list[Limit] = []
     if program in INTERPRETERS:
         code = _code_argument(program, args)
-        if code is not None and program in SHELLS:
+        if code is not None and shell.UNSEEN in code:
+            limits.append((3, f"unchecked: {program} runs a program produced at run time"))
+        elif code is not None and program in SHELLS:
             found.add(assess(code, cwd, project, depth + 1))
             words = None
+        elif code is not None and _inline(program, args):
+            limits.append((3, f"unchecked: code given to {program} inline can't be read"))
         elif code is None and simple.stdin and not _script_argument(args):
             limits.append((3, "floor: pipe_to_shell"))
     elif program == "git":
@@ -273,6 +278,16 @@ def _code_argument(program: str, args: tuple[str, ...]) -> str | None:
         if not arg.startswith("-"):
             return None
     return None
+
+
+def _inline(program: str, args: tuple[str, ...]) -> bool:
+    """Whether a non-shell interpreter was given its program on the command line."""
+    for arg in args:
+        if arg in INLINE_CODE:
+            return True
+        if not arg.startswith("-"):
+            return False
+    return False
 
 
 def _script_argument(args: tuple[str, ...]) -> bool:

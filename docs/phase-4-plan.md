@@ -56,7 +56,7 @@ AirPods, friends or hours of wall time.
 | 3 | Push-to-talk: the stem, `earshot talk`, commands   | Code, Mac | D-016, D-032      | Code*  |
 | 4 | The risk-gate interface                            | Code      | the spec          | Done   |
 | 5 | Anchoring the audit chain                          | Code      | D-025, P-10       | Done   |
-| 6 | The red-team suite                                 | Code, Mac | D-030, D-032      | Code   |
+| 6 | The red-team suite                                 | Code, Mac | D-030, D-032      | Code*  |
 | 7 | The soak tool, loose ends and the gate session     | Code, Mac | —                 | Code   |
 | 8 | The gate                                           | Mac       | —                 | Ready  |
 

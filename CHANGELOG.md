@@ -41,8 +41,17 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   a 0600 file beside the key in development. `earshot audit verify` and `earshot doctor` now
   catch records cut off the end, an older copy of the log put back, and records written while
   the daemon wasn't running.
+- The red-team suite (Phase 4, milestone 6), `tests/redteam/`, run with every `pytest`:
+  injection strings, lookalike packages, pushes to main, hidden and destructive commands, tier 3
+  with every reply, replays, splices, other voices, forged socket messages and tampered audit
+  logs. `docs/redteam.md` lists each attack, what stops it, and the result. It found four gaps,
+  all fixed (below). `dev/redteam_replay.py` plays your own recordings at Earshot on the Mac.
 
 ### Changed
+
+- Found by the red team: a shell given a program made at run time (`bash -c "$(…)"`), and code
+  given to an interpreter inline (`python -c`, `node -e`, `ruby -e`, `perl -E`), are tier 3,
+  since they can't be read. They were tier 2.
 
 - Phase 3 (the summarizer) is postponed, and Phase 4 takes the 0.3.x releases (D-031).
   `docs/phase-4-plan.md` is its plan. Push-to-talk will be the AirPods stem, and no voice-clone
@@ -138,6 +147,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - Barge-in stops Earshot only when Silero hears speech. It used to fire on any sound over 0.05,
   and in a live check a noise in the room, or a click as the AirPods switched into headset mode,
   cut most questions off within a second or two, before anything could be heard.
+- Found by the red team: a backslash-newline inside a word (`git\⏎ push`) is joined as the
+  shell joins it, so the command is judged as a push; and the decider never parses a cut-off
+  reply's transcript, at any tier (the live path never gave it one, so it couldn't be reached).
 - Noise and cut-off replies are no longer heard as approvals (P-20, D-027).
   - Silero VAD must hear speech in a reply before Parakeet does.
   - A reply that began before the listening window, for example while you talked over Earshot,

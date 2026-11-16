@@ -1108,6 +1108,11 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     300 ms time limit on the call, and ten spoken reasons in a closed list. The interface takes
     a Python object with `score(tool_name, tool_input, cwd)`; how a gate would be configured is
     left until one exists.
+  - **Inline code for an interpreter is tier 3** (`python -c`, `node -e`, `ruby -e`, `perl -E`),
+    found by the red team: Earshot can't read it, and D-029 sends what can't be read to the
+    screen. `python -m module` and `python script.py` stay at the default (tier 2, no rule).
+  - **The red-team suite is part of every `pytest` run,** not a separate step, so CI blocks a
+    push that lets an attack through, not only a release.
 - **Status:** Open, for the Phase 4 gate.
 
 ## Open questions

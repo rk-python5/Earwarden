@@ -184,7 +184,10 @@ class VoiceDecider:
                 if heard.recognizer == NOD and word is None:  # tier 1 only, and only if switched on
                     pending.notes["gesture"] = NOD
                     return _decision(pending, "allow")
-                answer = intents.parse(heard.transcript)
+                if heard.recognizer == CUT_OFF:
+                    answer = intents.Intent("unclear")  # begun before the tone: never parsed
+                else:
+                    answer = intents.parse(heard.transcript)
                 if word is not None and heard.recognizer != CUT_OFF:
                     if challenge.matches(heard.transcript, word):
                         if heard.speaker is not None and heard.speaker.verdict == "match":

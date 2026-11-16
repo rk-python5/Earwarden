@@ -122,7 +122,7 @@ def test_shell_c_is_read_in_turn() -> None:
     assert tier("bash -lc 'rm -rf build'") == 3
     assert tier("sh -c \"sh -c 'git push --force origin x'\"") == 3
     assert tier("watch -n 5 'rm -rf cache'") == 3
-    assert tier("python3 -c 'print(1)'") == 2
+    assert tier("python3 -c 'print(1)'") == 3  # inline code can't be read (the red team)
     assert tier("python3 script.py < data.txt") == 2
 
 
@@ -397,3 +397,31 @@ def test_no_disguise_lowers_a_rule(data: st.DataObject) -> None:
 @given(st.text(alphabet=st.sampled_from(list("ab $|&;<>()'\"`\\\n#{}=-~/*rm")), max_size=40))
 def test_any_text_gets_a_tier_without_crashing(command: str) -> None:
     assert 1 <= tier(command) <= 3
+
+
+# Found by the red team (Phase 4, milestone 6)
+
+
+def test_a_line_continuation_inside_a_word_is_joined() -> None:
+    from earshot.policy import shell
+
+    (command,) = shell.parse("gi\\\npush origin main").commands
+    assert command.words == ("gipush", "origin", "main")
+    (command,) = shell.parse("git\\\n push origin main").commands
+    assert command.words == ("git", "push", "origin", "main")
+    assert tier("git\\\n push origin main") == 3
+
+
+def test_a_shell_given_a_program_made_at_run_time_is_tier_3() -> None:
+    assert tier('bash -c "$(echo Z2l0IHB1c2g= | base64 -d)"') == 3
+    assert tier('sh -c "$CMD"') == 3
+    assert tier("bash -c 'pytest'") == 1  # readable: judged by its contents
+
+
+def test_code_given_to_an_interpreter_inline_is_tier_3() -> None:
+    assert tier("python -c \"import os; os.system('git push')\"") == 3
+    assert tier('node -e \'require("child_process").execSync("git push")\'') == 3
+    assert tier("ruby -e 'system(\"git push\")'") == 3
+    assert tier("perl -E 'say 1'") == 3
+    assert tier("python -m pytest") == 2  # a module by name is readable; no rule names it
+    assert tier("python script.py") == 2
