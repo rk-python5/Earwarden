@@ -49,7 +49,8 @@ class Voice(Protocol):
     def headset_ready(self) -> bool: ...
     def speaker_ready(self) -> bool: ...  # a voiceprint is enrolled: tier 2 can be asked
     def can_say(self, word: str) -> bool: ...
-    async def say(self, text: str, chime: int | None = None) -> None: ...
+    # With `tone`, the listening tone follows the last word at once: an answer comes next.
+    async def say(self, text: str, chime: int | None = None, tone: bool = False) -> None: ...
     async def listen(self, seconds: float) -> Heard | None: ...
     async def open_mic(self) -> None: ...
     async def close_mic(self) -> None: ...
@@ -127,11 +128,11 @@ class VoiceDecider:
                 pending, narration.text, voice_ok, word, narration.verb, judgement.raised
             )
 
-    async def _say(self, pending: Pending, text: str) -> None:
+    async def _say(self, pending: Pending, text: str, tone: bool = False) -> None:
         said = speakable(text, self.voice.can_say)
         pending.notes["spoken"] = " ".join(filter(None, [pending.notes.get("spoken"), said]))
         start = time.monotonic()
-        await self.voice.say(said, chime=pending.session.chime)
+        await self.voice.say(said, chime=pending.session.chime, tone=tone)
         self.floor.last_said = said
         timings = pending.notes.setdefault("timings_ms", {})
         timings["speak"] = timings.get("speak", 0) + int((time.monotonic() - start) * 1000)
@@ -157,7 +158,7 @@ class VoiceDecider:
             question += f" {self.floor.queued} more waiting."
         await self.voice.open_mic()  # before speaking: the headset mode switch takes ~0.85 s (Q-2)
         try:
-            await self._say(pending, question)
+            await self._say(pending, question, tone=True)
             silent = unclear = 0
             while True:
                 heard = await self.voice.listen(self.window_s)
@@ -170,7 +171,7 @@ class VoiceDecider:
                     await self.voice.close_mic()
                     await asyncio.sleep(self.reannounce_s)  # hold, then ask again (D-020)
                     await self.voice.open_mic()
-                    await self._say(pending, question)
+                    await self._say(pending, question, tone=True)
                     continue
                 pending.notes["transcript"] = heard.transcript
                 pending.notes["recognizer"] = heard.recognizer
@@ -215,8 +216,8 @@ class VoiceDecider:
                     await self._say(pending, "I didn't catch that. It's on your screen.")
                     return _decision(pending, "handoff")
                 if heard.recognizer == CUT_OFF:
-                    await self._say(pending, f"Wait for the tone, then {answer_with}.")
+                    await self._say(pending, f"Wait for the tone, then {answer_with}.", tone=True)
                 else:
-                    await self._say(pending, f"Sorry, {answer_with}.")
+                    await self._say(pending, f"Sorry, {answer_with}.", tone=True)
         finally:
             await self.voice.close_mic()

@@ -30,7 +30,7 @@ class SaysYes:
     def can_say(self, word: str) -> bool:
         return True
 
-    async def say(self, text: str, chime: int | None = None) -> None:
+    async def say(self, text: str, chime: int | None = None, tone: bool = False) -> None:
         self.said.append(text)
 
     async def listen(self, seconds: float) -> Heard | None:

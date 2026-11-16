@@ -501,7 +501,7 @@ def test_mode_changes_the_floor(home: Path, start_daemon: StartDaemon) -> None:
         def headset_ready(self) -> bool:
             return False
 
-        async def say(self, text: str, chime: int | None = None) -> None:
+        async def say(self, text: str, chime: int | None = None, tone: bool = False) -> None:
             pass
 
     class Away:

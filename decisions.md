@@ -692,6 +692,27 @@ How this file works:
   A stopped capture (a device change) is restarted from the session's runtime-error and
   interruption notifications.
 
+### D-034 The tone ends the question, through one output stream
+
+- **Date:** 2026-11-16 · **Status:** Accepted · **By:** Claude, from the Phase 4 gate, to
+  confirm ("the tone comes after your question right when i start speaking")
+- **Decision:**
+  - **Each sentence plays through one output stream:** the session's chime, every clause and,
+    when an answer comes next, the listening tone, back to back. The stream drains before the
+    window opens, so the window opens when the tone has actually played, then D-015's guard.
+  - **What asks for an answer ends with the tone:** the question, its re-ask after silence,
+    "Sorry, …" and "Wait for the tone, then …". Hand-offs ("It's on your screen") and
+    announcements don't.
+  - **Talking over the question stops it and plays the tone at once,** on the same stream.
+    Speech begun before the tone is still never parsed (D-027).
+  - D-028's tone, and the window rule, are unchanged.
+- **Why:** `sd.play` opened a new stream per clause and for the tone. On the AirPods each took
+  0.5–1 s to start ("the listening tone came 0.5 s late" in most runs), and could clip edges.
+  The kept clips of every barge-in at the gate were rehaan answering ("Yeah.", "Uh", "Okay.")
+  as the question ended, before the late tone, so each answer was refused as begun too early.
+- **Evidence:** four tier-2 questions on the Mac: 7.4 s of speech played in 8.0 s, the tone
+  included, with 0.3 s waiting for speech.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.

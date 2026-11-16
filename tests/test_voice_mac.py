@@ -53,18 +53,47 @@ class Clip(list[float]):
         super().__init__([0.0] * 240)  # 10 ms at 24 kHz
         self.tag = tag
 
+    def __getitem__(self, index: Any) -> Any:
+        return self if isinstance(index, slice) else super().__getitem__(index)
+
+    def reshape(self, *shape: int) -> Clip:
+        return self
+
+
+class FakeStream:
+    """An output stream: what's written, and whether it was drained or cut off."""
+
+    def __init__(self, sd: FakeSounddevice) -> None:
+        self.sd = sd
+
+    def start(self) -> None:
+        pass
+
+    def write(self, data: Any) -> None:
+        tag = getattr(data, "tag", None)
+        self.sd.events.append(f"play {tag}" if tag else f"write {len(data)}")
+        if self.sd.write_delay:
+            time.sleep(self.sd.write_delay.pop(0))
+
+    def stop(self) -> None:
+        self.sd.events.append("drain")
+
+    def abort(self) -> None:
+        self.sd.events.append("abort")
+
+    def close(self) -> None:
+        pass
+
 
 class FakeSounddevice(types.ModuleType):
     def __init__(self) -> None:
         super().__init__("sounddevice")
         self.events: list[str] = []
         self.refreshes = 0
+        self.write_delay: list[float] = []  # how long each write takes, in turn
 
-    def play(self, audio: Clip, rate: int) -> None:
-        self.events.append(f"play {audio.tag}")
-
-    def stop(self) -> None:
-        self.events.append("stop")
+    def OutputStream(self, **kwargs: Any) -> FakeStream:  # noqa: N802 - sounddevice's name
+        return FakeStream(self)
 
     def _terminate(self) -> None:
         self.refreshes += 1
@@ -122,7 +151,7 @@ def test_a_cancelled_voice_stops_before_the_next_one_speaks(sd: FakeSounddevice)
     tts.go.set()
     first.join(5)
     second.join(5)
-    assert sd.events == ["play first 1", "stop", "play second 1", "play second 2", "stop"]
+    assert sd.events == ["play first 1", "abort", "play second 1", "play second 2", "drain"]
 
 
 def test_devices_refresh_only_when_no_stream_is_open(sd: FakeSounddevice) -> None:
@@ -193,6 +222,105 @@ def test_the_listening_tone_is_short_soft_and_above_every_chime() -> None:
     assert len(tone) == int(mac.TTS_RATE * mac.LISTEN_TONE_S)
     assert max(abs(sample) for sample in tone) <= 0.15
     assert max(mac.CHIME_NOTES) * 1.25 < mac.LISTEN_TONE_HZ  # a chime's second note is 1.25x
+
+
+class InstantTTS:
+    """Makes every clause at once, as Kokoro does for a short question (0.8 s for four).
+
+    Clause n is n * 100 samples long, so the stream's writes show which clause played.
+    """
+
+    def __init__(self, clauses: int) -> None:
+        self.clauses = clauses
+
+    def generate(self, text: str, **kwargs: Any) -> Iterator[types.SimpleNamespace]:
+        for n in range(1, self.clauses + 1):
+            yield types.SimpleNamespace(audio=[0.0] * (n * 100))
+
+
+@pytest.fixture
+def stream_sd(monkeypatch: pytest.MonkeyPatch) -> FakeSounddevice:
+    """A fake sounddevice with real numpy, for the tone."""
+    fake = FakeSounddevice()
+    monkeypatch.setitem(sys.modules, "sounddevice", fake)
+    return fake
+
+
+def test_a_long_question_ends_even_when_its_clauses_fill_the_queue(
+    stream_sd: FakeSounddevice,
+) -> None:
+    # Four clauses made at once fill the three-place queue while the first, long one plays.
+    # The end marker used to give up after a second and be lost, and the speaker waited for it
+    # until someone spoke or the request timed out (191 s at the Phase 4 gate).
+    voice = MacVoice()
+    voice._tts = InstantTTS(4)
+    stream_sd.write_delay = [1.5]  # the first clause takes 1.5 s to play
+    speaking = speak(voice, "q", threading.Event())
+    speaking.join(6)
+    assert not speaking.is_alive()
+    assert stream_sd.events == ["write 100", "write 200", "write 300", "write 400", "drain"]
+
+
+def test_a_question_ends_with_the_tone_on_the_same_stream(stream_sd: FakeSounddevice) -> None:
+    voice = MacVoice()
+    voice._tts = InstantTTS(2)
+    voice._say("q", None, threading.Event(), True)
+    tone = int(mac.TTS_RATE * mac.LISTEN_TONE_S)
+    block = int(mac.TTS_RATE * mac.BLOCK_S)
+    writes = [f"write {min(block, tone - n)}" for n in range(0, tone, block)]
+    assert stream_sd.events == ["write 100", "write 200", *writes, "drain"]
+    assert time.monotonic() - voice._toned < 1  # so the window opens without a second tone
+
+
+def test_the_window_doesnt_play_the_tone_again_right_after_a_question(
+    stream_sd: FakeSounddevice, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    voice = MacVoice()
+    voice._mic, voice._mic_rate = "mic", mac.ASR_RATE
+    tones: list[float] = []
+    monkeypatch.setattr(voice, "_tone", lambda: tones.append(time.monotonic()))
+    voice._toned = time.monotonic()  # a question just ended with its tone
+    assert voice._capture(0.05) is None
+    assert tones == []
+    assert voice._capture(0.05) is None  # push-to-talk later: no question, so its own tone
+    assert len(tones) == 1
+
+
+def test_talking_over_a_question_still_plays_the_tone_at_once(
+    stream_sd: FakeSounddevice, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    voice = MacVoice()
+    voice._tts = InstantTTS(3)
+    talked = iter([False, False, False, True])  # you start answering during the second clause
+    monkeypatch.setattr(voice, "_talked_over", lambda: next(talked, True))
+    voice._say("q", None, threading.Event(), True)
+    tone = int(mac.TTS_RATE * mac.LISTEN_TONE_S)
+    block = int(mac.TTS_RATE * mac.BLOCK_S)
+    assert stream_sd.events[0] == "write 100"
+    assert "write 300" not in stream_sd.events  # stopped for you
+    assert stream_sd.events[-3:] == [f"write {block}", f"write {tone - block}", "drain"]
+    assert time.monotonic() - voice._toned < 1
+
+
+def test_a_cancelled_question_is_cut_off_without_a_tone(
+    stream_sd: FakeSounddevice, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    voice = MacVoice()
+    voice._tts = InstantTTS(3)
+    stop = threading.Event()
+    checks = iter(range(100))
+
+    def answered_on_screen() -> bool:  # during the second clause
+        if next(checks) == 3:
+            stop.set()
+        return False
+
+    monkeypatch.setattr(voice, "_talked_over", answered_on_screen)
+    voice._say("q", None, stop, True)
+    assert stream_sd.events[0] == "write 100"
+    assert stream_sd.events[-1] == "abort"  # cut off at once, nothing more written
+    assert "write 300" not in stream_sd.events
+    assert voice._toned == 0.0
 
 
 def test_answers_are_scored_against_the_voiceprint_once_enrolled() -> None:

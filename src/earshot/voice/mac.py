@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import faulthandler
 import json
 import logging
 import math
@@ -61,6 +62,9 @@ SECOND_BITS = 8  # Whisper's, loaded only when needed: 1.62 GB as float16, 0.87 
 ASR_RATE = 16_000
 FRAME_S = 0.02
 GUARD_S = 0.15  # output delay after playback ends (D-015)
+BLOCK_S = 0.05  # speech is written to the output in blocks this long, checking for a stop
+STALL_S = 15.0  # speech this late is a stall: the log gets every thread's stack
+TONE_FRESH_S = 1.0  # a tone that ended a question this recently opens the window itself
 PRE_ROLL_S = 0.25
 HELPER_GAP_S = 0.25  # a later chunk than this starts the helper's clock again
 CLAUSES = r"(?<=[.?!,:;])\s+"  # Kokoro speaks clause by clause: short first clauses start sooner
@@ -162,6 +166,7 @@ class MacVoice:
         self._loud = threading.Event()  # something loud while Earshot speaks: speech or noise?
         self._barge = threading.Event()  # it was speech: you're talking over Earshot
         self._ignored = 0  # noises heard while speaking, for the log
+        self._toned = 0.0  # when a question's own tone last finished playing
 
     # Loading
 
@@ -359,20 +364,23 @@ class MacVoice:
 
     # Speaking
 
-    async def say(self, text: str, chime: int | None = None) -> None:
+    async def say(self, text: str, chime: int | None = None, tone: bool = False) -> None:
+        """Speak `text`; with `tone`, the listening tone follows the last word at once."""
         stop = threading.Event()
         try:
-            await asyncio.to_thread(self._say, text, chime, stop)
+            await asyncio.to_thread(self._say, text, chime, stop, tone)
         except asyncio.CancelledError:
             stop.set()  # the request was answered elsewhere: fall silent at once
             raise
 
-    def _say(self, text: str, chime_index: int | None, stop: threading.Event) -> None:
+    def _say(
+        self, text: str, chime_index: int | None, stop: threading.Event, tone: bool = False
+    ) -> None:
         import numpy as np
-        import sounddevice as sd
 
-        # One voice at a time: a cancelled one finishes, and its final sd.stop() runs, before
-        # the next starts, or that stop would cut off the next request's speech.
+        # One voice at a time, through one output stream: the chime, every clause and the tone
+        # play back to back. A stream per piece cost 0.5 to 1 s each on the AirPods, clipped
+        # the pieces' edges, and put the tone late, on top of your answer.
         with self._audio:
             if stop.is_set():
                 return
@@ -390,29 +398,48 @@ class MacVoice:
             producer.start()  # Kokoro works on the first clause while the chime plays
             began = time.monotonic()
             spoken = waited = 0.0
+            finished = stalled = toned = False
+            stream = None
             try:
+                stream = self._output()
                 if chime_index is not None:
-                    self._play(np.array(chime(chime_index), dtype=np.float32), stop)
+                    self._write(stream, np.array(chime(chime_index), dtype=np.float32), stop)
                 while not (stop.is_set() or self._talked_over()):
                     asked = time.monotonic()
                     try:
                         chunk = chunks.get(timeout=0.05)  # short, so a cancel stops it at once
                     except queue.Empty:
                         waited += time.monotonic() - asked
+                        if waited > STALL_S and not stalled:
+                            stalled = True
+                            log.warning("speech stalled for %.0f s; every thread:", waited)
+                            faulthandler.dump_traceback(all_threads=True)
                         continue
                     waited += time.monotonic() - asked
-                    if chunk is None or stop.is_set() or self._talked_over():
+                    if chunk is None:
+                        finished = True
+                        break
+                    if stop.is_set() or self._talked_over():
                         break
                     spoken += len(chunk) / TTS_RATE
-                    self._play(chunk, stop)
+                    if not self._write(stream, chunk, stop):
+                        break
+                if tone and not stop.is_set():
+                    # Right after the last word, or at once if you spoke over it: either way the
+                    # tone comes now, not after a new stream opens. Talking doesn't cut it off.
+                    sound = np.array(listening_tone(), dtype=np.float32)
+                    toned = self._write(stream, sound, stop, barge=False)
             finally:
                 halt.set()
                 with contextlib.suppress(queue.Empty):
                     while True:  # let a producer blocked on a full queue see the halt
                         chunks.get_nowait()
                 producer.join(timeout=5)
+                if stream is not None:
+                    self._close_output(stream, drain=finished or toned)
+                if toned:
+                    self._toned = time.monotonic()
                 self._playing.clear()
-                sd.stop()
                 if self._ignored:
                     log.info("ignored %d noises while speaking", self._ignored)
                 log.info(
@@ -433,29 +460,58 @@ class MacVoice:
             while not halt.is_set():
                 with self._mlx:
                     result = next(clauses, None)
-                if result is None:
+                    # MLX is lazy: converting runs the model, so it's done under the lock too
+                    audio = None if result is None else np.array(result.audio, dtype=np.float32)
+                if audio is None:
                     break
-                audio = np.array(result.audio, dtype=np.float32)
-                while not halt.is_set():
-                    with contextlib.suppress(queue.Full):
-                        chunks.put(audio, timeout=0.1)
-                        break
+                self._hand_over(chunks, audio, halt)
         except Exception:
             log.exception("speech couldn't be made")
         finally:
-            with contextlib.suppress(queue.Full):
-                chunks.put(None, timeout=1)
+            # The end marker waits for room like any clause. It used to give up after a second,
+            # and with a long question's clauses filling the queue it was lost: the speaker then
+            # waited for it until you spoke or the request timed out (191 s once).
+            self._hand_over(chunks, None, halt)
 
-    def _play(self, audio: Any, stop: threading.Event) -> None:
+    @staticmethod
+    def _hand_over(chunks: queue.Queue[Any], item: Any, halt: threading.Event) -> None:
+        """Put `item` on the queue as soon as there's room, unless the speech is halted."""
+        while not halt.is_set():
+            with contextlib.suppress(queue.Full):
+                chunks.put(item, timeout=0.1)
+                return
+
+    def _output(self) -> Any:
+        """A started output stream on the default device, for one stretch of speech."""
         import sounddevice as sd
 
-        sd.play(audio, TTS_RATE)
-        end = time.monotonic() + len(audio) / TTS_RATE + 0.05
-        while time.monotonic() < end:
-            if stop.is_set() or self._talked_over():
-                sd.stop()
-                return
-            time.sleep(0.01)
+        stream = sd.OutputStream(samplerate=TTS_RATE, channels=1, dtype="float32")
+        stream.start()
+        return stream
+
+    def _write(self, stream: Any, audio: Any, stop: threading.Event, barge: bool = True) -> bool:
+        """Play `audio` on `stream` in short blocks; False if stopped (or talked over, with
+        `barge`)."""
+        block = int(TTS_RATE * BLOCK_S)
+        for start in range(0, len(audio), block):
+            if stop.is_set() or (barge and self._talked_over()):
+                return False
+            stream.write(audio[start : start + block].reshape(-1, 1))  # waits for room
+        return True
+
+    @staticmethod
+    def _close_output(stream: Any, drain: bool) -> None:
+        """Let what's written finish playing (`drain`), or cut it off at once."""
+        try:
+            if drain:
+                stream.stop()  # returns once everything written has played
+            else:
+                stream.abort()
+        except Exception:
+            log.exception("couldn't stop the output")
+        finally:
+            with contextlib.suppress(Exception):
+                stream.close()
 
     def _talked_over(self) -> bool:
         """Whether you're talking over Earshot: the mic was loud, and Silero hears speech in it."""
@@ -518,7 +574,9 @@ class MacVoice:
 
         if self._mic is None:
             self._open_mic()
-        self._tone()
+        if time.monotonic() - self._toned > TONE_FRESH_S:
+            self._tone()  # no question just ended with one: push-to-talk, or enrolment
+        self._toned = 0.0
         opened = time.monotonic() + GUARD_S  # nothing from before the window counts (D-015)
         deadline = opened + seconds
         motion_since = self._motion_clock()
@@ -581,12 +639,13 @@ class MacVoice:
     def _tone(self) -> None:
         """Play the listening tone and wait for it to finish; the window opens after it."""
         import numpy as np
-        import sounddevice as sd
 
         started = time.monotonic()
         with self._audio:
-            sd.play(np.array(listening_tone(), dtype=np.float32), TTS_RATE)
-            sd.wait()
+            stream = self._output()
+            sound = np.array(listening_tone(), dtype=np.float32)
+            self._write(stream, sound, threading.Event(), barge=False)
+            self._close_output(stream, drain=True)
         if (late := time.monotonic() - started - LISTEN_TONE_S) > 0.5:
             log.info("the listening tone came %.1f s late", late)
 

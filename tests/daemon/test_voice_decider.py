@@ -28,6 +28,7 @@ class FakeVoice:
         self.headset = headset
         self.enrolled = enrolled
         self.said: list[str] = []
+        self.toned: list[str] = []  # what was said with the listening tone after it
         self.mic_open = False
         self.listens = 0
 
@@ -40,8 +41,10 @@ class FakeVoice:
     def can_say(self, word: str) -> bool:
         return word.lower() != "pydantic"
 
-    async def say(self, text: str, chime: int | None = None) -> None:
+    async def say(self, text: str, chime: int | None = None, tone: bool = False) -> None:
         self.said.append(text)
+        if tone:
+            self.toned.append(text)
 
     async def listen(self, seconds: float) -> Heard | None:
         self.listens += 1
@@ -123,6 +126,25 @@ def test_an_answer_begun_too_early_is_asked_again_after_the_tone() -> None:
     assert decide(voice, pending()).outcome == "deny"
     assert "Wait for the tone, then say yes or no." in voice.said
     assert "Sorry, say yes or no." not in voice.said
+
+
+def test_the_tone_follows_what_asks_for_an_answer_and_nothing_else() -> None:
+    # The tone rides on the end of the sentence before a listen, so it comes right after the
+    # last word: a separate tone came up to a second late, on top of the answer.
+    question = "api wants to edit app dot p y, in the src folder. Approve?"
+    voice = FakeVoice([TOO_EARLY, "hold on"])
+    assert decide(voice, pending()).outcome == "handoff"
+    assert voice.toned == [question, "Wait for the tone, then say yes or no."]
+    assert voice.said[-1] == "Okay, it's on your screen."  # no tone: nothing is asked
+    voice = FakeVoice(["mm-hmm", "yes"])
+    assert decide(voice, pending()).outcome == "allow"
+    assert voice.toned == [question, "Sorry, say yes or no."]
+
+
+def test_a_question_asked_again_after_silence_ends_with_the_tone() -> None:
+    voice = FakeVoice([None, "yes"])
+    assert decide(voice, pending()).outcome == "allow"
+    assert len(voice.toned) == 2
 
 
 def test_two_answers_begun_too_early_go_to_the_screen() -> None:

@@ -74,6 +74,17 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 - `earshot talk` gave up after 5 seconds, before the daemon's listening window and reply were
   done, and said the daemon wasn't running. It now waits up to 40 seconds for `talk` (and still 5
   for `mode` and `status`).
+- Found at the Phase 4 gate: a long question could go silent after its last word for up to
+  minutes (191 s once), until you spoke or the request timed out, and nothing else was said
+  meanwhile. Kokoro makes a tier-2 question's four clauses at once, filling the speech queue,
+  and the end marker gave up after a second and was lost. It now waits for room like a clause.
+  The clause's audio is also made under the MLX lock now, and a stall over 15 s logs every
+  thread's stack.
+- The listening tone came 0.5–1 s after the question, on top of your answer, so the answer was
+  thrown away as begun too early. Every piece of a sentence (chime, clauses, tone) was its own
+  stream, and each new stream on the AirPods took that long to start and could clip a piece's
+  edges. A sentence now plays through one stream, a question ends with the tone right after its
+  last word, and the window opens when it has played (D-034).
 
 ## [0.2.0] - 2026-11-11
 
