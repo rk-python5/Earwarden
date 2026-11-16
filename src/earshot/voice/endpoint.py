@@ -32,10 +32,18 @@ class Reply(NamedTuple):
     loudest: float
 
 
-def find_reply(levels: Sequence[tuple[float, float]], opened: float, now: float) -> Reply | None:
-    """The first reply in the window, or None if nobody has spoken in it yet.
+def find_reply(
+    levels: Sequence[tuple[float, float]],
+    opened: float,
+    now: float,
+    window: float | None = None,
+) -> Reply | None:
+    """The first reply from `opened` on, or None if nobody has spoken yet.
 
     `levels` holds a (time, RMS) pair per frame, oldest first, and may begin before `opened`.
+    `window` is when the window really opened, if the search starts later, after a noise that
+    wasn't speech: only sound from before `window` makes a reply cut off. Without it, the
+    ignored noise's own tail counted as "before the window".
     """
     inside = [(t, level) for t, level in levels if t >= opened]
     if not inside:
@@ -50,7 +58,8 @@ def find_reply(levels: Sequence[tuple[float, float]], opened: float, now: float)
         if t - end >= END_SILENCE_S or t - start >= MAX_SPEECH_S:
             break
         end = t
-    cut_off = any(level > threshold for t, level in levels if start - LEAD_QUIET_S <= t < opened)
+    before = opened if window is None else window
+    cut_off = any(level > threshold for t, level in levels if start - LEAD_QUIET_S <= t < before)
     loudest = max(level for t, level in inside if start <= t <= end)
     still_going = now - end < END_SILENCE_S and now - start < MAX_SPEECH_S
     return Reply(start, None if still_going else end, cut_off, noise, threshold, loudest)

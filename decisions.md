@@ -730,6 +730,23 @@ How this file works:
 - **Safety:** unchanged. A command window still can't answer anything, and an answer window is
   still never interrupted: the floor is only free while the mic is closed.
 
+### D-036 Only speech from before the tone counts as cut off
+
+- **Date:** 2026-11-16 · **Status:** Accepted · **By:** Claude, found while checking D-034 on the
+  Mac, to confirm
+- **Decision:** amends how D-027's window rule is applied, not the rule.
+  - **A cut-off reply must be speech.** Silero is asked first; a sound that isn't speech is
+    ignored and the window listens on, whether or not it seemed to begin early.
+  - **"Before the window" means before the tone.** After an ignored noise the search starts
+    again past it, but only sound from before the window itself can make a reply cut off.
+  - Speech begun before the tone is still refused and never parsed: "Wait for the tone, then …".
+- **Why:** with the MacBook's mic, four of four windows ended "cut off" with nobody speaking. A
+  bump was ignored as not speech, the room's level then dropped, and the bump's tail became a
+  "reply" that "began before the window", so Earshot would have asked to wait for the tone.
+- **Evidence:** `dev/false_approvals.py` on Step 0's recordings: 0 false approvals, 18 of 18 real
+  approvals heard, 109 of 110 replies heard as labelled (the same safe miss as before), 0 of 130
+  room clips passed VAD.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.

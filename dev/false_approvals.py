@@ -57,15 +57,16 @@ def hear(voice: MacVoice, audio: Any, opened: float) -> tuple[str, str]:
     """What the daemon makes of this audio if the window opens at `opened` seconds."""
     levels = frame_levels(audio)
     now = len(audio) / ASR_RATE
+    window = opened  # the search moves past noises; the window itself doesn't
     while True:
-        reply = endpoint.find_reply(levels, opened, now)
+        reply = endpoint.find_reply(levels, opened, now, window)
         if reply is None:
             return "nothing", ""
-        if reply.cut_off:
-            return "cut off", ""
         end = now if reply.end is None else reply.end
         candidate = clip(audio, max(opened, reply.start - PRE_ROLL_S), end + FRAME_S + 0.25)
         if voice.is_speech(candidate):
+            if reply.cut_off:  # never parsed (P-20)
+                return "cut off", ""
             transcript = voice._recognize(candidate).transcript
             return intents.parse(transcript).kind, transcript
         opened = end + FRAME_S  # noise: listen on after it, as the daemon does

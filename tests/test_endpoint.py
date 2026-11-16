@@ -88,3 +88,26 @@ def test_sound_well_before_the_window_doesnt_cut_off_a_reply() -> None:
     reply = find_reply(levels, opened=1.0, now=2.5)
     assert reply is not None
     assert not reply.cut_off
+
+
+def test_an_ignored_noise_inside_the_window_doesnt_cut_off_what_follows() -> None:
+    """A bump at 1.2 s, judged not speech, with a soft tail; the search starts again after it.
+    The room is quieter there, so the threshold drops and the tail becomes a "reply" right after
+    the bump. The bump was inside the window, so it mustn't make that "begin before the window"
+    (at the Phase 4 gate, a noise became "Wait for the tone" with nobody speaking)."""
+    levels = frames((0.0, 1.2, 0.004), (1.2, 1.3, VOICE), (1.3, 1.5, 0.015), (1.5, 3.0, 0.003))
+    after_bump = 1.31
+    old = find_reply(levels, opened=after_bump, now=3.0)
+    assert old is not None
+    assert old.cut_off  # what it used to say
+    reply = find_reply(levels, opened=after_bump, now=3.0, window=1.0)
+    assert reply is not None
+    assert not reply.cut_off
+
+
+def test_sound_before_the_real_window_still_cuts_off_a_reply_found_later() -> None:
+    """Talking over the prompt is caught however late the search starts."""
+    levels = frames((0.6, 1.2, VOICE), (1.2, 2.5, ROOM))
+    reply = find_reply(levels, opened=1.0, now=2.5, window=1.0)
+    assert reply is not None
+    assert reply.cut_off

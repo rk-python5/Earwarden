@@ -578,6 +578,7 @@ class MacVoice:
             self._tone()  # no question just ended with one: push-to-talk, or enrolment
         self._toned = 0.0
         opened = time.monotonic() + GUARD_S  # nothing from before the window counts (D-015)
+        window = opened  # `opened` moves past noises; the window itself doesn't
         deadline = opened + seconds
         motion_since = self._motion_clock()
         self._nod_seen = False  # one log line per window, for the soak's count
@@ -590,7 +591,7 @@ class MacVoice:
             with self._lock:
                 frames = [(t, c) for t, c in self._frames if t >= opened - endpoint.LEAD_QUIET_S]
             levels = [(t, float(np.sqrt(np.mean(c**2)))) for t, c in frames]
-            reply = endpoint.find_reply(levels, opened, now)
+            reply = endpoint.find_reply(levels, opened, now, window)
             if reply is None:
                 if now > deadline:
                     inside = [level for t, level in levels if t >= opened]
@@ -623,10 +624,10 @@ class MacVoice:
                 "threshold": round(reply.threshold, 4),
                 "loudest": round(reply.loudest, 4),
             }
-            if reply.cut_off:
+            speech = self.is_speech(clip)
+            if speech and reply.cut_off:  # never parsed (P-20): asked again after the tone
                 self._kept = self._keep(clip, verdict="cut off", **levels_seen)
                 return CUT_OFF
-            speech = self.is_speech(clip)
             verdict = "speech" if speech else "not speech"
             self._kept = self._keep(clip, verdict=verdict, **levels_seen)
             if speech:

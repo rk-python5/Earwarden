@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 
 from earshot.voice import mac
+from earshot.voice.decider import CUT_OFF
 from earshot.voice.mac import MacVoice
 
 
@@ -410,3 +411,24 @@ def test_a_nod_with_nods_off_is_seen_logged_and_ignored(caplog: pytest.LogCaptur
     assert MacVoice(helper=helper, nods=True)._gesture(0.0) == "nod"  # type: ignore[arg-type]
     helper.motion = [*still(0, 1.5), *swing(1.5, "z"), *swing(2.1, "z")]
     assert voice._gesture(0.0) == "shake"  # shakes always count
+
+
+@pytest.mark.parametrize(("speech", "expected"), [(False, None), (True, "cut off")])
+def test_only_speech_from_before_the_window_counts_as_cut_off(
+    stream_sd: FakeSounddevice, monkeypatch: pytest.MonkeyPatch, speech: bool, expected: Any
+) -> None:
+    # A noise that the endpointer places before the window used to come back as "cut off", and
+    # Earshot said "Wait for the tone" with nobody speaking. Speech still never gets parsed.
+    import numpy as np
+
+    from earshot.voice import endpoint
+
+    voice = MacVoice()
+    voice._mic, voice._mic_rate = "mic", mac.ASR_RATE
+    voice._toned = time.monotonic()
+    voice._frames.append((time.monotonic() + 60, np.full(320, 0.05, dtype=np.float32)))
+    replies = iter([endpoint.Reply(0.0, 1e12, True, 0.001, 0.01, 0.05)])  # one sound, then quiet
+    monkeypatch.setattr(endpoint, "find_reply", lambda *args: next(replies, None))
+    monkeypatch.setattr(voice, "is_speech", lambda clip: speech)
+    heard = voice._capture(0.05)
+    assert heard is (CUT_OFF if expected == "cut off" else None)

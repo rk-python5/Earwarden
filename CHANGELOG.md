@@ -96,6 +96,11 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   minutes), so for that time the stem did nothing, `earshot talk` was refused, other approvals
   waited, and "details", which spells out a waiting request, could never run. The floor is now
   free while it holds; the approval takes it back in turn to ask again (D-035).
+- A noise in the answer window could make Earshot say "Wait for the tone, then …" with nobody
+  speaking. A sound that seemed to begin before the window was refused as cut off before Silero
+  was asked whether it was speech, and after an ignored noise the noise's own tail counted as
+  "before the window". Now only speech counts as cut off, and only sound from before the tone
+  does (D-036). Speech begun before the tone is still never parsed.
 
 ## [0.2.0] - 2026-11-11
 
