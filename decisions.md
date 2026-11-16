@@ -676,6 +676,22 @@ How this file works:
   - Everything else in `docs/phase-4-plan.md` is Claude's to build, and the choices it makes along
     the way are listed in P-22 to confirm at the gate.
 
+### D-033 The helper's mic is an input-only capture session
+
+- **Date:** 2026-11-16 · **Status:** Accepted · **By:** Claude, found at the Phase 4 gate, to
+  confirm
+- **Decision:** `EarshotMotion.app` captures the mic with `AVCaptureSession` and
+  `AVCaptureAudioDataOutput`, asking for 16 kHz mono 16-bit samples, not with `AVAudioEngine`'s
+  input node (D-016's first design). The protocol is unchanged: `{"audio": …}` now arrives in 20 ms
+  chunks instead of about 100 ms, which the daemon already cuts and times by samples.
+- **Why:** With the AirPods playing at 48 kHz and their mic at 24 kHz, the engine's input unit,
+  which has an output side too, refused to start (CoreAudio error -10868). The engine also kept a
+  stale format after a device change, and the tap then produced nothing. A probe against a stand-in
+  daemon got 7.92 s of audio in 8 s with the new capture and none with the old.
+- **Consequences:** Nothing in the safety path changes: the daemon still decides what a clip means.
+  A stopped capture (a device change) is restarted from the session's runtime-error and
+  interruption notifications.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.

@@ -10,7 +10,8 @@
 // - with --stem, becomes the "Now Playing" app, so a press of the AirPods stem (play/pause)
 //   reaches it, and sends {"button": "stem"} for push-to-talk (D-032)
 // - asks for both permissions when it starts, so neither prompt arrives in the middle of a request
-// - starts the mic again if the audio setup changes under it, and says so in a "log" message
+// - starts the mic again if capture stops under it (a device change), and says so in a "log"
+//   message
 // Messages are JSON lines both ways; see src/earshot/voice/helper.py. If the daemon goes away,
 // it stops everything and reconnects every two seconds.
 
@@ -193,15 +194,94 @@ func hasInput(_ id: AudioDeviceID) -> Bool {
     return AudioObjectGetPropertyDataSize(id, &address, 0, nil, &size) == noErr && size > 0
 }
 
+// MARK: - The mic
+
+// Input only, through AVCaptureSession, which converts to 16 kHz mono 16-bit itself.
+// AVAudioEngine isn't used: on macOS its input runs through a unit with an output side too, and
+// when the AirPods' output is at 48 kHz (music) while their mic is at 24 kHz (a call), it won't
+// start at all (error -10868, format not supported).
+final class Mic: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
+    private let session = AVCaptureSession()
+    private let queue = DispatchQueue(label: "dev.earshot.motion.mic")
+    private let onAudio: (Data) -> Void
+    private(set) var chunks = 0
+    let device: String
+
+    // Nil when no mic can be opened; `failure` then says why.
+    init?(headset: String, onAudio: @escaping (Data) -> Void, failure: inout String) {
+        self.onAudio = onAudio
+        let found = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.microphone, .external], mediaType: .audio, position: .unspecified
+        ).devices
+        guard let chosen = found.first(where: {
+            $0.localizedName.localizedCaseInsensitiveContains(headset)
+        }) ?? AVCaptureDevice.default(for: .audio) else {
+            failure = "no mic found"
+            return nil
+        }
+        device = chosen.localizedName
+        super.init()
+        do {
+            let input = try AVCaptureDeviceInput(device: chosen)
+            let output = AVCaptureAudioDataOutput()
+            output.audioSettings = [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: 16_000,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsFloatKey: false,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false,
+            ]
+            output.setSampleBufferDelegate(self, queue: queue)
+            session.beginConfiguration()
+            guard session.canAddInput(input), session.canAddOutput(output) else {
+                session.commitConfiguration()
+                failure = "the capture session refused \(chosen.localizedName)"
+                return nil
+            }
+            session.addInput(input)
+            session.addOutput(output)
+            session.commitConfiguration()
+        } catch {
+            failure = "\(chosen.localizedName): \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    var running: Bool { session.isRunning }
+    var captureSession: AVCaptureSession { session }
+
+    func start() { session.startRunning() }  // blocks until running; call off the main thread if it matters
+    func stop() { session.stopRunning() }
+
+    func captureOutput(
+        _ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        guard let block = CMSampleBufferGetDataBuffer(sampleBuffer) else { return }
+        let length = CMBlockBufferGetDataLength(block)
+        guard length > 0 else { return }
+        var data = Data(count: length)
+        let status = data.withUnsafeMutableBytes { raw in
+            CMBlockBufferCopyDataBytes(
+                block, atOffset: 0, dataLength: length, destination: raw.baseAddress!)
+        }
+        guard status == kCMBlockBufferNoErr else { return }
+        chunks += 1
+        onAudio(data)
+    }
+}
+
 // MARK: - The helper
 
 final class Helper {
     let options: Options
     let link: Link
-    let engine = AVAudioEngine()
     let motion = CMHeadphoneMotionManager()
     let motionQueue = OperationQueue()
-    var micOn = false
+    var mic: Mic?
+    var micOn: Bool { mic != nil }
     var motionWanted = false
     var motionSeen = false
 
@@ -238,9 +318,15 @@ final class Helper {
         AVCaptureDevice.requestAccess(for: .audio) { [weak self] _ in
             DispatchQueue.main.async { self?.reportPermissions() }
         }
-        NotificationCenter.default.addObserver(
-            forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
-        ) { [weak self] _ in self?.audioSetupChanged() }
+        for name in [AVCaptureSession.runtimeErrorNotification,
+                     AVCaptureSession.wasInterruptedNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
+                [weak self] note in
+                guard let self, let mic = self.mic, (note.object as AnyObject?) === mic.captureSession
+                else { return }
+                self.audioSetupChanged(note.name.rawValue)
+            }
+        }
         askForMotion()
         if options.stem { listenForStem() }
         link.connectForever()
@@ -291,13 +377,12 @@ final class Helper {
         }
     }
 
-    // A change of device or format stops the engine, and its tap with it: start the mic again.
-    func audioSetupChanged() {
-        guard micOn, !engine.isRunning else { return }
-        engine.inputNode.removeTap(onBus: 0)
-        micOn = false
+    // A device change can stop capture under it: start the mic again.
+    func audioSetupChanged(_ why: String) {
+        guard let old = mic, !old.running else { return }
+        setMic(false)
         setMic(true)
-        link.send(["log": "the audio setup changed: mic \(micOn ? "started again" : "lost")"])
+        link.send(["log": "the mic stopped (\(why)): \(micOn ? "started again" : "lost")"])
     }
 
     func reportDevices() {
@@ -325,56 +410,32 @@ final class Helper {
         link.send(["permission": ["mic": mic, "motion": motionStatus]])
     }
 
-    // The headset's mic, converted to 16 kHz mono 16-bit, sent in the buffers the engine gives.
+    // The headset's mic, as 16 kHz mono 16-bit samples, sent in the buffers capture gives.
     func setMic(_ on: Bool) {
         guard on != micOn else { return }
-        micOn = on
         if !on {
-            engine.inputNode.removeTap(onBus: 0)
-            engine.stop()
-            return
-        }
-        if let device = allDevices().first(where: {
-            deviceName($0).localizedCaseInsensitiveContains(options.headset) && hasInput($0)
-        }), let unit = engine.inputNode.audioUnit {
-            var id = device
-            AudioUnitSetProperty(
-                unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &id,
-                UInt32(MemoryLayout<AudioDeviceID>.size))
-        }
-        let input = engine.inputNode.outputFormat(forBus: 0)
-        guard let target = AVAudioFormat(
-            commonFormat: .pcmFormatInt16, sampleRate: 16_000, channels: 1, interleaved: true),
-            let converter = AVAudioConverter(from: input, to: target)
-        else {
-            link.send(["permission": ["mic": "unavailable"]])
-            micOn = false
-            return
-        }
-        engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: input) { [weak self] buffer, _ in
-            let frames = AVAudioFrameCount(Double(buffer.frameLength) * 16_000 / input.sampleRate) + 16
-            guard let out = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: frames) else { return }
-            var consumed = false
-            var error: NSError?
-            converter.convert(to: out, error: &error) { _, status in
-                if consumed {
-                    status.pointee = .noDataNow
-                    return nil
-                }
-                consumed = true
-                status.pointee = .haveData
-                return buffer
+            if let old = mic {
+                mic = nil
+                old.stop()
+                link.send(["log": "mic off: \(old.chunks) chunks sent"])
             }
-            guard error == nil, out.frameLength > 0, let samples = out.int16ChannelData else { return }
-            let data = Data(bytes: samples[0], count: Int(out.frameLength) * 2)
-            self?.link.send(["audio": data.base64EncodedString()])
+            return
         }
-        do {
-            try engine.start()
-            link.send(["log": "mic on: \(Int(input.sampleRate)) Hz, \(input.channelCount) channel(s)"])
-        } catch {
-            engine.inputNode.removeTap(onBus: 0)
-            micOn = false
+        var failure = ""
+        guard let new = Mic(headset: options.headset, onAudio: { [weak self] data in
+            self?.link.send(["audio": data.base64EncodedString()])
+        }, failure: &failure) else {
+            link.send(["log": "mic failed: \(failure)"])
+            link.send(["permission": ["mic": "unavailable"]])
+            return
+        }
+        mic = new
+        new.start()
+        if new.running {
+            link.send(["log": "mic on: \(new.device), captured at 16000 Hz"])
+        } else {
+            mic = nil
+            link.send(["log": "mic failed to start: \(new.device)"])
             link.send(["permission": ["mic": "unavailable"]])
         }
     }

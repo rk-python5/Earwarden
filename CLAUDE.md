@@ -99,7 +99,7 @@ the CI run after changing Swift code.
 
 ## Layout
 
-- `helpers/earshot-motion/`: the signed helper app (Swift, D-016): the mic, device changes and
+- `helpers/earshot-motion/`: the signed helper app (Swift, D-016, D-033): the mic, device changes and
   head motion, for `earshotd --helper`. `build.sh` builds and signs it; CI builds it too.
 - `dev/activate`: sourced per terminal on the Mac. It keeps uv, its Python, caches, spike
   environments and model downloads in the git-ignored `.tools/` (D-013).

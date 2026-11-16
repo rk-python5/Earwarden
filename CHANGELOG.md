@@ -67,6 +67,10 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ### Fixed
 
+- Found at the Phase 4 gate: the helper's mic didn't start with the AirPods in use (push-to-talk
+  heard 0 frames). It captured through `AVAudioEngine`, which won't start when the AirPods'
+  output runs at 48 kHz and their mic at 24 kHz (error -10868). It now captures input only,
+  through `AVCaptureSession`, which delivers 16 kHz mono itself (D-033).
 - `earshot talk` gave up after 5 seconds, before the daemon's listening window and reply were
   done, and said the daemon wasn't running. It now waits up to 40 seconds for `talk` (and still 5
   for `mode` and `status`).
