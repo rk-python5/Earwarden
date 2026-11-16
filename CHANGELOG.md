@@ -85,6 +85,10 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   stream, and each new stream on the AirPods took that long to start and could clip a piece's
   edges. A sentence now plays through one stream, a question ends with the tone right after its
   last word, and the window opens when it has played (D-034).
+- Pressing the AirPods stem while Earshot's mic was open put "Cannot Control Mic with AirPods" on
+  screen: with the mic open, a press is macOS's mute gesture, and an app that captures must
+  handle it. The helper now does, and never mutes; with `--stem` the press is passed on like any
+  other, and the daemon still ignores presses during an approval (D-032, D-033).
 
 ## [0.2.0] - 2026-11-11
 

@@ -328,8 +328,30 @@ final class Helper {
             }
         }
         askForMotion()
+        listenForMuteGesture()
         if options.stem { listenForStem() }
         link.connectForever()
+    }
+
+    // While the mic is open, a press of the AirPods stem is macOS's mute gesture, not play/pause.
+    // An app that captures without handling it gets "Cannot Control Mic with AirPods" on screen.
+    // The helper handles it and never mutes: Earshot's mic stays live for the answer, and with
+    // --stem the press is passed on like any other (the daemon ignores presses during an
+    // approval, D-032).
+    func listenForMuteGesture() {
+        do {
+            try AVAudioApplication.shared.setInputMuteStateChangeHandler { [weak self] _ in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    try? AVAudioApplication.shared.setInputMuted(false)
+                    self.link.send(["log": "the mute gesture (a stem press with the mic open): mic kept on"])
+                    if self.options.stem { self.link.send(["button": "stem"]) }
+                }
+                return true
+            }
+        } catch {
+            link.send(["log": "couldn't take the mute gesture: \(error.localizedDescription)"])
+        }
     }
 
     // The AirPods stem sends the system's play/pause command to the "Now Playing" app. Claiming

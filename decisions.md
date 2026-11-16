@@ -691,6 +691,9 @@ How this file works:
 - **Consequences:** Nothing in the safety path changes: the daemon still decides what a clip means.
   A stopped capture (a device change) is restarted from the session's runtime-error and
   interruption notifications.
+- **The mute gesture:** with the mic open, a stem press is macOS's mute gesture, and a capturing
+  app without a handler gets "Cannot Control Mic with AirPods" on screen. The helper registers
+  one (`AVAudioApplication`), keeps the mic live, and with `--stem` passes the press on.
 
 ### D-034 The tone ends the question, through one output stream
 
