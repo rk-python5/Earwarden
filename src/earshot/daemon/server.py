@@ -32,6 +32,8 @@ from pathlib import Path, PurePosixPath
 from pydantic import ValidationError
 
 from earshot import audit, auth, contracts, paths, wire
+from earshot.daemon import briefing
+from earshot.daemon.floor import FAILURE, MODES, Floor
 from earshot.daemon.state import Pending, PendingRequests, Resolved, Session, Sessions
 from earshot.narrator import redact
 from earshot.policy import engine, places
@@ -89,7 +91,10 @@ def open_socket(path: Path) -> socket.socket:
     return sock
 
 
-def parse(line: bytes) -> contracts.ApprovalRequest | contracts.Event | None:
+Message = contracts.ApprovalRequest | contracts.Event | contracts.Command
+
+
+def parse(line: bytes) -> Message | None:
     """The message on one line, or None if it isn't a valid one."""
     try:
         peek = json.loads(line)
@@ -97,6 +102,8 @@ def parse(line: bytes) -> contracts.ApprovalRequest | contracts.Event | None:
             return None
         if "event" in peek:
             return contracts.Event.model_validate_json(line)
+        if "command" in peek:
+            return contracts.Command.model_validate_json(line)
         return contracts.ApprovalRequest.model_validate_json(line)
     except (ValueError, ValidationError):
         return None
@@ -110,12 +117,16 @@ class Daemon:
         max_wait_s: float = MAX_WAIT_S,
         observe: bool = False,
         audit_log: audit.AuditLog | None = None,
+        floor: Floor | None = None,
     ) -> None:
         self.where = where
         self.decider = decider
         self.max_wait_s = max_wait_s
         self.observe = observe
         self.audit_log = audit_log
+        self.floor = floor  # who speaks when (Phase 4); None without voice
+        if floor is not None and floor.briefing is None:
+            floor.briefing = self._briefing_if_running
         self.sessions = Sessions()
         self.pending = PendingRequests()
         self.resolved: collections.deque[Resolved] = collections.deque(maxlen=HISTORY)
@@ -136,11 +147,15 @@ class Daemon:
         )
         log.info("listening on %s", self.where.socket)
         self.ready.set()
+        if self.floor is not None:
+            self.floor.start()
         try:
             async with server:
                 try:
                     await self._stopping.wait()
                 finally:
+                    if self.floor is not None:
+                        await self.floor.stop()
                     # Stop accepting, but keep the server open while connections already
                     # accepted finish: in Python 3.11, closing it mid-accept drops the new
                     # connection without closing its socket.
@@ -210,6 +225,9 @@ class Daemon:
         if isinstance(message, contracts.Event):
             self._on_event(message)
             return
+        if isinstance(message, contracts.Command):
+            await self._on_command(message, writer)
+            return
         await self._on_request(message, reader, writer)
 
     def _on_event(self, event: contracts.Event) -> None:
@@ -222,7 +240,10 @@ class Daemon:
         if event.event == "SessionStart" and event.model:
             session.model = event.model
         elif event.event == "Stop":
+            worked = session.working_since is not None  # a turn that ran tools, not a reply
             session.note_stop(event.last_assistant_message)
+            if worked and self.floor is not None:
+                self.floor.finished(session.name)
         elif event.event == "Notification" and event.notification_type == "idle_prompt":
             session.note_idle()
         elif event.event == "PostToolUse":
@@ -266,6 +287,8 @@ class Daemon:
                 answer, reason = None, "hook_closed"
             else:
                 answer, reason = decision(pending, "handoff"), "timeout"
+                if self.floor is not None:
+                    self.floor.announce(FAILURE, f"{session.name} approval moved to your screen.")
         finally:
             for task in (decide, hook_gone, cancelled):
                 task.cancel()
@@ -284,6 +307,42 @@ class Daemon:
         )
         log.info("request %s: %s (%s) after %.1f s", request.id, outcome, reason, seconds)
         self._audit(pending, outcome, reason)
+
+    def waiting(self) -> set[str]:
+        """The sessions with a request waiting for an answer."""
+        return {p.request.session_id for p in self.pending.all() if not p.cancelled.is_set()}
+
+    def briefing(self) -> str:
+        return briefing.briefing(self.sessions.all(), self.waiting())
+
+    def _briefing_if_running(self) -> str | None:
+        """For chatty mode's five-minute briefings: only while a session is doing something."""
+        busy = any(s.working_since is not None for s in self.sessions.all()) or self.waiting()
+        return self.briefing() if busy else None
+
+    async def _on_command(self, command: contracts.Command, writer: asyncio.StreamWriter) -> None:
+        """`earshot mode`, `earshot status`, `earshot talk`. Never touches a waiting request."""
+        ok, text = True, ""
+        if command.command == "status":
+            text = self.briefing()
+        elif self.floor is None:
+            ok, text = False, "earshotd isn't running with voice, so there's nothing to announce."
+        elif command.command == "mode":
+            if command.arg in MODES:
+                self.floor.mode = command.arg
+                text = f"Mode: {command.arg}."
+                log.info("mode: %s", command.arg)
+            else:
+                ok, text = False, "Modes are quiet, focus and chatty."
+        elif command.command == "talk":
+            ok, text = await self._talk()
+        reply = contracts.CommandReply(v=wire.PROTOCOL_VERSION, ok=ok, text=text)
+        with contextlib.suppress(OSError):
+            writer.write(wire.encode(reply.model_dump(mode="json")))
+            await writer.drain()
+
+    async def _talk(self) -> tuple[bool, str]:
+        return False, "Push-to-talk isn't available yet."
 
     def _audit(self, pending: Pending, outcome: str, reason: str) -> None:
         """One keyed, chained line per decision (D-025). Secrets are redacted first."""
@@ -362,6 +421,7 @@ def run_forever(
     decider: Decider = hand_off,
     on_start: Callable[[], Awaitable[None]] | None = None,
     on_stop: Callable[[], Awaitable[None]] | None = None,
+    floor: Floor | None = None,
 ) -> None:
     """Run the daemon in this process until SIGTERM or SIGINT. `on_start` runs on its loop first,
     and `on_stop` after it stops: the helper link (milestone 7) lives there."""
@@ -373,6 +433,7 @@ def run_forever(
             decider=decider,
             observe=observe,
             audit_log=audit.AuditLog(where.audit_dir, audit.load_key(where)),
+            floor=floor,
         )
         loop = asyncio.get_running_loop()
         for signum in (signal.SIGTERM, signal.SIGINT):

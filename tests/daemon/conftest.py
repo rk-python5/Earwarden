@@ -11,6 +11,7 @@ import pytest
 from harness import RunningDaemon
 
 from earshot.audit import AuditLog
+from earshot.daemon.floor import Floor
 from earshot.daemon.server import MAX_WAIT_S, Decider, hand_off
 
 
@@ -34,8 +35,9 @@ def start_daemon(home: Path) -> Iterator[StartDaemon]:
         max_wait_s: float = MAX_WAIT_S,
         observe: bool = False,
         audit_log: AuditLog | None = None,
+        floor: Floor | None = None,
     ) -> RunningDaemon:
-        daemon = RunningDaemon(home, decider, max_wait_s, observe, audit_log)
+        daemon = RunningDaemon(home, decider, max_wait_s, observe, audit_log, floor)
         running.append(daemon)
         return daemon
 

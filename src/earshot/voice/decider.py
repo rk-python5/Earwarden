@@ -22,6 +22,7 @@ import time
 from typing import Literal, NamedTuple, Protocol
 
 from earshot import contracts, paths, wire
+from earshot.daemon.floor import FAILURE, Floor
 from earshot.daemon.state import Pending
 from earshot.narrator.spoken import speakable
 from earshot.narrator.templates import narrate
@@ -75,6 +76,7 @@ class VoiceDecider:
         reannounce_s: float = 60.0,
         reannounce_max: int = 3,
         where: paths.Paths | None = None,
+        floor: Floor | None = None,
     ) -> None:
         self.voice = voice
         self.where = where  # where the policy files are; None for the built-in rules alone
@@ -82,8 +84,9 @@ class VoiceDecider:
         self.window_s = window_s
         self.reannounce_s = reannounce_s
         self.reannounce_max = reannounce_max
-        self._floor = asyncio.Lock()
-        self._queued = 0
+        # Who speaks when (Phase 4). The daemon shares its floor, so announcements wait for an
+        # open answer window; on its own, the decider makes one.
+        self.floor = floor if floor is not None else Floor(voice, presence)
 
     async def __call__(self, pending: Pending) -> contracts.Decision:
         request = pending.request
@@ -114,21 +117,15 @@ class VoiceDecider:
         if not self.voice.headset_ready():
             notes["rules"].append("presence: the headset isn't the output")
             return _decision(pending, "handoff")
-        self._queued += 1  # one approval is asked at a time; the rest wait their turn
-        try:
-            await self._floor.acquire()
-        finally:
-            self._queued -= 1
-        try:
+        async with self.floor.approval():  # one at a time; the rest wait their turn
             return await self._ask(pending, narration.text, voice_ok, word, narration.verb)
-        finally:
-            self._floor.release()
 
     async def _say(self, pending: Pending, text: str) -> None:
         said = speakable(text, self.voice.can_say)
         pending.notes["spoken"] = " ".join(filter(None, [pending.notes.get("spoken"), said]))
         start = time.monotonic()
         await self.voice.say(said, chime=pending.session.chime)
+        self.floor.last_said = said
         timings = pending.notes.setdefault("timings_ms", {})
         timings["speak"] = timings.get("speak", 0) + int((time.monotonic() - start) * 1000)
 
@@ -142,8 +139,8 @@ class VoiceDecider:
         question = f"{text} To {verb}, {answer_with}." if word else f"{text} Approve?"
         if word:
             pending.notes["challenge"] = word
-        if self._queued:
-            question += f" {self._queued} more waiting."
+        if self.floor.queued:
+            question += f" {self.floor.queued} more waiting."
         await self.voice.open_mic()  # before speaking: the headset mode switch takes ~0.85 s (Q-2)
         try:
             await self._say(pending, question)
@@ -153,6 +150,8 @@ class VoiceDecider:
                 if heard is None:
                     silent += 1
                     if silent > self.reannounce_max:
+                        name = pending.session.name
+                        self.floor.announce(FAILURE, f"{name} approval moved to your screen.")
                         return _decision(pending, "handoff")
                     await self.voice.close_mic()
                     await asyncio.sleep(self.reannounce_s)  # hold, then ask again (D-020)

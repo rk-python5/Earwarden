@@ -116,13 +116,14 @@ the CI run after changing Swift code.
 - `docs/next-steps.md`: the hand-over to local sessions: running the voice, P-20, Phase 2.
 - `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
   `src/earshot/__init__.py` free of imports; a test enforces it.
-  - `contracts.py`: the five messages as Pydantic models, at version 1.
+  - `contracts.py`: the spec's five messages, plus the `Command` from `earshot mode`, `status`
+    and `talk` (Phase 4), as Pydantic models, at version 1.
   - `wire.py` and `paths.py`: the wire format and file locations that the hook and the daemon
     share. Standard library only.
   - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
     imports.
   - `cli.py`: the `earshot` command (`init`, `uninstall`, `observe`, `audit`, `service`, `doctor`,
-    `test`, `policy`, `enroll`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
+    `test`, `policy`, `enroll`, `mode`, `status`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
     Phase 1's safety stub (D-019), kept as the reference the policy engine must never be looser
     than.
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
@@ -142,7 +143,10 @@ the CI run after changing Swift code.
     keyboard idle time, and `mac.py`, which speaks and listens with Kokoro, Silero VAD, Parakeet
     and Whisper (macOS only; `uv sync --group voice`).
   - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`
-    the sessions and waiting requests, `cli.py` the command. `auth.py` keeps the shared token.
+    the sessions and waiting requests, `cli.py` the command. `floor.py` decides who speaks when
+    (priorities, modes, the 20-second gap), `briefing.py` says what every session is doing, and
+    `client.py` sends `earshot mode`, `status` and `talk` to the daemon. `auth.py` keeps the
+    shared token.
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in
   `spikes/RESULTS.md`. Spike scripts declare their dependencies inline (PEP 723) and run with
   `uv run`. Their raw output goes to a git-ignored `out/` folder. Only their stdlib and

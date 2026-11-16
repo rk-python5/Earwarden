@@ -217,6 +217,22 @@ def test_silence_is_announced_again_then_handed_off() -> None:
     assert decide(FakeVoice([None, None, None, None]), pending()).outcome == "handoff"
 
 
+def test_an_approval_that_outlives_its_window_is_announced(monkeypatch: pytest.MonkeyPatch) -> None:
+    from earshot.daemon.floor import FAILURE
+
+    async def scenario() -> None:
+        voice = FakeVoice([None, None, None, None])
+        decider = VoiceDecider(voice, Away(), reannounce_s=0, reannounce_max=2)
+        assert (await decider(pending())).outcome == "handoff"
+        (waiting,) = decider.floor._waiting
+        assert (waiting.priority, waiting.text) == (FAILURE, "api approval moved to your screen.")
+        assert await decider.floor.pump()  # said once the floor is free
+        assert voice.said[-1] == "api approval moved to your screen."
+        assert decider.floor.last_said == voice.said[-1]
+
+    asyncio.run(scenario())
+
+
 def test_at_the_keyboard_nothing_is_said() -> None:
     voice = FakeVoice(["yes"])
     item = pending()

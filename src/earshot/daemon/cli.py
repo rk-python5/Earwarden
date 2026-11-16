@@ -8,6 +8,7 @@ import sys
 from collections.abc import Awaitable, Callable
 
 from earshot import auth, paths
+from earshot.daemon.floor import Floor
 from earshot.daemon.server import AlreadyRunningError, Decider, hand_off, run_forever
 
 
@@ -53,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s earshotd %(levelname)s %(message)s")
     decider: Decider = hand_off
+    floor: Floor | None = None
     on_start: Callable[[], Awaitable[None]] | None = None
     on_stop: Callable[[], Awaitable[None]] | None = None
     if args.voice:
@@ -83,7 +85,9 @@ def main(argv: list[str] | None = None) -> int:
         on_start, on_stop = start_link, link.stop
         print("Loading the voice models (the first time, they download)…", file=sys.stderr)
         voice.load()  # until this finishes, there's no socket, so prompts go to the screen
-        decider = VoiceDecider(voice, KeyboardPresence(pinned=args.pin_voice), where=where)
+        presence = KeyboardPresence(pinned=args.pin_voice)
+        floor = Floor(voice, presence)
+        decider = VoiceDecider(voice, presence, where=where, floor=floor)
     try:
         run_forever(
             paths.resolve(args.home),
@@ -91,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             decider=decider,
             on_start=on_start,
             on_stop=on_stop,
+            floor=floor,
         )
     except AlreadyRunningError as exc:
         print(f"earshotd: {exc}", file=sys.stderr)

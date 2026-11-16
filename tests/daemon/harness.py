@@ -14,6 +14,7 @@ from typing import Any
 
 from earshot import contracts, paths
 from earshot.audit import AuditLog
+from earshot.daemon.floor import Floor
 from earshot.daemon.server import Daemon, Decider
 from earshot.daemon.state import Pending
 
@@ -41,8 +42,11 @@ class RunningDaemon:
         max_wait_s: float,
         observe: bool = False,
         audit_log: AuditLog | None = None,
+        floor: Floor | None = None,
     ) -> None:
-        self.daemon = Daemon(paths.resolve(str(home)), decider, max_wait_s, observe, audit_log)
+        self.daemon = Daemon(
+            paths.resolve(str(home)), decider, max_wait_s, observe, audit_log, floor
+        )
         self.error: BaseException | None = None
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()

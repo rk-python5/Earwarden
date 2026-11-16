@@ -1088,7 +1088,16 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
 - **Problem:** Building Phase 4 without stopping (rehaan, 11 Nov) means choosing details the
   spec and D-032 leave open. None of them loosens a rule. They're listed here to confirm or change
   at the gate, before 0.3.0.
-- **Proposal:** (filled in as the milestones land; see `docs/phase-4-plan.md`)
+- **Proposal:**
+  - **A sixth message, `Command`,** carries `earshot mode`, `status` and `talk` to the daemon on
+    the same socket and token. It can't carry a request's fields, and the daemon never answers a
+    request from it.
+  - **Announcements obey presence routing** as approvals do: at the keyboard, or without the
+    headset, an announcement is dropped rather than kept, since you'd see it on the screen.
+  - **"Finished" is announced only for a turn that ran tools,** not for a plain reply, and only
+    in chatty mode (the spec puts finishes at P2, and focus is "approvals and failures").
+  - **An announcement that waited two minutes is dropped,** and the mode isn't kept across
+    restarts: the daemon starts in focus mode.
 - **Status:** Open, for the Phase 4 gate.
 
 ## Open questions

@@ -335,6 +335,27 @@ def _enroll(args: argparse.Namespace, where: paths.Paths, model: Path, link: Any
     return 0 if profile else 1
 
 
+def _command(args: argparse.Namespace, command: str, arg: str | None = None) -> int:
+    from earshot.daemon import client
+
+    reply = client.send(paths.resolve(args.home), command, arg)
+    if reply is None:
+        print("earshotd isn't running (or didn't answer).", file=sys.stderr)
+        return 1
+    print(reply.text)
+    return 0 if reply.ok else 1
+
+
+def mode(args: argparse.Namespace) -> int:
+    """Set what Earshot announces: quiet, focus or chatty (Phase 4)."""
+    return _command(args, "mode", args.name)
+
+
+def status(args: argparse.Namespace) -> int:
+    """What every session is doing, as Earshot would say it."""
+    return _command(args, "status")
+
+
 def policy_check(args: argparse.Namespace) -> int:
     """The tier a request would get, and why, without speaking (the spec's dry run)."""
     from earshot.policy import engine
@@ -444,6 +465,15 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("path", nargs="?", default=".earshot/policy.yaml", help="the repo's policy file")
     q.add_argument("--home", help="Earshot's folder for the token, socket and logs")
     q.set_defaults(run=policy_trust)
+
+    p = commands.add_parser("mode", help="set what Earshot announces: quiet, focus or chatty")
+    p.add_argument("name", choices=["quiet", "focus", "chatty"])
+    p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.set_defaults(run=mode)
+
+    p = commands.add_parser("status", help="what every session is doing, as Earshot would say it")
+    p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.set_defaults(run=status)
 
     p = commands.add_parser("test", help="send one made-up request through the running daemon")
     p.add_argument("--home", help="Earshot's folder for the token, socket and logs")

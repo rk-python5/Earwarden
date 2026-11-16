@@ -1,4 +1,8 @@
-"""The five messages that cross Earshot's component boundaries, at version 1.
+"""The messages that cross Earshot's component boundaries, at version 1.
+
+The spec's five, plus a Command from the `earshot` command to the daemon (Phase 4): "set the
+mode", "what's everyone doing?". A command only changes what Earshot announces; it can't answer a
+request, and the daemon never treats it as one.
 
 These are the spec's data contracts as Pydantic models. Every hop validates what it receives, and
 whatever fails validation is handed to the screen. Unknown fields fail too, so a newer client
@@ -31,6 +35,7 @@ Tier = Annotated[StrictInt, Field(ge=0, le=3)]
 Source = Literal["claude_code", "python_api"]
 Outcome = Literal["allow", "deny", "handoff"]
 EventName = Literal["SessionStart", "SessionEnd", "Stop", "Notification", "PostToolUse"]
+CommandName = Literal["mode", "status", "talk"]
 
 RequestId = Annotated[str, Field(pattern=r"^req_[0-9A-Za-z]{8,64}$")]
 Token = Annotated[str, Field(pattern=r"^[0-9a-f]{32,128}$")]
@@ -127,6 +132,24 @@ class Event(Contract):
         if self.event == "PostToolUse" and (self.tool_name is None or self.input_sha256 is None):
             raise ValueError("a PostToolUse event needs tool_name and input_sha256")
         return self
+
+
+class Command(Contract):
+    """`earshot` to daemon: change the mode, ask for the briefing, or start push-to-talk."""
+
+    v: Version
+    token: Token
+    source: Source
+    command: CommandName
+    arg: ShortText | None = None
+
+
+class CommandReply(Contract):
+    """Daemon to `earshot`: whether the command was done, and what to print."""
+
+    v: Version
+    ok: bool
+    text: str = Field(max_length=2000)
 
 
 class AuditRecord(Contract):

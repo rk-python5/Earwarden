@@ -13,6 +13,18 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   `daemon/briefing.py` turns the registry into "Three sessions. api: running 12 minutes, 14
   tools run. docs: waiting for you. deploy: finished 5 minutes ago.", five sessions at most, with
   no file contents or messages read aloud.
+- The floor manager (Phase 4, milestone 2), `daemon/floor.py`: one voice, in the spec's order.
+  - Approvals take the floor first, one at a time, and an open answer window is never
+    interrupted. An approval that outlives its window is announced: "docs approval moved to your
+    screen."
+  - Sessions that finish are announced in chatty mode, and finishes within 10 seconds are said
+    together ("api and docs finished").
+  - At most one unrequested announcement every 20 seconds; one that waits two minutes is dropped.
+  - Modes: quiet (approvals only), focus (and failures; the default) and chatty (everything,
+    with a briefing every five minutes while something is running).
+  - `earshot mode NAME` and `earshot status` reach the running daemon through a new `Command`
+    message on its socket, with the same token. A command only changes announcements; it can't
+    answer a request.
 
 ### Changed
 

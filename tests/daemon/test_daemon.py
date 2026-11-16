@@ -456,3 +456,90 @@ def test_tokens_compare_exactly() -> None:
 def test_paths_resolve_for_the_daemon(home: Path) -> None:
     where = paths.resolve(str(home))
     assert where.socket == home / "earshotd.sock"
+
+
+# Commands (Phase 4, milestone 2)
+
+
+def command(home: Path, name: str, arg: str | None = None, token_value: str | None = None) -> Any:
+    message: dict[str, Any] = {
+        "v": 1,
+        "token": token_value or token(home),
+        "source": "python_api",
+        "command": name,
+    }
+    if arg is not None:
+        message["arg"] = arg
+    data = raw_exchange(home, wire.encode(message))
+    return json.loads(data) if data else None
+
+
+def test_status_is_the_briefing_even_without_voice(home: Path, start_daemon: StartDaemon) -> None:
+    running = start_daemon(decider=never)
+    proc = start_hook(home, fixture("permission_request"))
+    running.wait_for(lambda d: len(d.pending) == 1)
+    reply = command(home, "status")
+    assert reply["ok"] is True
+    assert reply["text"].startswith("One session.")
+    assert "waiting for you" in reply["text"]
+    assert len(running.daemon.pending) == 1  # the command touched nothing
+    proc.terminate()
+    finish(proc)
+
+
+def test_mode_needs_voice_and_a_known_name(home: Path, start_daemon: StartDaemon) -> None:
+    start_daemon()
+    reply = command(home, "mode", "quiet")
+    assert reply["ok"] is False
+    assert "voice" in reply["text"]
+
+
+def test_mode_changes_the_floor(home: Path, start_daemon: StartDaemon) -> None:
+    from earshot.daemon.floor import Floor
+
+    class Silent:
+        def headset_ready(self) -> bool:
+            return False
+
+        async def say(self, text: str, chime: int | None = None) -> None:
+            pass
+
+    class Away:
+        def away(self) -> bool:
+            return True
+
+    floor = Floor(Silent(), Away())
+    running = start_daemon(floor=floor)
+    assert command(home, "mode", "chatty") == {"v": 1, "ok": True, "text": "Mode: chatty."}
+    assert floor.mode == "chatty"
+    assert command(home, "mode", "loud")["ok"] is False
+    assert floor.mode == "chatty"
+    assert command(home, "talk")["ok"] is False
+    running.stop()
+
+
+def test_a_command_with_the_wrong_token_gets_no_reply(
+    home: Path, start_daemon: StartDaemon
+) -> None:
+    start_daemon()
+    assert command(home, "status", token_value="cd" * 32) is None
+
+
+def test_a_command_can_never_be_a_decision(home: Path, start_daemon: StartDaemon) -> None:
+    # A line with both a command and a request's fields isn't a valid message at all.
+    running = start_daemon(decider=never)
+    proc = start_hook(home, fixture("permission_request"))
+    running.wait_for(lambda d: len(d.pending) == 1)
+    (pending,) = running.daemon.pending.all()
+    forged = {
+        "v": 1,
+        "token": token(home),
+        "source": "python_api",
+        "command": "status",
+        "id": pending.request.id,
+        "outcome": "allow",
+    }
+    assert raw_exchange(home, wire.encode(forged)) == b""
+    assert len(running.daemon.pending) == 1
+    proc.terminate()
+    finish(proc)
