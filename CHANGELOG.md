@@ -25,6 +25,12 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   - `earshot mode NAME` and `earshot status` reach the running daemon through a new `Command`
     message on its socket, with the same token. A command only changes announcements; it can't
     answer a request.
+- Push-to-talk (Phase 4, milestone 3). A press of the AirPods stem, or `earshot talk`, plays the
+  listening tone and hears one command: status, repeat, details (the waiting request, its
+  critical fields letter by letter), stop, or a mode name. Nothing said in that window can
+  approve or deny a request, and it never opens over an answer window.
+  - `earshotd --stem` makes the helper the "Now Playing" app so the press reaches it (D-032);
+    while it runs, the stem no longer plays or pauses music.
 
 ### Changed
 

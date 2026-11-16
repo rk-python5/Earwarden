@@ -16,6 +16,7 @@ proves itself with the same token the hook uses. Messages are JSON lines both wa
                       {"devices": {"output": "...", "input": "...", "headset": true}}
                       {"permission": {"mic": "granted", "motion": "denied"}}
                       {"log": "mic on: 16000 Hz, 1 channel(s)"}             for the daemon's log
+                      {"button": "stem"}                                     a press, with --stem
     daemon to helper  {"mic": true}  {"motion": false}
 
 The daemon asks for the mic and motion only while an approval is being asked, so the AirPods stay
@@ -54,6 +55,7 @@ class HelperLink:
         self.socket_path = socket_path
         self.token = token
         self.on_audio: Callable[[bytes], None] | None = None  # 16-bit samples, 16 kHz mono
+        self.on_button: Callable[[str], None] | None = None  # "stem": push-to-talk (D-032)
         self.motion: deque[Sample] = deque(maxlen=MOTION_KEPT)
         self.devices: dict[str, Any] = {}
         self.permission: dict[str, str] = {}
@@ -151,9 +153,15 @@ class HelperLink:
             log.info("helper permissions: %s", self.permission)
         elif isinstance(note := message.get("log"), str):
             log.info("helper: %s", note[:MAX_NOTE])
+        elif isinstance(button := message.get("button"), str):
+            log.info("button: %s", button[:MAX_NOTE])
+            if self.on_button is not None:
+                self.on_button(button[:MAX_NOTE])
 
 
-def launch(app: str | Path, socket_path: Path, token_file: Path, headset: str) -> str | None:
+def launch(
+    app: str | Path, socket_path: Path, token_file: Path, headset: str, stem: bool = False
+) -> str | None:
     """Open the helper app through Launch Services, so macOS asks for the mic in its name.
 
     Returns what went wrong, or None. Every path is made absolute: `open -a` takes a relative
@@ -173,6 +181,8 @@ def launch(app: str | Path, socket_path: Path, token_file: Path, headset: str) -
         "--headset",
         headset,
     ]
+    if stem:
+        command.append("--stem")
     result = subprocess.run(command, capture_output=True, text=True, check=False)  # noqa: S603
     return None if result.returncode == 0 else result.stderr.strip() or "open failed"
 

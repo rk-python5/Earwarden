@@ -1098,6 +1098,10 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     in chatty mode (the spec puts finishes at P2, and focus is "approvals and failures").
   - **An announcement that waited two minutes is dropped,** and the mode isn't kept across
     restarts: the daemon starts in focus mode.
+  - **The stem listens for every media command** (play, pause, toggle, next and previous), since
+    which one a press sends depends on the AirPods' settings. Each is one push-to-talk.
+  - **"Details" is the narration again, then each critical field letter by letter,** from the
+    policy engine's own fields, so a model never chooses the words.
 - **Status:** Open, for the Phase 4 gate.
 
 ## Open questions

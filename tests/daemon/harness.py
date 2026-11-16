@@ -43,9 +43,10 @@ class RunningDaemon:
         observe: bool = False,
         audit_log: AuditLog | None = None,
         floor: Floor | None = None,
+        listener: Any = None,
     ) -> None:
         self.daemon = Daemon(
-            paths.resolve(str(home)), decider, max_wait_s, observe, audit_log, floor
+            paths.resolve(str(home)), decider, max_wait_s, observe, audit_log, floor, listener
         )
         self.error: BaseException | None = None
         self._thread = threading.Thread(target=self._run, daemon=True)

@@ -1,12 +1,14 @@
 // earshot-motion: the signed helper for earshotd (Earshot Phase 2, milestone 7; D-016, D-018).
 //
-//   earshot-motion --socket PATH --token-file PATH [--headset AirPods]
+//   earshot-motion --socket PATH --token-file PATH [--headset AirPods] [--stem]
 //
 // It connects to earshotd's helper socket, proves itself with the shared token, and then:
 // - captures the headset's mic while asked, as 16 kHz mono 16-bit samples, so macOS grants the
 //   mic once, to this app, instead of to whichever Python runs the daemon
 // - streams the head's rotation rate from Core Motion while asked, for shakes and nods
 // - reports the default output and input devices whenever they change
+// - with --stem, becomes the "Now Playing" app, so a press of the AirPods stem (play/pause)
+//   reaches it, and sends {"button": "stem"} for push-to-talk (D-032)
 // - asks for both permissions when it starts, so neither prompt arrives in the middle of a request
 // - starts the mic again if the audio setup changes under it, and says so in a "log" message
 // Messages are JSON lines both ways; see src/earshot/voice/helper.py. If the daemon goes away,
@@ -16,17 +18,23 @@ import AVFoundation
 import CoreAudio
 import CoreMotion
 import Foundation
+import MediaPlayer
 
 struct Options {
     var socket = ""
     var tokenFile = ""
     var headset = "AirPods"
+    var stem = false
 }
 
 func parseOptions() -> Options {
     var options = Options()
     var iterator = CommandLine.arguments.dropFirst().makeIterator()
     while let flag = iterator.next() {
+        if flag == "--stem" {
+            options.stem = true
+            continue
+        }
         let value = iterator.next() ?? ""
         switch flag {
         case "--socket": options.socket = value
@@ -231,7 +239,30 @@ final class Helper {
             forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
         ) { [weak self] _ in self?.audioSetupChanged() }
         askForMotion()
+        if options.stem { listenForStem() }
         link.connectForever()
+    }
+
+    // The AirPods stem sends the system's play/pause command to the "Now Playing" app. Claiming
+    // that role means the stem no longer plays or pauses music while the helper runs, which is
+    // why it's opt-in (D-032). Each press, of any kind, is one push-to-talk.
+    func listenForStem() {
+        let center = MPRemoteCommandCenter.shared()
+        for command in [center.togglePlayPauseCommand, center.playCommand, center.pauseCommand,
+                        center.nextTrackCommand, center.previousTrackCommand] {
+            command.isEnabled = true
+            command.addTarget { [weak self] _ in
+                self?.link.send(["button": "stem"])
+                return .success
+            }
+        }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+            MPMediaItemPropertyTitle: "Earshot",
+            MPMediaItemPropertyArtist: "Press the stem to talk",
+            MPNowPlayingInfoPropertyPlaybackRate: 0.0,
+        ]
+        MPNowPlayingInfoCenter.default().playbackState = .playing
+        link.send(["log": "listening for the stem (play/pause) as the Now Playing app"])
     }
 
     // Core Motion asks for permission the first time it's read. Read it once now, so the prompt

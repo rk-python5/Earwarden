@@ -123,7 +123,7 @@ the CI run after changing Swift code.
   - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
     imports.
   - `cli.py`: the `earshot` command (`init`, `uninstall`, `observe`, `audit`, `service`, `doctor`,
-    `test`, `policy`, `enroll`, `mode`, `status`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
+    `test`, `policy`, `enroll`, `mode`, `status`, `talk`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
     Phase 1's safety stub (D-019), kept as the reference the policy engine must never be looser
     than.
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
@@ -136,7 +136,8 @@ the CI run after changing Swift code.
     checker (`checker.py`), which refuses a sentence that drops or invents a detail.
   - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
     settings file, with a byte-for-byte backup.
-  - `voice/`: the voice decider, intent rules, endpointer and challenge words (`challenge.py`,
+  - `voice/`: the voice decider, intent rules, push-to-talk commands (`commands.py`), endpointer
+    and challenge words (`challenge.py`,
     built by `dev/build_challenge_words.py`), all testable anywhere; the voiceprint
     (`voiceprint.py`, `enroll.py`; ECAPA on onnxruntime, numpy features); the link to the signed
     helper (`helper.py`) and nods and shakes (`gestures.py`, D-018); presence by

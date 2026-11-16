@@ -48,6 +48,9 @@ def test_the_helper_is_given_absolute_paths(
     assert command[command.index("-a") + 1] == str(here / "build" / "EarshotMotion.app")
     assert command[command.index("--socket") + 1] == str(here / "home" / "helper.sock")
     assert command[command.index("--token-file") + 1] == str(here / "home" / "token")
+    assert "--stem" not in command
+    helper.launch("a.app", Path("s"), Path("t"), "AirPods", stem=True)
+    assert ran[-1][-1] == "--stem"
 
 
 def test_a_helper_that_wont_open_says_why(monkeypatch: pytest.MonkeyPatch) -> None:

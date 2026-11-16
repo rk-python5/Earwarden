@@ -9,7 +9,14 @@ from collections.abc import Awaitable, Callable
 
 from earshot import auth, paths
 from earshot.daemon.floor import Floor
-from earshot.daemon.server import AlreadyRunningError, Decider, hand_off, run_forever
+from earshot.daemon.server import (
+    AlreadyRunningError,
+    Daemon,
+    Decider,
+    Listener,
+    hand_off,
+    run_forever,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -47,6 +54,12 @@ def main(argv: list[str] | None = None) -> int:
         help="start the signed helper app (EarshotMotion.app) for the mic and head motion",
     )
     parser.add_argument(
+        "--stem",
+        action="store_true",
+        help="a press of the AirPods stem starts push-to-talk (needs --helper; while it runs, "
+        "the stem no longer plays or pauses music, D-032)",
+    )
+    parser.add_argument(
         "--nods",
         action="store_true",
         help="let a strict double nod approve tier 1 (off by default, D-018); shakes always count",
@@ -55,6 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s earshotd %(levelname)s %(message)s")
     decider: Decider = hand_off
     floor: Floor | None = None
+    listener: Listener | None = None
+    setup: Callable[[Daemon], None] | None = None
     on_start: Callable[[], Awaitable[None]] | None = None
     on_stop: Callable[[], Awaitable[None]] | None = None
     if args.voice:
@@ -80,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
         async def start_link() -> None:
             await link.start()
             if args.helper:
-                launch_helper(args.helper, where, args.headset)
+                launch_helper(args.helper, where, args.headset, args.stem)
 
         on_start, on_stop = start_link, link.stop
         print("Loading the voice models (the first time, they download)…", file=sys.stderr)
@@ -88,6 +103,12 @@ def main(argv: list[str] | None = None) -> int:
         presence = KeyboardPresence(pinned=args.pin_voice)
         floor = Floor(voice, presence)
         decider = VoiceDecider(voice, presence, where=where, floor=floor)
+        listener = voice
+
+        def wire_stem(daemon: Daemon) -> None:
+            link.on_button = lambda _button: daemon.press()
+
+        setup = wire_stem
     try:
         run_forever(
             paths.resolve(args.home),
@@ -96,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
             on_start=on_start,
             on_stop=on_stop,
             floor=floor,
+            listener=listener,
+            setup=setup,
         )
     except AlreadyRunningError as exc:
         print(f"earshotd: {exc}", file=sys.stderr)
@@ -103,10 +126,10 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def launch_helper(app: str, where: paths.Paths, headset: str) -> None:
+def launch_helper(app: str, where: paths.Paths, headset: str, stem: bool = False) -> None:
     from earshot.voice import helper
 
-    problem = helper.launch(app, where.helper_socket, where.token, headset)
+    problem = helper.launch(app, where.helper_socket, where.token, headset, stem)
     if problem:
         logging.getLogger("earshotd").warning("couldn't open the helper: %s", problem)
 

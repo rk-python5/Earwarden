@@ -28,6 +28,7 @@ import threading
 import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path, PurePosixPath
+from typing import Any, Protocol
 
 from pydantic import ValidationError
 
@@ -35,8 +36,10 @@ from earshot import audit, auth, contracts, paths, wire
 from earshot.daemon import briefing
 from earshot.daemon.floor import FAILURE, MODES, Floor
 from earshot.daemon.state import Pending, PendingRequests, Resolved, Session, Sessions
-from earshot.narrator import redact
-from earshot.policy import engine, places
+from earshot.narrator import redact, spoken
+from earshot.narrator.templates import narrate
+from earshot.policy import engine, fields, places
+from earshot.voice import commands
 
 log = logging.getLogger("earshot.daemon")
 
@@ -44,8 +47,17 @@ READ_TIMEOUT_S = 5.0  # a client must send its line promptly
 MAX_WAIT_S = 280.0  # inside the hook's 290 s, which is inside Claude Code's 300 s
 SHUTDOWN_GRACE_S = 2.0
 HISTORY = 500
+COMMAND_WINDOW_S = 5.0  # how long push-to-talk listens for one command
 
 Decider = Callable[[Pending], Awaitable[contracts.Decision]]
+
+
+class Listener(Protocol):
+    """The voice, as push-to-talk needs it: the mic and one listen (the tone is inside)."""
+
+    async def open_mic(self) -> None: ...
+    async def close_mic(self) -> None: ...
+    async def listen(self, seconds: float) -> Any: ...  # a voice.decider.Heard, or None
 
 
 class AlreadyRunningError(RuntimeError):
@@ -118,6 +130,7 @@ class Daemon:
         observe: bool = False,
         audit_log: audit.AuditLog | None = None,
         floor: Floor | None = None,
+        listener: Listener | None = None,
     ) -> None:
         self.where = where
         self.decider = decider
@@ -125,6 +138,8 @@ class Daemon:
         self.observe = observe
         self.audit_log = audit_log
         self.floor = floor  # who speaks when (Phase 4); None without voice
+        self.listener = listener  # the mic, for push-to-talk; None without voice
+        self._talking = False
         if floor is not None and floor.briefing is None:
             floor.briefing = self._briefing_if_running
         self.sessions = Sessions()
@@ -341,8 +356,90 @@ class Daemon:
             writer.write(wire.encode(reply.model_dump(mode="json")))
             await writer.drain()
 
+    def press(self) -> None:
+        """The stem was pressed (D-032): one command window, on the daemon's loop."""
+        if self._loop is not None:
+            self._loop.create_task(self._talk())
+
     async def _talk(self) -> tuple[bool, str]:
-        return False, "Push-to-talk isn't available yet."
+        """Push-to-talk: take the floor, play the tone, hear one command, and act on it.
+
+        It never interrupts an open answer window, and nothing heard here can approve or deny a
+        request: the window's words are commands or nothing.
+        """
+        floor, listener = self.floor, self.listener
+        if floor is None or listener is None:
+            return False, "earshotd isn't running with voice."
+        if self._talking:
+            return False, "Already listening."
+        if floor.lock.locked():
+            return False, "An approval is open; answer it first."
+        if not floor.presence.away() or not floor.voice.headset_ready():
+            return False, "Push-to-talk needs the headset, and you away from the keyboard."
+        self._talking = True
+        try:
+            async with floor.lock:
+                await listener.open_mic()
+                try:
+                    heard = await listener.listen(COMMAND_WINDOW_S)
+                finally:
+                    await listener.close_mic()
+                said = getattr(heard, "transcript", "") if heard is not None else ""
+                recognizer = getattr(heard, "recognizer", "") if heard is not None else ""
+                if recognizer == "shake":
+                    return True, "Okay."  # cancelled, nothing said
+                command = commands.parse(said if recognizer not in ("cut off", "nod") else "")
+                log.info("push-to-talk heard %r: %s", said, command.kind)
+                reply = self._run_command(command)
+                await floor.voice.say(reply)
+                if command.kind != "repeat":
+                    floor.last_said = reply
+                return command.kind != "unclear", reply
+        finally:
+            self._talking = False
+
+    def _run_command(self, command: commands.Command) -> str:
+        floor = self.floor
+        if floor is None:
+            return "Sorry, I didn't catch that."
+        if command.kind == "status":
+            return self.briefing()
+        if command.kind == "repeat":
+            return floor.last_said or "Nothing yet."
+        if command.kind == "details":
+            return self._details()
+        if command.kind == "stop":
+            dropped = len(floor._waiting)
+            floor._waiting.clear()
+            log.info("push-to-talk: stop, %d announcements dropped", dropped)
+            return "Okay, quiet."
+        if command.kind == "mode" and command.mode in MODES:
+            floor.mode = command.mode
+            log.info("mode: %s (by voice)", command.mode)
+            return f"{command.mode.capitalize()} mode."
+        return "Sorry, I didn't catch that."
+
+    def _details(self) -> str:
+        """Spell out the request that's waiting: its narration, then its critical fields letter
+        by letter. The words come from the narrator and the policy engine, never from a model."""
+        waiting = [p for p in self.pending.all() if not p.cancelled.is_set()]
+        if not waiting:
+            return "Nothing is waiting."
+        oldest = min(waiting, key=lambda p: p.received)
+        request = oldest.request
+        judgement = engine.judge_request(self.where, request, oldest.session.config_edited)
+        narration = narrate(
+            oldest.session.name, request.cwd, request.tool_name, request.tool_input, judgement
+        )
+        parts = [narration.text]
+        actions = fields.actions(request.tool_name, request.tool_input, request.cwd, judgement.bash)
+        for action in actions:
+            for critical in action.fields:  # each critical field, letter by letter
+                letters = spoken.spell(critical.spoken[:40])
+                if letters:
+                    parts.append(f"{critical.name.replace('_', ' ')}: {letters}.")
+        text = " ".join(parts)[:600]
+        return redact.redact(text, redact.SPOKEN)
 
     def _audit(self, pending: Pending, outcome: str, reason: str) -> None:
         """One keyed, chained line per decision (D-025). Secrets are redacted first."""
@@ -422,9 +519,12 @@ def run_forever(
     on_start: Callable[[], Awaitable[None]] | None = None,
     on_stop: Callable[[], Awaitable[None]] | None = None,
     floor: Floor | None = None,
+    listener: Listener | None = None,
+    setup: Callable[[Daemon], None] | None = None,
 ) -> None:
     """Run the daemon in this process until SIGTERM or SIGINT. `on_start` runs on its loop first,
-    and `on_stop` after it stops: the helper link (milestone 7) lives there."""
+    and `on_stop` after it stops: the helper link (milestone 7) lives there. `setup` gets the
+    daemon before it serves, to wire the helper's stem press to it (Phase 4)."""
     import signal
 
     async def main() -> None:
@@ -434,7 +534,10 @@ def run_forever(
             observe=observe,
             audit_log=audit.AuditLog(where.audit_dir, audit.load_key(where)),
             floor=floor,
+            listener=listener,
         )
+        if setup is not None:
+            setup(daemon)
         loop = asyncio.get_running_loop()
         for signum in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(signum, daemon.stop)

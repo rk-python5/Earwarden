@@ -126,3 +126,21 @@ def test_the_helpers_notes_reach_the_log_and_permissions_add_up(
 
     with caplog.at_level("INFO", logger="earshot.helper"):
         asyncio.run(scenario())
+
+
+def test_a_stem_press_reaches_the_daemon(short: Path) -> None:
+    async def scenario() -> None:
+        link = HelperLink(short / "helper.sock", TOKEN)
+        pressed: list[str] = []
+        link.on_button = pressed.append
+        await link.start()
+        _, writer = await connect(link.socket_path)
+        writer.write((json.dumps({"button": "stem"}) + "\n").encode())
+        writer.write((json.dumps({"button": 7}) + "\n").encode())  # not a button
+        await writer.drain()
+        await until(lambda: pressed)
+        assert pressed == ["stem"]
+        writer.close()
+        await link.stop()
+
+    asyncio.run(scenario())

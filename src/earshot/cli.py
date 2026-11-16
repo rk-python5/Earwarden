@@ -356,6 +356,11 @@ def status(args: argparse.Namespace) -> int:
     return _command(args, "status")
 
 
+def talk(args: argparse.Namespace) -> int:
+    """Push-to-talk from the keyboard: Earshot plays its tone and listens for one command."""
+    return _command(args, "talk")
+
+
 def policy_check(args: argparse.Namespace) -> int:
     """The tier a request would get, and why, without speaking (the spec's dry run)."""
     from earshot.policy import engine
@@ -474,6 +479,10 @@ def main(argv: list[str] | None = None) -> int:
     p = commands.add_parser("status", help="what every session is doing, as Earshot would say it")
     p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
     p.set_defaults(run=status)
+
+    p = commands.add_parser("talk", help="push-to-talk from the keyboard: say one command")
+    p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.set_defaults(run=talk)
 
     p = commands.add_parser("test", help="send one made-up request through the running daemon")
     p.add_argument("--home", help="Earshot's folder for the token, socket and logs")

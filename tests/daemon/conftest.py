@@ -6,6 +6,7 @@ import shutil
 import tempfile
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from harness import RunningDaemon
@@ -36,8 +37,9 @@ def start_daemon(home: Path) -> Iterator[StartDaemon]:
         observe: bool = False,
         audit_log: AuditLog | None = None,
         floor: Floor | None = None,
+        listener: Any = None,
     ) -> RunningDaemon:
-        daemon = RunningDaemon(home, decider, max_wait_s, observe, audit_log, floor)
+        daemon = RunningDaemon(home, decider, max_wait_s, observe, audit_log, floor, listener)
         running.append(daemon)
         return daemon
 
