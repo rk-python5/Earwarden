@@ -90,8 +90,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   last word, and the window opens when it has played (D-034).
 - Pressing the AirPods stem while Earshot's mic was open put "Cannot Control Mic with AirPods" on
   screen: with the mic open, a press is macOS's mute gesture, and an app that captures must
-  handle it. The helper now does, and never mutes; with `--stem` the press is passed on like any
-  other, and the daemon still ignores presses during an approval (D-032, D-033).
+  handle it. The helper now declines the mute without touching the mute state (setting it
+  called the handler again and looped: 168,000 presses in ten seconds), passes the press on once
+  with `--stem`, and the daemon ignores presses within half a second of the last (D-032, D-033).
 - An unanswered approval kept the floor through its minute-long holds between asks (up to four
   minutes), so for that time the stem did nothing, `earshot talk` was refused, other approvals
   waited, and "details", which spells out a waiting request, could never run. The floor is now

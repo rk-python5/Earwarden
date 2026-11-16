@@ -48,6 +48,7 @@ MAX_WAIT_S = 280.0  # inside the hook's 290 s, which is inside Claude Code's 300
 SHUTDOWN_GRACE_S = 2.0
 HISTORY = 500
 COMMAND_WINDOW_S = 5.0  # how long push-to-talk listens for one command
+PRESS_GAP_S = 0.5  # presses closer together than this are one press (or a flood): ignored
 
 Decider = Callable[[Pending], Awaitable[contracts.Decision]]
 
@@ -140,6 +141,7 @@ class Daemon:
         self.floor = floor  # who speaks when (Phase 4); None without voice
         self.listener = listener  # the mic, for push-to-talk; None without voice
         self._talking = False
+        self._last_press = -PRESS_GAP_S
         if floor is not None and floor.briefing is None:
             floor.briefing = self._briefing_if_running
         self.sessions = Sessions()
@@ -357,7 +359,15 @@ class Daemon:
             await writer.drain()
 
     def press(self) -> None:
-        """The stem was pressed (D-032): one command window, on the daemon's loop."""
+        """The stem was pressed (D-032): one command window, on the daemon's loop.
+
+        A press within half a second of the last is ignored, so a burst of them (one press seen
+        twice, or a helper gone wrong: 168,000 in ten seconds at the gate) opens one window.
+        """
+        now = time.monotonic()
+        if now - self._last_press < PRESS_GAP_S:
+            return
+        self._last_press = now
         if self._loop is not None:
             self._loop.create_task(self._talk())
 

@@ -284,6 +284,7 @@ final class Helper {
     var micOn: Bool { mic != nil }
     var motionWanted = false
     var motionSeen = false
+    var lastPress = Date.distantPast  // one physical press can arrive by both paths
 
     init(options: Options, token: String) {
         self.options = options
@@ -333,25 +334,31 @@ final class Helper {
         link.connectForever()
     }
 
-    // While the mic is open, a press of the AirPods stem is macOS's mute gesture, not play/pause.
-    // An app that captures without handling it gets "Cannot Control Mic with AirPods" on screen.
-    // The helper handles it and never mutes: Earshot's mic stays live for the answer, and with
-    // --stem the press is passed on like any other (the daemon ignores presses during an
-    // approval, D-032).
+    // While the AirPods are in headset mode, a press of the stem is macOS's mute gesture, not
+    // play/pause. An app that captures without handling it gets "Cannot Control Mic with
+    // AirPods" on screen. The helper handles it and declines the mute, so Earshot's mic stays
+    // live, and with --stem the press is passed on like any other (the daemon ignores presses
+    // during an approval, D-032). It must never set the mute state itself: that calls this
+    // handler again, and at the gate it looped, sending 168,000 presses in ten seconds.
     func listenForMuteGesture() {
         do {
             try AVAudioApplication.shared.setInputMuteStateChangeHandler { [weak self] _ in
-                DispatchQueue.main.async {
-                    guard let self else { return }
-                    try? AVAudioApplication.shared.setInputMuted(false)
-                    self.link.send(["log": "the mute gesture (a stem press with the mic open): mic kept on"])
-                    if self.options.stem { self.link.send(["button": "stem"]) }
-                }
-                return true
+                DispatchQueue.main.async { self?.pressed(by: "the mute gesture") }
+                return false  // declined: the mic isn't muted
             }
         } catch {
             link.send(["log": "couldn't take the mute gesture: \(error.localizedDescription)"])
         }
+    }
+
+    // One stem press, from either path, passed on once.
+    func pressed(by path: String) {
+        let now = Date()
+        guard now.timeIntervalSince(lastPress) > 0.7 else { return }
+        lastPress = now
+        guard options.stem else { return }
+        link.send(["button": "stem"])
+        if path != "play/pause" { link.send(["log": "stem pressed (\(path))"]) }
     }
 
     // The AirPods stem sends the system's play/pause command to the "Now Playing" app. Claiming
@@ -363,7 +370,7 @@ final class Helper {
                         center.nextTrackCommand, center.previousTrackCommand] {
             command.isEnabled = true
             command.addTarget { [weak self] _ in
-                self?.link.send(["button": "stem"])
+                self?.pressed(by: "play/pause")
                 return .success
             }
         }

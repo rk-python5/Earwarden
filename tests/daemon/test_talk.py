@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -156,3 +157,17 @@ def test_a_stem_press_opens_the_window(home: Path, start_daemon: StartDaemon) ->
     running.daemon._loop.call_soon_threadsafe(running.daemon.press)
     running.wait_for(lambda d: bool(voice.said))
     assert voice.said == ["Focus mode."]
+
+
+def test_a_burst_of_presses_opens_one_window(home: Path, start_daemon: StartDaemon) -> None:
+    running, voice = started(start_daemon, ["Focus mode.", "Chatty mode."])
+
+    def burst() -> None:
+        for _ in range(1000):  # what a looping helper sent at the gate, in miniature
+            running.daemon.press()
+
+    running.daemon._loop.call_soon_threadsafe(burst)
+    running.wait_for(lambda d: bool(voice.said))
+    time.sleep(0.2)
+    assert voice.said == ["Focus mode."]
+    assert voice.mic == ["open", "close"]
