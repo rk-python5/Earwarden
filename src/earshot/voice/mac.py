@@ -124,6 +124,32 @@ def _quantized(model: Any, bits: int) -> Any:
     return model
 
 
+def without_espeak() -> None:
+    """Give mlx-audio a `misaki.espeak` that never speaks, so no GPL code is installed (D-022).
+
+    mlx-audio's English Kokoro pipeline imports `misaki.espeak` whether or not it uses it, and
+    the real one imports `phonemizer` (GPLv3+) and bundles espeak-ng. The pipeline already copes
+    with a fallback that fails to start: it logs a warning and skips words it can't pronounce,
+    which is what Earshot wants (P-03 spells them out instead). So this module's fallback
+    refuses to start, in every environment, and the real one is never imported.
+    """
+    import sys
+    import types
+
+    stub = sys.modules.get("misaki.espeak")
+    if stub is not None and getattr(stub, "EARSHOT_STUB", False):
+        return
+
+    class EspeakFallback:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            raise RuntimeError("espeak-ng isn't used by Earshot (D-022)")
+
+    module = types.ModuleType("misaki.espeak")
+    module.EspeakFallback = EspeakFallback  # type: ignore[attr-defined]
+    module.EARSHOT_STUB = True  # type: ignore[attr-defined]
+    sys.modules["misaki.espeak"] = module
+
+
 class MacVoice:
     def __init__(
         self,
@@ -175,6 +201,8 @@ class MacVoice:
         if models_cached(hub_cache()):  # read at import, so before mlx_audio brings in the Hub
             os.environ.setdefault("HF_HUB_OFFLINE", "1")
         import mlx.core as mx  # noqa: F401 - fail early off Apple Silicon
+
+        without_espeak()
         from mlx_audio.stt.utils import load as load_stt
         from mlx_audio.tts.utils import load as load_tts
         from mlx_audio.vad import load as load_vad

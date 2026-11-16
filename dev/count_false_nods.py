@@ -1,6 +1,6 @@
 """Count false nods during normal work (milestone 7's done-when; D-018). Run on the Mac:
 
-    helpers/earshot-motion/build.sh
+    src/earshot/helper_app/build.sh
     uv run python dev/count_false_nods.py --minutes 60 [--home .tools/earshot]
 
 Stop earshotd first: this takes the helper's place for the hour. It opens the helper app, asks it

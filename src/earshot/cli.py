@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from earshot import audit, auth, paths, service, wire
+from earshot import audit, auth, paths, provision, service, wire
 from earshot.connectors.claude_code import settings
 
 DEFAULT_SETTINGS = Path.home() / ".claude" / "settings.json"
@@ -42,6 +42,34 @@ def init(args: argparse.Namespace) -> int:
         print(f"The file as it was is saved in {backup}; earshot uninstall puts it back.")
     print(f"The token is in {where.token}. Start the daemon with: earshotd", end="")
     print(f" --home {shlex.quote(args.home)}" if args.home else "")
+    return 0
+
+
+def setup(args: argparse.Namespace) -> int:
+    """The hooks, and for voice: the helper app, spaCy's model and the voiceprint model."""
+    where = paths.resolve(args.home)
+    init(args)
+    if args.no_voice:
+        print("Voice skipped. Every prompt stays on the screen until you run earshot setup again.")
+        return 0
+    if sys.platform != "darwin":
+        print("Voice needs an Apple Silicon Mac. The hooks are in place; prompts stay on screen.")
+        return 0
+    app = provision.build_helper(where)
+    spacy = provision.ensure_spacy_model()
+    model = provision.fetch_models(where)
+    done = app is not None and spacy and model
+    print()
+    print(f"Helper app:       {'built, ' + str(app) if app else 'NOT built'}")
+    print(f"Text front-end:   {'ready' if spacy else 'NOT ready'}")
+    print(f"Voiceprint model: {'ready' if model else 'NOT ready'}")
+    if not done:
+        print("Fix what's marked NOT, then run earshot setup again. It only redoes what's missing.")
+        return 1
+    print("\nNext, with your AirPods in:")
+    print("  earshot enroll                          records your voiceprint (about 3 minutes)")
+    print("  earshot service install --voice --stem  starts Earshot at login, by voice")
+    print("  earshot doctor                          checks that everything is in place")
     return 0
 
 
@@ -124,8 +152,9 @@ def service_install(args: argparse.Namespace) -> int:
         daemon_args += ["--home", str(Path(args.home).expanduser().resolve())]
     if args.voice:
         daemon_args.append("--voice")
-    if args.helper:
-        daemon_args += ["--helper", str(Path(args.helper).expanduser().resolve())]
+    helper = args.helper or (provision.default_helper(where) if args.voice else None)
+    if helper:
+        daemon_args += ["--helper", str(Path(helper).expanduser().resolve())]
     if args.stem:
         daemon_args.append("--stem")
     print(service.install(daemon_args, where.state_dir / "earshotd.log"))
@@ -180,10 +209,27 @@ def doctor(args: argparse.Namespace) -> int:
     voice = importlib.util.find_spec("mlx_audio") is not None
     results.append(
         _check(
-            voice, "the voice libraries are installed", "no voice libraries: uv sync --group voice"
+            voice,
+            "the voice libraries are installed",
+            "no voice libraries: uv tool install 'earshot-agents[voice]'",
         )
     )
     if voice:
+        app = provision.default_helper(where)
+        results.append(
+            _check(
+                app is not None,
+                f"the helper app is built ({app})",
+                "no helper app: run earshot setup",
+            )
+        )
+        results.append(
+            _check(
+                provision.models_ready(where),
+                "the voiceprint model is downloaded and checked",
+                "no voiceprint model: run earshot setup",
+            )
+        )
         from earshot.voice.mac import MacVoice
 
         headset = MacVoice(headset=args.headset).headset_ready()
@@ -279,6 +325,7 @@ def enroll(args: argparse.Namespace) -> int:
         print(f"No voiceprint model at {model}. Make it with: uv run dev/export_ecapa.py{home}")
         return 1
     thread = None
+    args.helper = args.helper or provision.default_helper(where)
     if args.helper:  # record through the helper, as earshotd --helper listens
         from earshot.daemon.server import AlreadyRunningError
         from earshot.voice import helper
@@ -417,6 +464,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--settings", default=str(DEFAULT_SETTINGS), help="the settings file to edit")
     p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
     p.set_defaults(run=init)
+
+    p = commands.add_parser(
+        "setup",
+        help="hooks, then (macOS) the helper app and voice models: everything a new Mac needs",
+    )
+    p.add_argument("--settings", default=str(DEFAULT_SETTINGS), help="the settings file to edit")
+    p.add_argument("--home", help="Earshot's folder for the token, socket and logs")
+    p.add_argument("--no-voice", action="store_true", help="only the hooks; prompts stay on screen")
+    p.set_defaults(run=setup)
 
     p = commands.add_parser("uninstall", help="remove Earshot's hooks again")
     p.add_argument("--settings", default=str(DEFAULT_SETTINGS), help="the settings file to edit")

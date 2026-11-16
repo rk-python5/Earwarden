@@ -1,7 +1,7 @@
 #!/bin/sh
 # Build the signed helper as EarshotMotion.app, for earshotd --helper (Phase 2, milestone 7).
 #
-#     helpers/earshot-motion/build.sh
+#     src/earshot/helper_app/build.sh
 #
 # macOS judges a program by its app and that app's signature. Signed with a fixed identity, the
 # mic and motion permissions survive a rebuild (D-016). Set EARSHOT_SIGNING_IDENTITY to your Apple

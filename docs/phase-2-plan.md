@@ -270,7 +270,7 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
 
 ### 7. The helper: mic, devices and head motion (Mac)
 
-- **`helpers/earshot-motion/`,** a Swift app signed with a fixed identity (D-016). It:
+- **`src/earshot/helper_app/`,** a Swift app signed with a fixed identity (D-016). It:
   - captures the AirPods mic, converts it to 16 kHz mono, and streams it to the daemon
   - reports device changes, such as the AirPods connecting or the output switching
   - streams head motion (rotation rates) from `CMHeadphoneMotionManager`
@@ -286,7 +286,7 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
   - the grant survives a rebuild
   - the hour-long count shows under 1% of answer windows with a false nod
 - **Code done (8 Nov):**
-  - `helpers/earshot-motion/`, a Swift app (`EarshotMotion.app`, `dev.earshot.motion`, no Dock
+  - `src/earshot/helper_app/`, a Swift app (`EarshotMotion.app`, `dev.earshot.motion`, no Dock
     icon), built and signed by `build.sh`. It's signed with `$EARSHOT_SIGNING_IDENTITY`, or ad
     hoc, and CI builds it.
   - It captures the headset mic at 16 kHz while asked, streams Core Motion rotation rates while

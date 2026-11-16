@@ -15,7 +15,7 @@ Claude can run every command here; rehaan's part is the AirPods, the voice and t
 git pull
 uv sync --group voice
 uv run pytest
-helpers/earshot-motion/build.sh
+src/earshot/helper_app/build.sh
 ```
 
 - `pytest` now includes the red-team suite; everything should pass, about 1,050 tests in 40 s.
@@ -29,7 +29,7 @@ Terminal A:
 
 ```sh
 uv run earshotd --home .tools/earshot --voice --pin-voice --keep-audio --stem \
-  --helper helpers/earshot-motion/.build/EarshotMotion.app 2>&1 | tee .tools/earshot/soak.log
+  --helper src/earshot/helper_app/.build/EarshotMotion.app 2>&1 | tee .tools/earshot/soak.log
 ```
 
 - `--stem` makes the helper the "Now Playing" app, so a press of the AirPods stem reaches
@@ -80,7 +80,7 @@ Stop terminal A's daemon (Ctrl-C). For each friend, wearing your AirPods, after 
 
 ```sh
 uv run earshot enroll --home .tools/earshot --record alex \
-  --helper helpers/earshot-motion/.build/EarshotMotion.app
+  --helper src/earshot/helper_app/.build/EarshotMotion.app
 ```
 
 Then calibrate, and restart the daemon (step 2):
@@ -118,7 +118,7 @@ uv run python dev/soak.py --hours 8 --home .tools/earshot --log .tools/earshot/s
 
 ```sh
 uv run earshot service install --home .tools/earshot --voice \
-  --helper helpers/earshot-motion/.build/EarshotMotion.app
+  --helper src/earshot/helper_app/.build/EarshotMotion.app
 launchctl kill SIGKILL gui/$(id -u)/dev.earshot.daemon
 ```
 

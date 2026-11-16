@@ -16,7 +16,7 @@ sections as they're done.
     stays in the scratch project.
   - the helper's fixed signature (below).
 - **The helper's app predates its last fix** (the hello goes first). Rebuild it with
-  `helpers/earshot-motion/build.sh` before the next voice session; macOS asks for the mic and
+  `src/earshot/helper_app/build.sh` before the next voice session; macOS asks for the mic and
   motion once more.
 - **CI** runs as one macOS job, and builds the helper too. GitHub's Mac runners were unreliable in
   early November, so a local `uv run pytest` is the dependable check.

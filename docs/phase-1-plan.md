@@ -210,7 +210,7 @@ rehaan's Mac and AirPods.
 
 ### 8. The helper app, the LaunchAgent and doctor (Mac)
 
-- `helpers/earshot-motion/`, the signed helper app (D-016), in Swift:
+- `src/earshot/helper_app/`, the signed helper app (D-016), in Swift:
   - It captures the AirPods mic, converts it to 16 kHz mono and streams it to the daemon.
   - It reports device changes, such as the AirPods connecting.
   - It's signed with a fixed identity, so permissions survive rebuilds.

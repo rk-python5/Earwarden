@@ -26,7 +26,7 @@ and checks it against SpeechBrain.
 ## 2. Build the helper (2 minutes)
 
 ```sh
-helpers/earshot-motion/build.sh
+src/earshot/helper_app/build.sh
 ```
 
 - It compiles the Swift helper and wraps it as `EarshotMotion.app`, signed ad hoc. It takes about
@@ -35,7 +35,7 @@ helpers/earshot-motion/build.sh
   so macOS asks for the mic and motion again after each rebuild of the helper. That's harmless,
   just a prompt. To fix it later, make a self-signed "Code Signing" certificate in Keychain
   Access (Certificate Assistant > Create a Certificate, named `Earshot Dev`), then build with
-  `EARSHOT_SIGNING_IDENTITY="Earshot Dev" helpers/earshot-motion/build.sh`. Other users' Macs
+  `EARSHOT_SIGNING_IDENTITY="Earshot Dev" src/earshot/helper_app/build.sh`. Other users' Macs
   need an Apple Developer ID (Phase 5).
 
 ## 3. Start the daemon with the helper (5 minutes)
@@ -44,7 +44,7 @@ Terminal A:
 
 ```sh
 uv run earshotd --home .tools/earshot --voice --pin-voice --keep-audio \
-  --helper helpers/earshot-motion/.build/EarshotMotion.app 2>&1 | tee .tools/earshot/phase2.log
+  --helper src/earshot/helper_app/.build/EarshotMotion.app 2>&1 | tee .tools/earshot/phase2.log
 ```
 
 - This starts Earshot with the helper. The helper now captures the mic and reads head motion.
@@ -63,7 +63,7 @@ Stop the daemon (Ctrl-C), then:
 
 ```sh
 uv run earshot enroll --home .tools/earshot --save-clips .tools/earshot/enroll \
-  --helper helpers/earshot-motion/.build/EarshotMotion.app
+  --helper src/earshot/helper_app/.build/EarshotMotion.app
 ```
 
 - `--helper` records through the helper, the channel Earshot later checks your voice on. Stop
@@ -79,7 +79,7 @@ uv run earshot enroll --home .tools/earshot --save-clips .tools/earshot/enroll \
 
 ```sh
 uv run earshot enroll --home .tools/earshot --record kitchen --save-clips .tools/earshot/enroll \
-  --helper helpers/earshot-motion/.build/EarshotMotion.app
+  --helper src/earshot/helper_app/.build/EarshotMotion.app
 ```
 
 ## 5. Your friends' phrases (3 minutes each, Q-5)
@@ -88,7 +88,7 @@ uv run earshot enroll --home .tools/earshot --record kitchen --save-clips .tools
 
 ```sh
 uv run earshot enroll --home .tools/earshot --record alex \
-  --helper helpers/earshot-motion/.build/EarshotMotion.app
+  --helper src/earshot/helper_app/.build/EarshotMotion.app
 ```
 
 - It records 12 phrases from them, for calibration only, into `.tools/earshot/calibration/alex/`.

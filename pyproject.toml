@@ -8,7 +8,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "rehaan" }]
 requires-python = ">=3.11"
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 4 - Beta",
     "Operating System :: MacOS",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
@@ -26,9 +26,27 @@ earshot-hook = "earshot.connectors.claude_code.hook:main"
 earshotd = "earshot.daemon.cli:main"
 earshot = "earshot.cli:main"
 
+[project.optional-dependencies]
+# The voice stack for `uv tool install 'earshot-agents[voice]'`, macOS on Apple Silicon only.
+# `misaki` without its [en] extra, so espeak-ng and phonemizer (GPL) aren't installed (D-022).
+# spaCy's English model is a direct URL, which PyPI refuses as a dependency: `earshot setup`
+# installs it. torch is not needed.
+voice = [
+    "mlx-audio==0.6.4 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "misaki==0.9.4 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "spacy>=3.8 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "num2words>=0.5 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "numpy>=1.26 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sounddevice>=0.5 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "onnxruntime>=1.20 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+
 [project.urls]
 Repository = "https://github.com/rk-python5/Earshot"
 Changelog = "https://github.com/rk-python5/Earshot/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/rk-python5/Earshot/blob/main/docs/quickstart.md"
+Issues = "https://github.com/rk-python5/Earshot/issues"
+Security = "https://github.com/rk-python5/Earshot/blob/main/SECURITY.md"
 
 [dependency-groups]
 dev = [
@@ -41,7 +59,9 @@ dev = [
 # The voice stack, macOS on Apple Silicon only: `uv sync --group voice` on the Mac (D-023).
 voice = [
     "mlx-audio==0.6.4 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
-    "misaki[en]==0.9.4 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "misaki==0.9.4 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "spacy>=3.8 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "num2words>=0.5 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
     "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl ; sys_platform == 'darwin' and platform_machine == 'arm64'",
     "numpy>=1.26 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
     "sounddevice>=0.5 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
@@ -54,6 +74,9 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "earshot"
+# The helper's Swift source ships; what swift build makes from it doesn't.
+wheel-exclude = ["**/.build/**", "**/.swiftpm/**"]
+source-exclude = ["**/.build/**", "**/.swiftpm/**"]
 
 [tool.ruff]
 line-length = 100

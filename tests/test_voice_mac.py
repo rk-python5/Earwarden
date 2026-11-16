@@ -432,3 +432,19 @@ def test_only_speech_from_before_the_window_counts_as_cut_off(
     monkeypatch.setattr(voice, "is_speech", lambda clip: speech)
     heard = voice._capture(0.05)
     assert heard is (CUT_OFF if expected == "cut off" else None)
+
+
+def test_the_espeak_module_is_replaced_by_one_that_never_starts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # mlx-audio imports misaki.espeak, which needs phonemizer (GPL) and espeak-ng. Earshot gives
+    # it a stand-in whose fallback refuses to start, which the pipeline treats as "skip unknown
+    # words", so none of that code needs to be installed (D-022).
+    monkeypatch.delitem(sys.modules, "misaki.espeak", raising=False)
+    mac.without_espeak()
+    stub = sys.modules["misaki.espeak"]
+    with pytest.raises(RuntimeError, match="espeak-ng"):
+        stub.EspeakFallback(british=False)
+    mac.without_espeak()  # twice is fine, and keeps the same module
+    assert sys.modules["misaki.espeak"] is stub
+    assert "phonemizer" not in sys.modules or sys.modules["phonemizer"] is not stub
