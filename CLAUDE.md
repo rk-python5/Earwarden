@@ -28,10 +28,11 @@ released as 0.2.0. Its milestones are in `docs/phase-2-plan.md`. Deferred to bef
 calibration of the voiceprint (Q-5), the hour-long nod count (nods stay off), the helper's fixed
 signature, and a longer stretch of voice use for P-20, which stays open. Until it closes, run
 `earshotd --voice` only with the hooks in a scratch project. **Start with `docs/next-steps.md`.**
-Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) has its code
-done (16 Nov): `docs/phase-4-plan.md` has its milestones, and its gate is that the red-team
-suite gets no approval through. Its releases are 0.3.x. **Its gate needs rehaan:**
-`docs/phase-4-gate.md` is the session. P-22 (choices made while building) is settled at the gate.
+Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) passed its gate on
+16 Nov 2026 (D-037), with deferrals, and was released as 0.3.0. Its milestones are in
+`docs/phase-4-plan.md`; `docs/phase-4-gate.md` is the session on the Mac, and `docs/redteam.md`
+the red-team table. Deferred to before 1.0: the live replay attack, the 8-hour soak and friends'
+calibration (Q-5), plus Phase 2's. Phase 5 (public launch) is `1.0.0`; `main` carries `0.3.1.dev0`.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
 later phase's components before the current phase's gate passes.

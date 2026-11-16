@@ -6,6 +6,8 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-16
+
 ### Added
 
 - Session activity and briefings (Phase 4, milestone 1). Each session records whether it's
@@ -413,7 +415,8 @@ run on the Mac.
 - The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
   and lists what gets decided at the gate.
 
-[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/rk-python5/Earshot/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/rk-python5/Earshot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rk-python5/Earshot/compare/v0.0.2...v0.1.0
 [0.0.2]: https://github.com/rk-python5/Earshot/compare/v0.0.1...v0.0.2

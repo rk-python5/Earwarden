@@ -747,6 +747,50 @@ How this file works:
   approvals heard, 109 of 110 replies heard as labelled (the same safe miss as before), 0 of 130
   room clips passed VAD.
 
+### D-037 The Phase 4 gate passed, with deferrals
+
+- **Date:** 2026-11-16 · **Status:** Accepted · **By:** rehaan ("release", on Claude's
+  recommendation to pass with the deferrals below)
+- **Decision:** Phase 4, sessions, the risk gate and hardening, passes its gate. Release 0.3.0
+  closes it. Phase 3 stays postponed (D-031); Phase 5 is `1.0.0`. Four checks are deferred, not
+  passed. None of them can approve anything: each is off by default, or fails toward the screen.
+  P-22's choices are accepted as built.
+- **What the gate asked, and what showed:**
+  - **The red-team suite gets no approval through:** met. It runs with every `pytest` (1,061
+    tests): injection, other voices, a disguised voice, commands that can't approve, the socket
+    and the log. It found four gaps while being built, all fixed (`docs/redteam.md`).
+  - **The floor, push-to-talk and commands, on the Mac with the AirPods:** runs 1 to 8 of
+    `dev/gate_voice.py` passed: "status", "chatty mode" and "quiet mode" by stem and by
+    `earshot talk`; a "yes" in a command window approved nothing; tier-1 "yes" allowed and "no"
+    denied; a stem press during a question changed nothing; "details" spelled out a waiting
+    request. After the fixes below, answers were heard about 1.5 s after each question, with no
+    late tone, stall or early cut-off.
+  - **Recorded audio:** 0 false approvals, 18 of 18 real approvals heard, 109 of 110 replies as
+    labelled, 0 of 130 room clips passed VAD (`dev/false_approvals.py`, after D-036).
+- **Found and fixed at the gate (D-033 to D-036):** the helper's mic didn't start with the
+  AirPods in use (`AVAudioEngine`, error -10868); a long question could go silent for minutes
+  (a lost end marker); the tone came 0.5 to 1 s late, on top of the answer; an unanswered
+  approval held the floor through its holds; the AirPods' mute gesture showed "Cannot Control
+  Mic" and then looped (168,000 presses in ten seconds); noise could be refused as cut off;
+  `earshot talk` gave up after 5 seconds.
+- **Deferred to before 1.0:**
+  - **The replay attack on hardware** (`dev/redteam_replay.py`): your recordings played at the
+    Mac's speaker. The suite covers it with recordings through the same path; the live run is
+    still owed.
+  - **The 8-hour soak** (`dev/soak.py`): memory, idle CPU, crashes and false nods. The tool is
+    built and has not run for hours.
+  - **Friends' calibration of the voiceprint** (Q-5), still open from Phase 2 (D-030). Tier 2
+    keeps the uncalibrated threshold of 0.50.
+  - **Gate runs 9 and 10** (tier 2 by the guided runner, and `earshot mode focus`), and the
+    optional check at login. Tier 2 by voice passed at the Phase 2 gate (D-030).
+  - **From D-030, still open:** the hour-long nod count (nods stay off), the helper's fixed
+    signature (it's signed ad hoc, so macOS asks again after each rebuild), and a longer stretch
+    of voice use for P-20. Until P-20 closes, run `earshotd --voice` only with the hooks in a
+    scratch project.
+- **Consequences:** `0.3.0` is released. `main` carries `0.3.1.dev0`, since D-031 gave Phase 5
+  the next number, `1.0.0`. Phase 5 (public launch) can start only once the deferred checks above
+  that matter for a public release are closed or accepted.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -1188,7 +1232,7 @@ From the design review of 3 Nov 2026. Each needs rehaan's call by the point list
     the Phase 2 gate (D-030). The list stays at 200.
   - **A nod is logged as seen while nods are off,** once per answer window, and never acts. It
     gives the soak its false-nod count without switching nods on (D-018).
-- **Status:** Open, for the Phase 4 gate.
+- **Status:** Accepted as built at the Phase 4 gate (D-037).
 
 ## Open questions
 
@@ -1200,5 +1244,5 @@ From the plan's open-questions list.
 | Q-2 | How long does the AirPods mic take to switch on with the M2?                   | Step 0 audio spike             | **Answered 4 Nov 2026: 847 ms median, 931 ms max** (5 trials, `audio_io switch`). Long enough to clip the start of an answer, so the plan's fallback applies: keep the mic warm while an approval is pending, switching it on when the approval starts, while Earshot is still speaking. |
 | Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free, and D-008 adopts it. Whether the name is clear enough is still open. |
 | Q-4 | Which small model clears EarshotBench in under 300 ms?                         | Phase 3                        | Open                                                           |
-| Q-5 | Which 3–5 friends will record impostor and gesture data?                       | rehaan                         | Open. Deferred at the Phase 2 gate (D-030); one friend's Step 0 phrases are the only impostor data so far. |
+| Q-5 | Which 3–5 friends will record impostor and gesture data?                       | rehaan                         | Open. Deferred at the Phase 2 gate (D-030); one friend's Step 0 phrases are the only impostor data so far. Deferred again at the Phase 4 gate (D-037). |
 | Q-6 | Release the summarizer under Apache-2.0, or match its base model's license?    | rehaan, before Phase 5         | Open                                                           |

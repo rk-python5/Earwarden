@@ -17,8 +17,11 @@ Pre-alpha, and nothing is installable yet. Step 0 (feasibility) passed its gate 
 8 Nov 2026: a Claude Code permission prompt was answered by voice through AirPods, end to end,
 under a safety stub. Phase 2, the safety layer, passed its gate on 11 Nov 2026: tiers from rules,
 challenge words and a voiceprint for risky requests, and a signed helper for the mic and head
-motion. Until P-20 in [decisions.md](decisions.md) closes after longer use, use voice only in a
-scratch project. The
+motion. Phase 4 passed its gate on 16 Nov 2026: several sessions share one voice in order, the
+AirPods stem or `earshot talk` asks for a status or a mode, a risk-gate interface can only raise a
+tier, the audit log is anchored outside its file, and a red-team suite runs with every test. Until
+P-20 in [decisions.md](decisions.md) closes after longer use, use voice only in a scratch
+project. The
 [build plan](docs/design/earshot-technical-design-build-plan.pdf) lays out the road to v1.0.
 
 ## Documents
