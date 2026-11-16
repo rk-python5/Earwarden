@@ -31,8 +31,14 @@ signature, and a longer stretch of voice use for P-20, which stays open. Until i
 Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) passed its gate on
 16 Nov 2026 (D-037), with deferrals, and was released as 0.3.0. Its milestones are in
 `docs/phase-4-plan.md`; `docs/phase-4-gate.md` is the session on the Mac, and `docs/redteam.md`
-the red-team table. Deferred to before 1.0: the live replay attack, the 8-hour soak and friends'
-calibration (Q-5), plus Phase 2's. Phase 5 (public launch) is `1.0.0`; `main` carries `0.3.1.dev0`.
+the red-team table.
+
+Phase 5 (public launch) is released as 1.0.0 (D-038): `earshot setup` makes a Mac ready from an
+installed package, and the docs, `SECURITY.md` and the release workflow are in. It becomes public
+when the owner does `docs/releasing.md` (repository public, the model upload, PyPI, signing key).
+Deferred to before or after launch: the live replay attack, the 8-hour soak, friends' calibration
+(Q-5), P-20's longer run, the Claude Code plugin and the demo. Until P-20 closes, run
+`earshotd --voice` with the hooks in a scratch project at first.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
 later phase's components before the current phase's gate passes.
@@ -95,12 +101,12 @@ uv run pytest                  # tests
 
 Run all four before every push. CI (`.github/workflows/ci.yml`, macOS 15 on Apple Silicon) runs
 the same checks on every push to `main`. It also builds the Swift spike in `spikes/motion` and the helper in
-`helpers/earshot-motion`. That's the only place they compile when you work in the Linux container, so check
+`src/earshot/helper_app`. That's the only place they compile when you work in the Linux container, so check
 the CI run after changing Swift code.
 
 ## Layout
 
-- `helpers/earshot-motion/`: the signed helper app (Swift, D-016, D-033): the mic, device changes and
+- `src/earshot/helper_app/`: the signed helper app (Swift, D-016, D-033): the mic, device changes and
   head motion, for `earshotd --helper`. `build.sh` builds and signs it; CI builds it too.
 - `dev/activate`: sourced per terminal on the Mac. It keeps uv, its Python, caches, spike
   environments and model downloads in the git-ignored `.tools/` (D-013).
@@ -115,7 +121,9 @@ the CI run after changing Swift code.
 - `dev/export_ecapa.py` (PEP 723; PyTorch and SpeechBrain) exports the voiceprint model and checks
   the numpy features against SpeechBrain's. `dev/calibrate_voiceprint.py` sets the threshold from
   other voices' phrases. `dev/count_false_nods.py` runs the hour-long false-nod count.
-- `docs/design/`: the spec (PDF).
+- `docs/design/`: the spec (PDF). `docs/quickstart.md`, `how-tiers-work.md`, `privacy.md` and
+  `attribution.md` are the user's docs; `docs/releasing.md` is the owner's one-time setup.
+  `SECURITY.md` is at the top.
 - `docs/phase-1-plan.md`: the Phase 1 build plan, with milestones and the decisions each needs.
 - `docs/phase-2-plan.md`: the Phase 2 build plan, the same way, with its gate's targets.
 - `docs/phase-2-gate.md`: the session on the Mac that runs Phase 2's gate, step by step.
@@ -130,6 +138,8 @@ the CI run after changing Swift code.
     share. Standard library only.
   - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
     imports.
+  - `provision.py`: `earshot setup`: builds the helper from `helper_app/`, installs spaCy's model
+    and downloads the voiceprint model (D-038).
   - `cli.py`: the `earshot` command (`init`, `uninstall`, `observe`, `audit`, `service`, `doctor`,
     `test`, `policy`, `enroll`, `mode`, `status`, `talk`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
     Phase 1's safety stub (D-019), kept as the reference the policy engine must never be looser

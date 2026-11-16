@@ -791,6 +791,43 @@ How this file works:
   the next number, `1.0.0`. Phase 5 (public launch) can start only once the deferred checks above
   that matter for a public release are closed or accepted.
 
+### D-038 Earshot 1.0 installs from PyPI on any Apple Silicon Mac
+
+- **Date:** 2026-11-16 · **Status:** Accepted; public once the owner completes
+  `docs/releasing.md` · **By:** rehaan ("release 1.0, usable by any user"), built by Claude
+- **Decision:** Phase 5 (public launch) ships as `1.0.0`, without the parts D-031 postponed (the
+  summarizer, EarshotBench, Hugging Face) and without the Claude Code plugin and the demo.
+  - **One command sets up a Mac:** `uv tool install 'earshot-agents[voice]'`, then
+    `earshot setup`, `earshot enroll` and `earshot service install --voice --stem`.
+  - **The helper is built on the user's Mac,** from Swift source in the wheel, signed ad hoc. No
+    Apple Developer ID is needed, and nothing downloaded is quarantined. The cost is that macOS
+    asks for the mic and motion again after a rebuild (P-21), and Xcode's command line tools are
+    required.
+  - **The voiceprint model is downloaded** from a release of this repository (`model-ecapa-1`),
+    checked against pinned SHA-256s, and never run unchecked. It's 84 MB, too large to put in
+    the wheel comfortably.
+  - **No GPL code is installed** (closes D-023's "before any public release"): the `voice` extra
+    depends on `misaki` without `[en]`, and `earshot.voice.mac.without_espeak()` stands in for
+    `misaki.espeak`. spaCy's model is a direct URL PyPI refuses as a dependency, so `earshot setup`
+    installs it.
+  - **Releases are automatic:** a pushed `v*` tag runs the checks, publishes with PyPI trusted
+    publishing and makes the GitHub release. Release tags are *not* signed yet (D-006 says from
+    1.0.0): there is no signing key on this Mac. `docs/releasing.md` sets one up.
+- **Verified on the Mac,** in a clean virtualenv from the built wheel: the voice extra installs
+  without `phonemizer`, espeak-ng or PyTorch; `earshot setup` builds the helper from the packaged
+  source, installs spaCy's model and downloads and checks the voiceprint model; and the voice
+  loads and speaks. The model download was tried against a local mirror, since the release
+  doesn't exist yet.
+- **Not verified, and said so in the README and `SECURITY.md`:** any machine, headset or voice
+  other than rehaan's (an M2 MacBook Air, AirPods 4 with noise cancelling, one speaker); the 8-hour
+  soak; the live replay attack; friends' calibration of the voiceprint (Q-5); P-20's longer run;
+  and the install from PyPI itself, which can't happen until the package is published.
+- **Still the owner's, because they're accounts and credentials** (`docs/releasing.md`): make the
+  repository public; upload the two model files to the `model-ecapa-1` release; add the PyPI
+  trusted publisher and the `pypi` environment; enable private vulnerability reporting; set up a
+  signing key. The Phase 5 gate, "v1.0 is public", is met when those are done and the first
+  `uv tool install` works on a Mac that has never had Earshot.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.

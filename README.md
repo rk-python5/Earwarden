@@ -9,27 +9,43 @@ permission prompts by voice through your AirPods, with confirmation strength set
 
 Everything runs on your Mac: no cloud calls at runtime, and no account or API key of its own.
 
+## Install
+
+You need a Mac with Apple Silicon (macOS 14 or later), AirPods or another headset,
+[uv](https://docs.astral.sh/uv/), Claude Code and Xcode's command line tools:
+
+```sh
+uv tool install 'earshot-agents[voice]'
+earshot setup      # hooks, the helper app, and the voice models
+earshot enroll     # your voiceprint, about 3 minutes with the AirPods in
+earshot service install --voice --stem
+```
+
+[docs/quickstart.md](docs/quickstart.md) has the five-minute version with what to expect. Without
+`[voice]`, or without a headset, every prompt stays on Claude Code's screen, as it always has.
+
 ## Status
 
-Pre-alpha, and nothing is installable yet. Step 0 (feasibility) passed its gate on
-4 Nov 2026. The spike kits are in [spikes/](spikes/), and their results are in the go/no-go note,
-[spikes/RESULTS.md](spikes/RESULTS.md). Phase 1, the walking skeleton, passed its gate on
-8 Nov 2026: a Claude Code permission prompt was answered by voice through AirPods, end to end,
-under a safety stub. Phase 2, the safety layer, passed its gate on 11 Nov 2026: tiers from rules,
-challenge words and a voiceprint for risky requests, and a signed helper for the mic and head
-motion. Phase 4 passed its gate on 16 Nov 2026: several sessions share one voice in order, the
-AirPods stem or `earshot talk` asks for a status or a mode, a risk-gate interface can only raise a
-tier, the audit log is anchored outside its file, and a red-team suite runs with every test. Until
-P-20 in [decisions.md](decisions.md) closes after longer use, use voice only in a scratch
-project. The
-[build plan](docs/design/earshot-technical-design-build-plan.pdf) lays out the road to v1.0.
+Earshot 1.0 passed its test suite, a red-team suite and recorded-audio checks, and has run live
+on one setup: an M2 MacBook Air with AirPods 4 and one speaker's voice. Other headsets, rooms and
+voices are untested, and the voiceprint's threshold isn't calibrated on other people. Voice is a
+convenience check, never identity proof, and tier 3 is never approvable by voice. Read
+[SECURITY.md](SECURITY.md) for what it does and doesn't promise, and
+[docs/redteam.md](docs/redteam.md) for the attacks it was tried against. Until
+P-20 in [decisions.md](decisions.md) closes after longer use, try voice in a scratch project
+first.
 
 ## Documents
 
+- [Quick start](docs/quickstart.md), [how tiers work](docs/how-tiers-work.md) and
+  [privacy](docs/privacy.md)
+- [SECURITY.md](SECURITY.md), the [red-team table](docs/redteam.md) and
+  [attribution](docs/attribution.md) for every model and library
 - [Technical design and build plan](docs/design/earshot-technical-design-build-plan.pdf)
 - [Decisions](decisions.md): decisions, proposals and open questions
 - [Changelog](CHANGELOG.md)
-- [CLAUDE.md](CLAUDE.md): working rules for Claude Code sessions in this repo
+- [Releasing](docs/releasing.md) and [CLAUDE.md](CLAUDE.md): working rules for maintainers and
+  Claude Code sessions in this repo
 
 ## Development
 
@@ -50,7 +66,7 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pyt
 
 To remove everything, delete `.tools/` and `.venv/`.
 
-The PyPI distribution will be `earshot-agents`; the import name and commands stay `earshot`.
+The PyPI distribution is `earshot-agents`; the import name and commands are `earshot`.
 
 ## License
 

@@ -6,6 +6,35 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-17
+
+Earshot 1.0 installs from PyPI on any Apple Silicon Mac (D-038).
+
+### Added
+
+- `earshot setup`: everything a new Mac needs from an installed package. It adds the hooks, builds
+  the helper app from the Swift source that now ships in the wheel (`swift build`, signed ad hoc,
+  into Earshot's own folder), installs spaCy's English model, and downloads the voiceprint model,
+  checking its SHA-256. It says which step failed and redoes only what's missing, and
+  `earshot doctor` checks the helper and the model too.
+- `pip install 'earshot-agents[voice]'` (or `uv tool install`) carries the whole voice stack,
+  with no GPL code: no `phonemizer`, no espeak-ng, no PyTorch.
+- The docs a user needs: a quick start, how tiers work, privacy, attribution for every model and
+  library, `SECURITY.md`, and the maintainer's one-time setup (`docs/releasing.md`).
+- `.github/workflows/release.yml`: a pushed `v*` tag runs the checks, builds the wheel, publishes
+  to PyPI with trusted publishing and makes the GitHub release.
+
+### Changed
+
+- `earshot enroll` and `earshot service install --voice` use the helper that `earshot setup`
+  built, so `--helper` isn't needed.
+- The helper's source moved from `helpers/earshot-motion` to `src/earshot/helper_app`, so the
+  wheel carries it.
+- mlx-audio's import of `misaki.espeak` is satisfied by a stand-in whose fallback never starts, so
+  espeak-ng and `phonemizer` (GPL) aren't installed (D-022). The development `voice` group matches
+  what users get, and drops PyTorch with it.
+- The package's classifier is *Beta*, not *Planning*.
+
 ## [0.3.0] - 2026-11-16
 
 ### Added
@@ -415,7 +444,8 @@ run on the Mac.
 - The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
   and lists what gets decided at the gate.
 
-[Unreleased]: https://github.com/rk-python5/Earshot/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/rk-python5/Earshot/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/rk-python5/Earshot/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/rk-python5/Earshot/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/rk-python5/Earshot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rk-python5/Earshot/compare/v0.0.2...v0.1.0
