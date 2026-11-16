@@ -39,24 +39,27 @@ uv run earshotd --home .tools/earshot --voice --pin-voice --keep-audio --stem \
 - `--keep-audio` keeps each answer's audio in `.tools/earshot/audio/`, for the false-approval
   check after the soak. Delete it when done.
 
-## 3. Push-to-talk and the floor (10 minutes)
+## 3. Push-to-talk and the floor (8 minutes, guided)
 
 With the AirPods in, in terminal B:
 
-| Run | Do | Expect |
-| --- | --- | --- |
-| 1 | press the AirPods stem once | the listening tone; say "status" → "No sessions are open." (or the sessions) |
-| 2 | press, say "chatty mode" | "Chatty mode." |
-| 3 | `uv run earshot status --home .tools/earshot` | the same briefing, printed |
-| 4 | `uv run earshot talk --home .tools/earshot`, say "quiet mode" | "Quiet mode." |
-| 5 | press, say "yes" | "Sorry, I didn't catch that." (a command window never approves) |
-| 6 | `uv run earshot test --home .tools/earshot`, then press the stem during the question | nothing: a press never interrupts an answer window; answer "yes" → allow |
-| 7 | press, say "repeat" | the last thing Earshot said |
-| 8 | `uv run earshot test --tier 2 --home .tools/earshot`, don't answer; press, say "details" | the request, with its critical field spelled out; the request is still waiting (it goes to the screen after the window) |
-| 9 | `uv run earshot mode focus --home .tools/earshot` | "Mode: focus." |
+```sh
+uv run python dev/gate_voice.py --home .tools/earshot --log .tools/earshot/soak.log
+```
 
-If the stem press does nothing (run 1), tell Claude: `earshot talk` is the fallback (D-032),
-and the rest still runs.
+- Before each run, a voice in your AirPods (macOS's, not Earshot's) says what to do: press the
+  stem and say a command, or answer a question after the tone. The runner starts each request
+  itself and reads the outcome from the daemon's log, so there's nothing to time or type.
+- The ten runs: "status" and "chatty mode" by the stem; "quiet mode" through `earshot talk`; a
+  "yes" in a command window that must not approve; a tier-1 "yes" (allow) and "no" (deny); a
+  stem press during a question that must change nothing; "details" while a request waits
+  between asks (D-035); a tier-2 challenge word (allow); and `earshot mode focus`.
+- It prints PASS or FAIL per run, with what the log showed, including whether the tone came late
+  or an answer began before it, and saves them to `.tools/earshot/gate-voice.json`.
+  `--only 8,9` repeats some runs.
+
+If the stem does nothing, `earshot talk` is the fallback (D-032); runs 3, 5, 6, 9 and 10 don't
+need the stem.
 
 ## 4. The replay attack (5 minutes)
 

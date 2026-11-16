@@ -108,6 +108,8 @@ the CI run after changing Swift code.
   `spikes/speech/out/` through the daemon's own listening path. Run it after any change there.
 - `dev/refresh_package_lists.py`: rebuilds the popular-package lists at release time.
 - `dev/redteam_replay.py`: the replay attack on the Mac, your own recordings played at Earshot.
+- `dev/gate_voice.py`: Phase 4's voice runs, guided by voice in the AirPods and checked from
+  the daemon's log.
 - `dev/soak.py`: the hours-long soak beside a running daemon: memory, CPU, crashes, nods seen.
 - `dev/export_ecapa.py` (PEP 723; PyTorch and SpeechBrain) exports the voiceprint model and checks
   the numpy features against SpeechBrain's. `dev/calibrate_voiceprint.py` sets the threshold from

@@ -52,6 +52,9 @@ written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
   session on the Mac. `earshot service install` takes `--helper` and `--stem`.
 - With nods off, a nod inside an answer window is still logged as seen (once per window), so
   the soak can count false nods without any of them approving anything (D-018).
+- `dev/gate_voice.py`: the Phase 4 gate's voice runs, guided by a voice in the AirPods and
+  checked from the daemon's log, with PASS or FAIL per run. It replaces step 3's table of runs to
+  time by hand, which at the gate kept answers landing before the tone.
 
 ### Changed
 
