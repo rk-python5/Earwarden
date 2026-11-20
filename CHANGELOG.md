@@ -25,6 +25,12 @@ Earwarden was called Earshot until 21 Nov 2026 (D-039). Entries before 1.0.1 kee
   and spells it out.
 - A spoken command may begin with the name, as one word or two ("Ear warden, quiet mode").
 
+### Fixed
+
+- The checks passed only on a Mac with the voice libraries installed, so a plain `uv sync` (what CI
+  runs) failed: the speech tests that need numpy now skip without it, and a `type: ignore` on
+  mlx's `quantize` that mypy flagged as unused when mlx isn't installed is gone.
+
 ## [1.0.0] - 2026-11-17
 
 Earshot 1.0 installs from PyPI on any Apple Silicon Mac (D-038).

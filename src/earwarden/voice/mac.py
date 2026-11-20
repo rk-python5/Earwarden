@@ -116,9 +116,10 @@ def listening_tone(rate: int = TTS_RATE) -> list[float]:
 def _quantized(model: Any, bits: int) -> Any:
     """`model` with its linear layers quantised to `bits`, in place (MLX)."""
     import mlx.core as mx
-    import mlx.nn as nn
+    import mlx.nn as mlx_nn
 
-    nn.quantize(model, group_size=64, bits=bits)  # type: ignore[attr-defined]  # not in the stubs
+    nn: Any = mlx_nn  # `quantize` isn't in mlx's stubs, and without mlx installed nothing is
+    nn.quantize(model, group_size=64, bits=bits)
     mx.eval(model.parameters())
     mx.clear_cache()  # MLX keeps the full-size weights' memory cached otherwise
     return model

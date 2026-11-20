@@ -241,7 +241,8 @@ class InstantTTS:
 
 @pytest.fixture
 def stream_sd(monkeypatch: pytest.MonkeyPatch) -> FakeSounddevice:
-    """A fake sounddevice with real numpy, for the tone."""
+    """A fake sounddevice with real numpy, for the tone. Skipped where numpy isn't installed."""
+    pytest.importorskip("numpy")  # the voice libraries are installed only on the Mac
     fake = FakeSounddevice()
     monkeypatch.setitem(sys.modules, "sounddevice", fake)
     return fake
