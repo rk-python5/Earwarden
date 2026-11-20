@@ -8,6 +8,8 @@ Earwarden was called Earshot until 21 Nov 2026 (D-039). Entries before 1.0.1 kee
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-21
+
 ### Changed
 
 - **Earshot is now Earwarden** (D-039). Other projects already used the old name, among them a
@@ -469,10 +471,11 @@ run on the Mac.
 - The go/no-go note (`spikes/RESULTS.md`) maps the plan's four week-1 tests to the spike sections
   and lists what gets decided at the gate.
 
-[Unreleased]: https://github.com/rk-python5/Earshot/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/rk-python5/Earshot/compare/v0.3.0...v1.0.0
-[0.3.0]: https://github.com/rk-python5/Earshot/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/rk-python5/Earshot/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/rk-python5/Earshot/compare/v0.0.2...v0.1.0
-[0.0.2]: https://github.com/rk-python5/Earshot/compare/v0.0.1...v0.0.2
-[0.0.1]: https://github.com/rk-python5/Earshot/releases/tag/v0.0.1
+[Unreleased]: https://github.com/rk-python5/Earwarden/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/rk-python5/Earwarden/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/rk-python5/Earwarden/compare/v0.3.0...v1.0.0
+[0.3.0]: https://github.com/rk-python5/Earwarden/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/rk-python5/Earwarden/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/rk-python5/Earwarden/compare/v0.0.2...v0.1.0
+[0.0.2]: https://github.com/rk-python5/Earwarden/compare/v0.0.1...v0.0.2
+[0.0.1]: https://github.com/rk-python5/Earwarden/releases/tag/v0.0.1
