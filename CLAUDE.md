@@ -33,9 +33,10 @@ Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) pa
 `docs/phase-4-plan.md`; `docs/phase-4-gate.md` is the session on the Mac, and `docs/redteam.md`
 the red-team table.
 
-Phase 5 (public launch) is released as 1.0.0 (D-038): `earwarden setup` makes a Mac ready from an
-installed package, and the docs, `SECURITY.md` and the release workflow are in. It becomes public
-when the owner does `docs/releasing.md` (repository public, the model upload, PyPI, signing key).
+Phase 5 (public launch) is done (D-038): `earwarden setup` makes a Mac ready from an installed
+package. It was published on 21 Nov 2026 as `earwarden` 1.0.1 on PyPI, the first release under the
+new name; a pushed tag publishes automatically (`docs/releasing.md`). Release tags are still
+unsigned: that file has the signing-key setup.
 Deferred to before or after launch: the live replay attack, the 8-hour soak, friends' calibration
 (Q-5), P-20's longer run, the Claude Code plugin and the demo. Until P-20 closes, run
 `earwardend --voice` with the hooks in a scratch project at first.

@@ -797,8 +797,8 @@ How this file works:
 
 ### D-038 Earshot 1.0 installs from PyPI on any Apple Silicon Mac
 
-- **Date:** 2026-11-16 · **Status:** Accepted; public once the owner completes
-  `docs/releasing.md` · **By:** rehaan ("release 1.0, usable by any user"), built by Claude
+- **Date:** 2026-11-16 · **Status:** Accepted; public since 21 Nov 2026
+  (1.0.1 on PyPI, D-039) · **By:** rehaan ("release 1.0, usable by any user"), built by Claude
 - **Decision:** Phase 5 (public launch) ships as `1.0.0`, without the parts D-031 postponed (the
   summarizer, EarshotBench, Hugging Face) and without the Claude Code plugin and the demo.
   - **One command sets up a Mac:** `uv tool install 'earshot-agents[voice]'`, then
