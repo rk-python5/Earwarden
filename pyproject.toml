@@ -1,6 +1,6 @@
 [project]
 name = "earwarden"
-version = "1.0.1"
+version = "1.0.2.dev0"
 description = "Answer Claude Code permission prompts by voice, with confirmation strength set by risk."
 readme = "README.md"
 license = "Apache-2.0"
