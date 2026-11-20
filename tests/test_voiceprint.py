@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from earshot.voice import voiceprint
+from earwarden.voice import voiceprint
 
 
 def test_a_profile_is_the_mean_of_unit_embeddings() -> None:
@@ -61,7 +61,7 @@ def test_ecapa_features_have_the_right_shape_and_no_mean() -> None:
 
 
 def test_enrollment_builds_and_saves_a_profile(tmp_path: Path) -> None:
-    from earshot.voice import enroll
+    from earwarden.voice import enroll
 
     prompts: list[str] = []
     vectors = iter([[1.0, 0.1], [0.9, 0.0], [1.0, -0.1], [0.95, 0.05], [0.0, 1.0]])
@@ -83,7 +83,7 @@ def test_enrollment_builds_and_saves_a_profile(tmp_path: Path) -> None:
 
 
 def test_too_few_phrases_make_no_profile(tmp_path: Path) -> None:
-    from earshot.voice import enroll
+    from earwarden.voice import enroll
 
     said: list[str] = []
     profile = enroll.enroll(lambda p: None, lambda c: [1.0], tmp_path / "v.json", said.append, 3, 0)

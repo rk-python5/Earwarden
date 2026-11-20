@@ -9,9 +9,9 @@ import json
 
 import pytest
 
-from earshot.narrator import redact
-from earshot.narrator.templates import narrate
-from earshot.policy import engine
+from earwarden.narrator import redact
+from earwarden.narrator.templates import narrate
+from earwarden.policy import engine
 
 CWD = "/Users/rehaan/code/api"
 MIXED = "a1B2c3D4e5F6g7H8i9J0"  # 20 characters of mixed case and digits
@@ -54,7 +54,7 @@ NEAR_MISSES = [
     "git checkout 3f44650f22cc16f1ab740b149c477c714e53398a",
     "sha256:9b2a8c5e1f3d7a6b4c0e2f8d9a1b3c5e7f9d0a2b4c6e8f1a3b5d7e9f0a2c4e6b8",
     "550e8400-e29b-41d4-a716-446655440000",
-    "/private/var/folders/x7/k2j3l4m5n6p7q8r9s0t1u2v3w4/T/earshot-test-Ab3dE5gH/notes.md",
+    "/private/var/folders/x7/k2j3l4m5n6p7q8r9s0t1u2v3w4/T/earwarden-test-Ab3dE5gH/notes.md",
     "claude --max_tokens=1000",
     "tokens: 1000",
     "git commit --author='rehaan <r@example.com>'",

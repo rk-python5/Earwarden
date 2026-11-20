@@ -1,4 +1,4 @@
-"""earshotd with the real hook: decisions, refusals, sessions, and every way a wait ends (D-020)."""
+"""The daemon with the real hook: decisions, refusals, sessions, ways a wait ends (D-020)."""
 
 from __future__ import annotations
 
@@ -20,10 +20,10 @@ import pytest
 from conftest import StartDaemon
 from harness import RunningDaemon, finish, fixture, never, run_hook, start_hook
 
-from earshot import auth, contracts, paths, wire
-from earshot.daemon import server
-from earshot.daemon.server import AlreadyRunningError, decision, open_socket
-from earshot.daemon.state import Pending
+from earwarden import auth, contracts, paths, wire
+from earwarden.daemon import server
+from earwarden.daemon.server import AlreadyRunningError, decision, open_socket
+from earwarden.daemon.state import Pending
 
 ALLOW = {
     "hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": {"behavior": "allow"}}
@@ -41,7 +41,7 @@ def raw_exchange(home: Path, line: bytes, timeout: float = 5) -> bytes:
     """Send one raw line and return whatever comes back before the daemon closes."""
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
         conn.settimeout(timeout)
-        conn.connect(str(home / "earshotd.sock"))
+        conn.connect(str(home / "earwardend.sock"))
         conn.sendall(line)
         data = b""
         while chunk := conn.recv(4096):
@@ -59,7 +59,7 @@ def token(home: Path) -> str:
 def test_the_socket_token_and_folder_are_private(home: Path, start_daemon: StartDaemon) -> None:
     start_daemon()
     assert stat.S_IMODE(home.stat().st_mode) == 0o700
-    assert stat.S_IMODE((home / "earshotd.sock").stat().st_mode) == 0o600
+    assert stat.S_IMODE((home / "earwardend.sock").stat().st_mode) == 0o600
     assert stat.S_IMODE((home / "token").stat().st_mode) == 0o600
     assert len(token(home)) == 64
 
@@ -67,7 +67,7 @@ def test_the_socket_token_and_folder_are_private(home: Path, start_daemon: Start
 def test_stopping_removes_the_socket(home: Path, start_daemon: StartDaemon) -> None:
     running = start_daemon()
     running.stop()
-    assert not (home / "earshotd.sock").exists()
+    assert not (home / "earwardend.sock").exists()
     assert running.error is None
 
 
@@ -82,7 +82,7 @@ def test_stopping_just_after_a_connection_leaks_nothing(
         for _ in range(50):
             running = RunningDaemon(home, server.hand_off, server.MAX_WAIT_S)
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
-                conn.connect(str(home / "earshotd.sock"))
+                conn.connect(str(home / "earwardend.sock"))
             running.stop()
             del running
             gc.collect()
@@ -92,14 +92,14 @@ def test_stopping_just_after_a_connection_leaks_nothing(
 def test_a_second_daemon_refuses_to_start(home: Path, start_daemon: StartDaemon) -> None:
     start_daemon()
     with pytest.raises(AlreadyRunningError):
-        open_socket(home / "earshotd.sock")
+        open_socket(home / "earwardend.sock")
 
 
 def test_a_file_in_the_sockets_place_is_left_alone(home: Path) -> None:
-    (home / "earshotd.sock").write_text("not a socket", encoding="utf-8")
+    (home / "earwardend.sock").write_text("not a socket", encoding="utf-8")
     with pytest.raises(AlreadyRunningError):
-        open_socket(home / "earshotd.sock")
-    assert (home / "earshotd.sock").read_text(encoding="utf-8") == "not a socket"
+        open_socket(home / "earwardend.sock")
+    assert (home / "earwardend.sock").read_text(encoding="utf-8") == "not a socket"
 
 
 # Decisions
@@ -230,7 +230,7 @@ def test_a_slow_client_is_dropped(
     start_daemon(answering("allow"))
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
         conn.settimeout(5)
-        conn.connect(str(home / "earshotd.sock"))
+        conn.connect(str(home / "earwardend.sock"))
         start = time.monotonic()
         assert conn.recv(10) == b""  # closed without a word
         assert time.monotonic() - start < 3
@@ -255,7 +255,11 @@ def test_session_events_keep_the_registry(home: Path, start_daemon: StartDaemon)
     run_hook(home, fixture("session_start"), "--event")
     running.wait_for(lambda d: len(d.sessions) == 1)
     [session] = sessions.all()
-    assert (session.name, session.model, session.chime) == ("earshot-probe", "claude-sonnet-5-5", 0)
+    assert (session.name, session.model, session.chime) == (
+        "earwarden-probe",
+        "claude-sonnet-5-5",
+        0,
+    )
     run_hook(home, fixture("stop"), "--event")
     running.wait_for(lambda d: session.last_message is not None)
     assert session.last_message is not None
@@ -351,12 +355,12 @@ def test_stopping_hands_waiting_prompts_to_the_screen(
     assert running.daemon.resolved[-1].reason == "shutdown"
 
 
-# The earshotd command
+# The earwardend command
 
 
-def start_earshotd(home: Path) -> subprocess.Popen[bytes]:
+def start_earwardend(home: Path) -> subprocess.Popen[bytes]:
     proc = subprocess.Popen(
-        [sys.executable, "-m", "earshot.daemon.cli", "--home", str(home)],
+        [sys.executable, "-m", "earwarden.daemon.cli", "--home", str(home)],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
@@ -364,7 +368,7 @@ def start_earshotd(home: Path) -> subprocess.Popen[bytes]:
     while True:  # listening, not just a socket file: a crashed daemon leaves one behind
         try:
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as probe:
-                probe.connect(str(home / "earshotd.sock"))
+                probe.connect(str(home / "earwardend.sock"))
             return proc
         except OSError:
             assert proc.poll() is None, proc.stderr.read() if proc.stderr else b""
@@ -372,7 +376,7 @@ def start_earshotd(home: Path) -> subprocess.Popen[bytes]:
             time.sleep(0.05)
 
 
-def stop_earshotd(proc: subprocess.Popen[bytes]) -> int:
+def stop_earwardend(proc: subprocess.Popen[bytes]) -> int:
     proc.send_signal(signal.SIGTERM)
     returncode = proc.wait(timeout=10)
     if proc.stderr:
@@ -380,20 +384,20 @@ def stop_earshotd(proc: subprocess.Popen[bytes]) -> int:
     return returncode
 
 
-def test_earshotd_runs_and_stops_cleanly(home: Path) -> None:
-    proc = start_earshotd(home)
+def test_earwardend_runs_and_stops_cleanly(home: Path) -> None:
+    proc = start_earwardend(home)
     try:
         assert run_hook(home, fixture("permission_request")) == b""
     finally:
-        assert stop_earshotd(proc) == 0
-    assert not (home / "earshotd.sock").exists()
+        assert stop_earwardend(proc) == 0
+    assert not (home / "earwardend.sock").exists()
 
 
-def test_a_second_earshotd_says_so(home: Path) -> None:
-    first = start_earshotd(home)
+def test_a_second_earwardend_says_so(home: Path) -> None:
+    first = start_earwardend(home)
     try:
         second = subprocess.run(
-            [sys.executable, "-m", "earshot.daemon.cli", "--home", str(home)],
+            [sys.executable, "-m", "earwarden.daemon.cli", "--home", str(home)],
             capture_output=True,
             timeout=15,
             check=False,
@@ -401,31 +405,31 @@ def test_a_second_earshotd_says_so(home: Path) -> None:
         assert second.returncode == 1
         assert b"already running" in second.stderr
     finally:
-        stop_earshotd(first)
+        stop_earwardend(first)
 
 
 def test_after_a_crash_the_hook_hands_off_and_a_new_daemon_starts(home: Path) -> None:
-    crashed = start_earshotd(home)
+    crashed = start_earwardend(home)
     crashed.send_signal(signal.SIGKILL)
     crashed.wait(timeout=10)
     if crashed.stderr:
         crashed.stderr.close()
-    assert (home / "earshotd.sock").exists()  # left behind
+    assert (home / "earwardend.sock").exists()  # left behind
     start = time.monotonic()
     assert run_hook(home, fixture("permission_request")) == b""
     assert time.monotonic() - start < 3
-    proc = start_earshotd(home)
+    proc = start_earwardend(home)
     try:
         assert run_hook(home, fixture("permission_request")) == b""
     finally:
-        assert stop_earshotd(proc) == 0
+        assert stop_earwardend(proc) == 0
 
 
 # The token
 
 
 def test_a_token_is_created_private(tmp_path: Path) -> None:
-    path = tmp_path / "earshot" / "token"
+    path = tmp_path / "earwarden" / "token"
     created = auth.ensure_token(path)
     assert len(created) == 64
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
@@ -455,7 +459,7 @@ def test_tokens_compare_exactly() -> None:
 
 def test_paths_resolve_for_the_daemon(home: Path) -> None:
     where = paths.resolve(str(home))
-    assert where.socket == home / "earshotd.sock"
+    assert where.socket == home / "earwardend.sock"
 
 
 # Commands (Phase 4, milestone 2)
@@ -495,7 +499,7 @@ def test_mode_needs_voice_and_a_known_name(home: Path, start_daemon: StartDaemon
 
 
 def test_mode_changes_the_floor(home: Path, start_daemon: StartDaemon) -> None:
-    from earshot.daemon.floor import Floor
+    from earwarden.daemon.floor import Floor
 
     class Silent:
         def headset_ready(self) -> bool:

@@ -15,14 +15,14 @@ Keep this file current: mark a milestone done in the same commit that finishes i
 
 From the build plan's Phase 2 list:
 
-- the policy engine: YAML rules, tiers, the never-by-voice floor, and `earshot policy check`
+- the policy engine: YAML rules, tiers, the never-by-voice floor, and `earwarden policy check`
 - resolvers: the real `git push` target and force flags, command splitting, obfuscation to tier 3,
   and requirements files
 - critical-field extractors, the fidelity checker and secret redaction
 - the lookalike check against the top PyPI and npm lists
 - challenge words: about 200, matched by sound
-- the voiceprint: `earshot enroll`, ECAPA in ONNX, and threshold calibration
-- the `earshot-motion` helper, and the v1 nod and shake detector inside answer windows only
+- the voiceprint: `earwarden enroll`, ECAPA in ONNX, and threshold calibration
+- the `earwarden-motion` helper, and the v1 nod and shake detector inside answer windows only
 - property tests for rules and resolvers
 
 Moved here by decisions:
@@ -36,7 +36,7 @@ Moved here by decisions:
 
 Not in Phase 2:
 
-- the summarizer model and EarshotBench (Phase 3, optional)
+- the summarizer model and EarwardenBench (Phase 3, optional)
 - the floor manager's priorities, modes and briefings, the risk gate, the red-team suite and
   the 8-hour soak (Phase 4)
 - packaging and launch (Phase 5)
@@ -59,7 +59,7 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 
 | # | Milestone                                    | Where     | Rests on            | Status |
 | - | -------------------------------------------- | --------- | ------------------- | ------ |
-| 1 | The policy engine and `earshot policy check` | Code      | D-029 (P-02, P-11)  | Done   |
+| 1 | The policy engine and `earwarden policy check` | Code      | D-029 (P-02, P-11)  | Done   |
 | 2 | Resolvers and per-effect rules               | Code      | D-029 (P-01)        | Done   |
 | 3 | Critical fields, the checker, redaction      | Code      | D-024               | Done   |
 | 4 | Lookalike packages                           | Code      | D-029 (P-09)        | Done   |
@@ -72,20 +72,20 @@ means it needs rehaan, the AirPods, other people's voices or Xcode.
 \* Passed at the gate (11 Nov, D-030) with deferrals: friends' calibration (Q-5), the hour-long
 nod count (nods stay off), a longer stretch of use for P-20, and the helper's fixed signature.
 
-### 1. The policy engine and `earshot policy check` (code)
+### 1. The policy engine and `earwarden policy check` (code)
 
 - Tiers from four sources, and the most restrictive wins:
   - built-in defaults per tool (P-02): tier 0 means tier 1; reads outside the project are at
     least tier 2; unknown tools, and Bash commands no rule matches, are tier 2
-  - your `~/.earshot/policy.yaml` (under `--home`, `<home>/policy.yaml`)
-  - a repo's `.earshot/policy.yaml`, which can only raise tiers. Lowering one needs
-    `earshot policy trust`, which pins the file's hash; a changed file is untrusted again (P-11).
+  - your `~/.earwarden/policy.yaml` (under `--home`, `<home>/policy.yaml`)
+  - a repo's `.earwarden/policy.yaml`, which can only raise tiers. Lowering one needs
+    `earwarden policy trust`, which pins the file's hash; a changed file is untrusted again (P-11).
   - the never-by-voice floor: push to the default branch, force push, secrets, recursive
     delete, deploy, pipe to shell, and changes to the agent's permissions are tier 3, and no
     file or model can lower them
 - The secret paths cover `.env`, `id_rsa`, `id_ed25519`, `id_ecdsa`, `*.pem`, `*.key`,
   credentials, `.netrc`, `.npmrc`, `.pypirc`, `~/.kube/config` and `~/.docker/config.json` (P-02).
-- `earshot policy check request.json` prints the tier, the rules that fired and the critical
+- `earwarden policy check request.json` prints the tier, the rules that fired and the critical
   fields, without speaking.
 - The daemon and the audit log use the engine's tier and rules in place of the stub's.
 - **Done when:**
@@ -94,8 +94,8 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
     a change
   - no request the stub sends to the screen comes out tier 1
 - **Done (8 Nov):**
-  - `earshot/policy/` (`engine.py` and `file.py`), with `earshot policy check` and
-    `earshot policy trust`. The daemon, the audit log and observe mode use it in place of the
+  - `earwarden/policy/` (`engine.py` and `file.py`), with `earwarden policy check` and
+    `earwarden policy trust`. The daemon, the audit log and observe mode use it in place of the
     stub. PyYAML is a new dependency.
   - The floor's shell effects (force push, a push naming the default branch, recursive delete,
     piping into a shell, deploys, the agent's files) are found by pattern until milestone 2.
@@ -117,7 +117,7 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
   `base64 -d | sh` and `curl ... | sh`.
 - **`pip install -r` reads the requirements file** and lists what it would install.
 - **Per effect (P-01):**
-  - Edits to `.git/`, `.claude/`, `.earshot/`, `.github/workflows/` and `.envrc` are tier 3.
+  - Edits to `.git/`, `.claude/`, `.earwarden/`, `.github/workflows/` and `.envrc` are tier 3.
   - Edits to build and test config (`conftest.py`, `package.json`, `Makefile`, `pyproject.toml`,
     `setup.py`) are at least tier 2.
   - Running code after such an edit in the same session is at least tier 2. The daemon keeps
@@ -234,7 +234,7 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
 
 ### 6. The voiceprint (code, then Mac)
 
-- **`earshot enroll`** records 12 phrases (about 45 s) through the AirPods mic, in headset mode.
+- **`earwarden enroll`** records 12 phrases (about 45 s) through the AirPods mic, in headset mode.
   It builds an ECAPA profile with Step 0's ONNX export and onnxruntime, so no PyTorch is needed.
 - **Calibration:**
   - rehaan's held-out recordings, over several days and rooms
@@ -255,7 +255,7 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
     - `dev/export_ecapa.py` exports the model (83.8 MB) into the home's `models/`.
     - Parity: features within 0.0012 dB of SpeechBrain's, and embeddings at cosine 1.000000
       with PyTorch's on every Step 0 recording.
-  - `earshot enroll`: 12 phrases plus 6 held out, spoken as challenge phrases in headset mode.
+  - `earwarden enroll`: 12 phrases plus 6 held out, spoken as challenge phrases in headset mode.
     `--record NAME` records a friend's phrases, or more of yours, for calibration.
   - `dev/calibrate_voiceprint.py` gives the equal error rate and the threshold at no more than
     2% impostors, and `--write` saves it.
@@ -270,7 +270,7 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
 
 ### 7. The helper: mic, devices and head motion (Mac)
 
-- **`src/earshot/helper_app/`,** a Swift app signed with a fixed identity (D-016). It:
+- **`src/earwarden/helper_app/`,** a Swift app signed with a fixed identity (D-016). It:
   - captures the AirPods mic, converts it to 16 kHz mono, and streams it to the daemon
   - reports device changes, such as the AirPods connecting or the output switching
   - streams head motion (rotation rates) from `CMHeadphoneMotionManager`
@@ -286,26 +286,26 @@ nod count (nods stay off), a longer stretch of use for P-20, and the helper's fi
   - the grant survives a rebuild
   - the hour-long count shows under 1% of answer windows with a false nod
 - **Code done (8 Nov):**
-  - `src/earshot/helper_app/`, a Swift app (`EarshotMotion.app`, `dev.earshot.motion`, no Dock
-    icon), built and signed by `build.sh`. It's signed with `$EARSHOT_SIGNING_IDENTITY`, or ad
+  - `src/earwarden/helper_app/`, a Swift app (`EarwardenMotion.app`, `dev.earwarden.motion`, no Dock
+    icon), built and signed by `build.sh`. It's signed with `$EARWARDEN_SIGNING_IDENTITY`, or ad
     hoc, and CI builds it.
   - It captures the headset mic at 16 kHz while asked, streams Core Motion rotation rates while
     asked, and reports device changes and permissions.
   - `voice/helper.py` is the daemon's end: a private Unix socket and the shared token, in JSON
-    lines. `earshotd --voice` always serves it, and `--helper PATH` launches the app through
+    lines. `earwardend --voice` always serves it, and `--helper PATH` launches the app through
     Launch Services. The Mac voice uses it whenever it's connected, and sounddevice otherwise.
   - `voice/gestures.py`:
     - A shake in the answer window hands off.
-    - Nods are off unless `earshotd --nods`. Then a strict double nod approves tier 1 only:
+    - Nods are off unless `earwardend --nods`. Then a strict double nod approves tier 1 only:
       two nods within 2 s, pitch at least twice yaw and roll, a second of stillness first.
     - The audit records the gesture.
   - `dev/count_false_nods.py` runs the hour-long count.
-  - **Left for the Mac (rehaan):** check macOS asks for the mic once, in Earshot's name; and the
+  - **Left for the Mac (rehaan):** check macOS asks for the mic once, in Earwarden's name; and the
     hour-long count.
   - **Deferred (rehaan, 9 Nov): the fixed signature.** The helper is signed ad hoc for now, so
     macOS asks again after each rebuild, and the "grant survives a rebuild" check stays open.
     - The fix for this Mac: a self-signed code-signing certificate from Keychain Access, used by
-      `EARSHOT_SIGNING_IDENTITY=… build.sh`. No Xcode is needed.
+      `EARWARDEN_SIGNING_IDENTITY=… build.sh`. No Xcode is needed.
     - For other users: an Apple Developer ID and notarisation, in Phase 5.
 
 ### 8. Close P-20, memory and latency (code, then Mac)
@@ -377,8 +377,8 @@ decides they should. The session that runs the gate is `docs/phase-2-gate.md`.
 As in Phase 1:
 
 - Libraries, models and tools stay inside the repo (D-013).
-- Earshot's data, now including `policy.yaml`, goes under `.tools/earshot/`.
-- Hooks go into `~/earshot-scratch`, never the global settings.
+- Earwarden's data, now including `policy.yaml`, goes under `.tools/earwarden/`.
+- Hooks go into `~/earwarden-scratch`, never the global settings.
 - The PyPI and npm snapshots and the challenge-word list are versioned in the repo, since nothing
   is fetched at runtime.
 
@@ -391,4 +391,4 @@ As in Phase 1:
 - **rehaan's Mac, at each Mac milestone:**
   - `dev/false_approvals.py`, and the recorded-audio set as it grows (by hand, since P-14 is
     deferred)
-  - a live `earshot test` round with `--keep-audio`
+  - a live `earwarden test` round with `--keep-audio`

@@ -13,8 +13,8 @@ from typing import Any
 
 import pytest
 
-from earshot.daemon.server import AlreadyRunningError
-from earshot.voice import helper
+from earwarden.daemon.server import AlreadyRunningError
+from earwarden.voice import helper
 
 TOKEN = "ab" * 32
 
@@ -40,12 +40,12 @@ def test_the_helper_is_given_absolute_paths(
     monkeypatch.setattr(subprocess, "run", run)
     monkeypatch.chdir(tmp_path)
     problem = helper.launch(
-        "build/EarshotMotion.app", Path("home/helper.sock"), Path("home/token"), "AirPods"
+        "build/EarwardenMotion.app", Path("home/helper.sock"), Path("home/token"), "AirPods"
     )
     assert problem is None
     (command,) = ran
     here = tmp_path.resolve()
-    assert command[command.index("-a") + 1] == str(here / "build" / "EarshotMotion.app")
+    assert command[command.index("-a") + 1] == str(here / "build" / "EarwardenMotion.app")
     assert command[command.index("--socket") + 1] == str(here / "home" / "helper.sock")
     assert command[command.index("--token-file") + 1] == str(here / "home" / "token")
     assert "--stem" not in command
@@ -63,7 +63,7 @@ def test_a_helper_that_wont_open_says_why(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_a_command_can_hold_the_link_on_its_own_thread(short: Path) -> None:
-    # `earshot enroll --helper`: the command blocks on the mic while the link's loop runs beside it.
+    # `earwarden enroll --helper`: the command blocks on the mic while the link's loop runs.
     thread = helper.LinkThread(helper.HelperLink(short / "helper.sock", TOKEN))
     thread.start()
     assert not thread.wait(0.1)  # no helper yet
@@ -71,7 +71,7 @@ def test_a_command_can_hold_the_link_on_its_own_thread(short: Path) -> None:
     async def fake_helper() -> dict[str, Any]:
         reader, writer = await asyncio.open_unix_connection(str(short / "helper.sock"))
         for message in (
-            {"hello": "earshot-motion", "v": 1, "token": TOKEN},
+            {"hello": "earwarden-motion", "v": 1, "token": TOKEN},
             {"devices": {"output": "AirPods", "input": "AirPods", "headset": True}},
         ):
             writer.write((json.dumps(message) + "\n").encode())

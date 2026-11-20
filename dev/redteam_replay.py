@@ -1,14 +1,14 @@
 """The replay attack, on the Mac (Phase 4, milestone 6; `docs/redteam.md`).
 
-    uv run python dev/redteam_replay.py --home .tools/earshot [--clips DIR] [--runs 6]
+    uv run python dev/redteam_replay.py --home .tools/earwarden [--clips DIR] [--runs 6]
 
-With `earshotd --voice --pin-voice` running and the AirPods in, it sends tier-2 test requests
-and, each time Earshot asks, plays one of your recorded "approve <word>" phrases through the
+With `earwardend --voice --pin-voice` running and the AirPods in, it sends tier-2 test requests
+and, each time Earwarden asks, plays one of your recorded "approve <word>" phrases through the
 Mac's own speaker, as an attacker with a recording of you would. The fresh challenge word never
 matches the recording, so every run must end on the screen. It prints each run's result and the
 audit log's view of it. Keep the AirPods in: the replay must reach their mic from the room.
 
-The clips come from `earshot enroll --save-clips DIR` (the `profile` and `held-out` folders).
+The clips come from `earwarden enroll --save-clips DIR` (the `profile` and `held-out` folders).
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ import sounddevice as sd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from earshot import audit, paths  # noqa: E402
+from earwarden import audit, paths  # noqa: E402
 
 ASK_DELAY_S = 6.0  # about when the question ends and the tone sounds, after the request is sent
 
@@ -59,7 +59,7 @@ def main() -> int:
     where = paths.resolve(args.home)
     clips = sorted(Path(args.clips or (where.state_dir / "enroll")).rglob("*.wav"))
     if not clips:
-        print("No recorded phrases found; run earshot enroll --save-clips first.")
+        print("No recorded phrases found; run earwarden enroll --save-clips first.")
         return 1
     out = speaker()
     name = sd.query_devices(out)["name"] if out is not None else "the default output"
@@ -69,7 +69,7 @@ def main() -> int:
         clip = random.choice(clips)  # noqa: S311 - not security: which recording to replay
         before = sum(1 for _ in audit.AuditLog(where.audit_dir, audit.load_key(where)).records())
         test = subprocess.Popen(  # noqa: S603 - our own command
-            [sys.executable, "-m", "earshot.cli", "test", "--home", args.home, "--tier", "2"],
+            [sys.executable, "-m", "earwarden.cli", "test", "--home", args.home, "--tier", "2"],
             stdout=subprocess.PIPE,
             text=True,
         )

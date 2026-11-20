@@ -1,11 +1,11 @@
 """Calibrate the voiceprint's threshold against other voices (milestone 6; the spec, Q-5).
 
-    uv run python dev/calibrate_voiceprint.py --home .tools/earshot \\
-        --yours .tools/earshot/enroll --impostors .tools/earshot/calibration [--write]
+    uv run python dev/calibrate_voiceprint.py --home .tools/earwarden \\
+        --yours .tools/earwarden/enroll --impostors .tools/earwarden/calibration [--write]
 
-- `--yours`: your phrases as WAV files (`earshot enroll --save-clips DIR`). A `profile` folder
+- `--yours`: your phrases as WAV files (`earwarden enroll --save-clips DIR`). A `profile` folder
   in it is skipped: those phrases built the profile, so they'd flatter it.
-- `--impostors`: other people's phrases (`earshot enroll --impostor NAME`), one folder each.
+- `--impostors`: other people's phrases (`earwarden enroll --impostor NAME`), one folder each.
 - `--enroll-from DIR --enroll N`: build the profile from the first N phrases in DIR instead of
   using your enrolled one. This is how Step 0's recordings are checked:
 
@@ -31,9 +31,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from earshot import paths  # noqa: E402
-from earshot.voice import voiceprint  # noqa: E402
-from earshot.voice.mac import VAD_MODEL  # noqa: E402
+from earwarden import paths  # noqa: E402
+from earwarden.voice import voiceprint  # noqa: E402
+from earwarden.voice.mac import VAD_MODEL  # noqa: E402
 
 MAX_IMPOSTORS_ACCEPTED = 0.02
 
@@ -81,7 +81,7 @@ def wavs(folder: Path) -> list[Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--home", help="Earshot's home, as for earshotd")
+    parser.add_argument("--home", help="Earwarden's home, as for earwardend")
     parser.add_argument("--yours", required=True, help="your held-out phrases (WAV)")
     parser.add_argument("--impostors", required=True, help="other voices' phrases (WAV)")
     parser.add_argument("--enroll-from", help="build the profile from this folder instead")
@@ -106,7 +106,7 @@ def main() -> int:
     else:
         loaded = voiceprint.load(where.voiceprint)
         if loaded is None:
-            print(f"No voiceprint at {where.voiceprint}: run earshot enroll first.")
+            print(f"No voiceprint at {where.voiceprint}: run earwarden enroll first.")
             return 1
         profile = loaded
     yours = {p: voiceprint.cosine(embed(p), profile.embedding) for p in pick(args.yours)}

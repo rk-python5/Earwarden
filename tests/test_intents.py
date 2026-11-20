@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from earshot.voice.intents import Intent, parse
+from earwarden.voice.intents import Intent, parse
 
 
 @pytest.mark.parametrize(

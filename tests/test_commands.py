@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from earshot.voice import commands, intents
+from earwarden.voice import commands, intents
 
 
 @pytest.mark.parametrize(
@@ -12,7 +12,7 @@ from earshot.voice import commands, intents
     [
         ("Status.", "status", None),
         ("What's everyone doing?", "status", None),
-        ("Earshot, what's everyone doing", "status", None),
+        ("Earwarden, what's everyone doing", "status", None),
         ("Repeat.", "repeat", None),
         ("Say that again, please.", "repeat", None),
         ("Details.", "details", None),
@@ -20,7 +20,8 @@ from earshot.voice import commands, intents
         ("Stop.", "stop", None),
         ("Be quiet.", "stop", None),
         ("Quiet mode.", "mode", "quiet"),
-        ("Earshot, quiet mode.", "mode", "quiet"),
+        ("Earwarden, quiet mode.", "mode", "quiet"),
+        ("Ear warden, quiet mode.", "mode", "quiet"),  # the recogniser may split the name
         ("Focus.", "mode", "focus"),
         ("Chatty mode please", "mode", "chatty"),
     ],

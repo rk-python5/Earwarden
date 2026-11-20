@@ -1,10 +1,10 @@
 # The red-team suite
 
-Every attack Earshot is built to stop, what stops it, where it's tested, and the result. The
+Every attack Earwarden is built to stop, what stops it, where it's tested, and the result. The
 suite runs with every `uv run pytest` (`tests/redteam/`, marker `redteam`) and before every
 release: **one approval through any attack blocks the release** (the spec, Phase 4's gate).
 
-Earshot fails toward the screen. Every attack below ends with Claude Code's own dialog, or with no
+Earwarden fails toward the screen. Every attack below ends with Claude Code's own dialog, or with no
 reply at all; none ends with an approval. "Screen" below means that.
 
 ## Results, 16 Nov 2026 (0.3.0.dev0)
@@ -34,14 +34,14 @@ reply at all; none ends with an approval. "Screen" below means that.
 | An event with the token, aimed at a waiting request | The most it can do is send the prompt to the screen (D-020). | `test_socket.py` | Screen |
 | An oversized, malformed or half-valid line | Dropped. | `test_socket.py` | No reply |
 | The socket, token or folder readable by others | 0600, 0600, 0700, checked at start. | `test_socket.py` | — |
-| **The audit log** edited (an outcome rewritten to allow), a record removed, the end cut off, the file deleted, a record forged without the key, a record added with the key but not by the daemon, an older copy put back | The keyed hash chain (D-025) and the anchor outside the log (Phase 4). | `test_log.py` | Every one reported by `earshot audit verify` |
+| **The audit log** edited (an outcome rewritten to allow), a record removed, the end cut off, the file deleted, a record forged without the key, a record added with the key but not by the daemon, an older copy put back | The keyed hash chain (D-025) and the anchor outside the log (Phase 4). | `test_log.py` | Every one reported by `earwarden audit verify` |
 
 ### Found and fixed by the suite
 
 - A shell given a program made at run time (`bash -c "$(…)"`, `sh -c "$CMD"`) was tier 2; it's
   tier 3.
 - Code given to an interpreter inline (`python -c`, `node -e`, `ruby -e`, `perl -E`) was tier 2;
-  it's tier 3, since Earshot can't read it. `python -m pytest` and `python script.py` are
+  it's tier 3, since Earwarden can't read it. `python -m pytest` and `python script.py` are
   unchanged.
 - A backslash-newline inside a word (`git\⏎ push`) wasn't joined, so the command matched no rule;
   the parser now joins it, as the shell does.

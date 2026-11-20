@@ -1,6 +1,6 @@
 # Attribution
 
-Earshot is Apache-2.0. These are the models and libraries it uses, and what each asks of you.
+Earwarden is Apache-2.0. These are the models and libraries it uses, and what each asks of you.
 
 ## Models
 
@@ -12,8 +12,8 @@ Earshot is Apache-2.0. These are the models and libraries it uses, and what each
 | [Silero VAD](https://github.com/snakers4/silero-vad) | Hearing speech, not noise | MIT |
 | [ECAPA-TDNN speaker embeddings](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb) (SpeechBrain), exported to ONNX | Checking who is answering | Apache-2.0 |
 
-The ECAPA model was trained on VoxCeleb, whose own terms are for research use. Earshot ships the
-network exported to ONNX and trains nothing; if that matters for how you use Earshot, read
+The ECAPA model was trained on VoxCeleb, whose own terms are for research use. Earwarden ships the
+network exported to ONNX and trains nothing; if that matters for how you use Earwarden, read
 VoxCeleb's terms.
 
 ## Libraries
@@ -27,7 +27,7 @@ library, unmodified), [ONNX Runtime](https://onnxruntime.ai) (MIT),
 [Pydantic](https://pydantic.dev) (MIT), [PyYAML](https://pyyaml.org) (MIT), metaphone (BSD).
 
 **espeak-ng and `phonemizer`, which are GPL, are not installed or used.** Kokoro's pipeline
-imports them whether or not it needs them, so Earshot gives it a stand-in that never starts
+imports them whether or not it needs them, so Earwarden gives it a stand-in that never starts
 (decisions.md, D-022). A word the speech front-end can't pronounce is spelled out instead.
 
 The popular-package lists behind the lookalike check come from

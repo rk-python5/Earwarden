@@ -11,7 +11,7 @@ from typing import Any
 
 from harness import RunningDaemon, finish, fixture, never, start_hook
 
-from earshot import wire
+from earwarden import wire
 
 StartDaemon = Callable[..., RunningDaemon]
 
@@ -19,7 +19,7 @@ StartDaemon = Callable[..., RunningDaemon]
 def exchange(home: Path, line: bytes) -> bytes:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
         conn.settimeout(5)
-        conn.connect(str(home / "earshotd.sock"))
+        conn.connect(str(home / "earwardend.sock"))
         conn.sendall(line)
         data = b""
         while chunk := conn.recv(4096):
@@ -109,6 +109,6 @@ def test_the_socket_and_token_are_yours_alone(home: Path, start_daemon: StartDae
     import stat
 
     start_daemon()
-    assert stat.S_IMODE((home / "earshotd.sock").stat().st_mode) == 0o600
+    assert stat.S_IMODE((home / "earwardend.sock").stat().st_mode) == 0o600
     assert stat.S_IMODE((home / "token").stat().st_mode) == 0o600
     assert stat.S_IMODE(home.stat().st_mode) == 0o700

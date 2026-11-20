@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from earshot import stub
+from earwarden import stub
 
 CWD = "/Users/rehaan/code/api"
 
@@ -27,7 +27,7 @@ def test_edits_inside_the_project_are_voice_approvable(path: str) -> None:
         ".git/config",
         "src/.git/hooks/pre-commit",
         ".claude/settings.json",
-        ".earshot/policy.yaml",
+        ".earwarden/policy.yaml",
         ".github/workflows/ci.yml",
         ".envrc",
         "conftest.py",

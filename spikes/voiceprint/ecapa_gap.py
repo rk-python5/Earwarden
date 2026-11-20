@@ -24,7 +24,7 @@ Your first `--enroll` phrases build the profile; the rest of yours, and all of y
 are scored against it by cosine similarity.
 
 It then exports ECAPA's embedding network to ONNX and checks that onnxruntime gives the same
-embeddings as PyTorch on every recording, each also cut to shorter lengths, because Earshot will
+embeddings as PyTorch on every recording, each also cut to shorter lengths, because Earwarden will
 trim silence and phrases will vary in length. The plan keeps PyTorch out of the
 daemon (D-002), so this must hold. It also measures embedding time and the memory of an
 onnxruntime-only process. Runs on any OS; this script was written for the M2.

@@ -1,10 +1,11 @@
 """The Phase 4 gate's voice runs, guided by voice and checked from the daemon's log.
 
-    uv run python dev/gate_voice.py --home .tools/earshot --log .tools/earshot/soak.log
+    uv run python dev/gate_voice.py --home .tools/earwarden --log .tools/earwarden/soak.log
 
-Run it beside `earshotd --voice --pin-voice --stem --helper … 2>&1 | tee .tools/earshot/soak.log`,
+Run it beside
+`earwardend --voice --pin-voice --stem --helper … 2>&1 | tee .tools/earwarden/soak.log`,
 with the AirPods in. Before each run it tells you what to do, in your AirPods (macOS's `say`, a
-different voice from Earshot's), then starts whatever the run needs and reads the daemon's log
+different voice from Earwarden's), then starts whatever the run needs and reads the daemon's log
 for the outcome. You never need to look at the screen or time anything: do what the voice says.
 
 It prints PASS or FAIL for each run with what the log showed, and writes them to
@@ -71,13 +72,13 @@ class Log:
 
 
 def cue(text: str) -> None:
-    """An instruction in your ear, in macOS's voice, so it's never mistaken for Earshot."""
+    """An instruction in your ear, in macOS's voice, so it's never mistaken for Earwarden."""
     subprocess.run(["/usr/bin/say", "-r", "185", text], check=False)  # noqa: S603
 
 
-def earshot(home: str, *args: str, timeout: float = 120) -> str:
+def earwarden(home: str, *args: str, timeout: float = 120) -> str:
     out = subprocess.run(  # noqa: S603 - our own command
-        [str(BIN / "earshot"), *args, "--home", home],
+        [str(BIN / "earwarden"), *args, "--home", home],
         capture_output=True,
         text=True,
         timeout=timeout,
@@ -87,7 +88,7 @@ def earshot(home: str, *args: str, timeout: float = 120) -> str:
 
 
 def settle(log: Log) -> None:
-    """Let the last thing Earshot said finish before the next cue."""
+    """Let the last thing Earwarden said finish before the next cue."""
     time.sleep(2.5)
     log.mark()
 
@@ -119,8 +120,8 @@ def run_chatty(home: str, log: Log) -> Result:
 
 def run_talk(home: str, log: Log) -> Result:
     cue("Run 3. No press this time. After the tone, say: quiet mode.")
-    reply = earshot(home, "talk")
-    return Result(3, "earshot talk, quiet mode", "Quiet mode" in reply, f"reply: {reply!r}")
+    reply = earwarden(home, "talk")
+    return Result(3, "earwarden talk, quiet mode", "Quiet mode" in reply, f"reply: {reply!r}")
 
 
 def run_never_approves(home: str, log: Log) -> Result:
@@ -132,7 +133,7 @@ def run_never_approves(home: str, log: Log) -> Result:
 def run_tier1(number: int, answer: str, expect: str) -> Callable[[str, Log], Result]:
     def run(home: str, log: Log) -> Result:
         cue(f"Run {number}. A question is coming. After the tone, say: {answer}.")
-        out = earshot(home, "test")
+        out = earwarden(home, "test")
         result = out.splitlines()[-1] if out else ""
         ok = f"Result: {expect}" in result
         return Result(number, f"tier 1, {answer}", ok, f"{result}; {timing(log)}")
@@ -145,7 +146,7 @@ def run_press_during_question(home: str, log: Log) -> Result:
         "Run 7. While the next question is being read, press the stem once. "
         "Then, after the tone, say: yes."
     )
-    out = earshot(home, "test")
+    out = earwarden(home, "test")
     result = out.splitlines()[-1] if out else ""
     pressed = log.count(r"button: stem")
     talked = log.count(r"push-to-talk heard")
@@ -157,7 +158,7 @@ def run_press_during_question(home: str, log: Log) -> Result:
 def run_details(home: str, log: Log) -> Result:
     cue("Run 8. Say nothing at all to the next question. I'll tell you when to press.")
     test = subprocess.Popen(  # noqa: S603 - our own command
-        [str(BIN / "earshot"), "test", "--tier", "2", "--home", home],
+        [str(BIN / "earwarden"), "test", "--tier", "2", "--home", home],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         start_new_session=True,  # its hook too, so both end together
@@ -184,7 +185,7 @@ def run_details(home: str, log: Log) -> Result:
 
 def run_tier2(home: str, log: Log) -> Result:
     cue("Run 9. A stricter question is coming. After the tone, say approve, and the word it asks.")
-    out = earshot(home, "test", "--tier", "2")
+    out = earwarden(home, "test", "--tier", "2")
     result = out.splitlines()[-1] if out else ""
     score = log.wait_for(r"voiceprint (\d\.\d+), (\w+)", 1)
     evidence = f"{result}; " + (score.group(0) if score else "no voiceprint score")
@@ -192,8 +193,8 @@ def run_tier2(home: str, log: Log) -> Result:
 
 
 def run_mode(home: str, log: Log) -> Result:
-    reply = earshot(home, "mode", "focus")
-    return Result(10, "earshot mode focus", "Mode: focus" in reply, f"reply: {reply!r}")
+    reply = earwarden(home, "mode", "focus")
+    return Result(10, "earwarden mode focus", "Mode: focus" in reply, f"reply: {reply!r}")
 
 
 RUNS: dict[int, Callable[[str, Log], Result]] = {
@@ -213,17 +214,17 @@ RUNS: dict[int, Callable[[str, Log], Result]] = {
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--home", required=True)
-    parser.add_argument("--log", required=True, help="the daemon's log (tee'd from earshotd)")
+    parser.add_argument("--log", required=True, help="the daemon's log (tee'd from earwardend)")
     parser.add_argument("--only", help="comma-separated run numbers")
     args = parser.parse_args()
     log = Log(Path(args.log))
     started = log.path.read_text(errors="replace") if log.path.exists() else ""
     if "helper connected" not in started or "listening for the stem" not in started:
-        print(f"{log.path} shows no daemon with the helper and --stem; start earshotd first.")
+        print(f"{log.path} shows no daemon with the helper and --stem; start earwardend first.")
         return 1
     chosen = [int(n) for n in args.only.split(",")] if args.only else sorted(RUNS)
     results: list[Result] = []
-    cue("Earshot's voice check. Follow my instructions; each run takes under a minute.")
+    cue("Earwarden's voice check. Follow my instructions; each run takes under a minute.")
     for number in chosen:
         settle(log)
         result = RUNS[number](args.home, log)

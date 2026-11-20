@@ -24,6 +24,6 @@ def test_refuses_outside_the_repo(shell: str, tmp_path: Path) -> None:
         text=True,
         check=False,
     )
-    assert "from inside the Earshot repo" in result.stderr
+    assert "from inside the Earwarden repo" in result.stderr
     assert "status 1" in result.stdout
     assert not (tmp_path / ".tools").exists()

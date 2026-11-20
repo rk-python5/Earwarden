@@ -68,7 +68,7 @@ IDENTIFIERS = [
     "mlx",
     "kokoro",
     "parakeet",
-    "earshot",
+    "earwarden",
     "numpyy",
     "djnago",
     # Git words and branches

@@ -1,4 +1,4 @@
-"""`earshot setup`: the helper source ships, models download with their checksums checked."""
+"""`earwarden setup`: the helper source ships, models download with their checksums checked."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from earshot import cli, paths, provision
+from earwarden import cli, paths, provision
 
 
 def serve(folder: Path, files: dict[str, bytes]) -> dict[str, str]:
@@ -20,7 +20,7 @@ def serve(folder: Path, files: dict[str, bytes]) -> dict[str, str]:
 
 def test_the_helpers_source_ships_in_the_package() -> None:
     source = provision.helper_source()
-    for name in ("build.sh", "Package.swift", "Sources/EarshotMotion/main.swift"):
+    for name in ("build.sh", "Package.swift", "Sources/EarwardenMotion/main.swift"):
         assert (source / name).exists(), name
 
 
@@ -65,7 +65,7 @@ def test_a_missing_model_is_reported_not_raised(tmp_path: Path) -> None:
 def test_the_default_helper_is_the_built_app_if_there_is_one(tmp_path: Path) -> None:
     where = paths.resolve(str(tmp_path))
     assert provision.default_helper(where) is None
-    binary = provision.helper_app(where) / "Contents" / "MacOS" / "earshot-motion"
+    binary = provision.helper_app(where) / "Contents" / "MacOS" / "earwarden-motion"
     binary.parent.mkdir(parents=True)
     binary.write_bytes(b"")
     assert provision.default_helper(where) == provision.helper_app(where)
@@ -79,6 +79,6 @@ def test_setup_without_voice_adds_only_the_hooks(
     home = tmp_path / "home"
     code = cli.main(["setup", "--no-voice", "--home", str(home), "--settings", str(settings)])
     assert code == 0
-    assert "earshot-hook" in settings.read_text()
+    assert "earwarden-hook" in settings.read_text()
     assert "Voice skipped" in capsys.readouterr().out
     assert not (home / "helper").exists()

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from earshot import audit
+from earwarden import audit
 
 KEY = b"k" * 32
 

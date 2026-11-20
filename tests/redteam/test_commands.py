@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from earshot.policy import engine
+from earwarden.policy import engine
 
 CWD = "/Users/rehaan/code/api"
 

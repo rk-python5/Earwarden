@@ -6,7 +6,7 @@ from importlib import metadata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DISTRIBUTION = "earshot-agents"
+DISTRIBUTION = "earwarden"
 # Semantic Versioning core, with an optional PEP 440 development suffix between releases.
 VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(\.dev(0|[1-9]\d*))?")
 

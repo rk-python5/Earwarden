@@ -10,8 +10,8 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from earshot.policy import engine
-from earshot.policy.shell import parse
+from earwarden.policy import engine
+from earwarden.policy.shell import parse
 
 CWD = "/Users/rehaan/code/api"
 
@@ -403,7 +403,7 @@ def test_any_text_gets_a_tier_without_crashing(command: str) -> None:
 
 
 def test_a_line_continuation_inside_a_word_is_joined() -> None:
-    from earshot.policy import shell
+    from earwarden.policy import shell
 
     (command,) = shell.parse("gi\\\npush origin main").commands
     assert command.words == ("gipush", "origin", "main")

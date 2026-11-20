@@ -14,9 +14,9 @@ from typing import Any
 
 import pytest
 
-from earshot.voice import mac
-from earshot.voice.decider import CUT_OFF
-from earshot.voice.mac import MacVoice
+from earwarden.voice import mac
+from earwarden.voice.decider import CUT_OFF
+from earwarden.voice.mac import MacVoice
 
 
 def cache_model(cache: Path, model: str) -> None:
@@ -204,14 +204,14 @@ def loud_while_speaking(monkeypatch: pytest.MonkeyPatch, speech: bool) -> MacVoi
     return voice
 
 
-def test_a_noise_while_speaking_doesnt_stop_earshot(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_noise_while_speaking_doesnt_stop_earwarden(monkeypatch: pytest.MonkeyPatch) -> None:
     voice = loud_while_speaking(monkeypatch, speech=False)
     assert not voice._talked_over()
     assert not voice._barge.is_set()
     assert voice._ignored == 1
 
 
-def test_talking_over_earshot_stops_it(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_talking_over_earwarden_stops_it(monkeypatch: pytest.MonkeyPatch) -> None:
     voice = loud_while_speaking(monkeypatch, speech=True)
     assert voice._talked_over()
     assert voice._talked_over()  # it stays stopped without asking Silero again
@@ -325,7 +325,7 @@ def test_a_cancelled_question_is_cut_off_without_a_tone(
 
 
 def test_answers_are_scored_against_the_voiceprint_once_enrolled() -> None:
-    from earshot.voice import voiceprint
+    from earwarden.voice import voiceprint
 
     voice = MacVoice()
     assert not voice.speaker_ready()
@@ -375,7 +375,7 @@ def test_the_helpers_chunks_become_frames_timed_by_their_samples(
     clock[0] = 101.0  # after a gap, the clock starts again
     voice._helper_audio(chunk)
     assert voice._frames[-1][0] == pytest.approx(101.0)
-    assert not voice._loud.is_set()  # Earshot wasn't speaking
+    assert not voice._loud.is_set()  # Earwarden wasn't speaking
 
 
 def test_a_loud_helper_chunk_while_speaking_is_looked_at() -> None:
@@ -403,7 +403,7 @@ def test_a_nod_with_nods_off_is_seen_logged_and_ignored(caplog: pytest.LogCaptur
 
     helper = FakeHelper()
     voice = MacVoice(helper=helper)  # type: ignore[arg-type]
-    with caplog.at_level("INFO", logger="earshot.voice"):
+    with caplog.at_level("INFO", logger="earwarden.voice"):
         voice._nod_seen = False
         assert voice._gesture(0.0) is None  # nods are off (D-018): never a gesture
         assert voice._gesture(0.0) is None
@@ -418,10 +418,10 @@ def test_only_speech_from_before_the_window_counts_as_cut_off(
     stream_sd: FakeSounddevice, monkeypatch: pytest.MonkeyPatch, speech: bool, expected: Any
 ) -> None:
     # A noise that the endpointer places before the window used to come back as "cut off", and
-    # Earshot said "Wait for the tone" with nobody speaking. Speech still never gets parsed.
+    # Earwarden said "Wait for the tone" with nobody speaking. Speech still never gets parsed.
     import numpy as np
 
-    from earshot.voice import endpoint
+    from earwarden.voice import endpoint
 
     voice = MacVoice()
     voice._mic, voice._mic_rate = "mic", mac.ASR_RATE
@@ -437,7 +437,7 @@ def test_only_speech_from_before_the_window_counts_as_cut_off(
 def test_the_espeak_module_is_replaced_by_one_that_never_starts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # mlx-audio imports misaki.espeak, which needs phonemizer (GPL) and espeak-ng. Earshot gives
+    # mlx-audio imports misaki.espeak, which needs phonemizer (GPL) and espeak-ng. Earwarden gives
     # it a stand-in whose fallback refuses to start, which the pipeline treats as "skip unknown
     # words", so none of that code needs to be installed (D-022).
     monkeypatch.delitem(sys.modules, "misaki.espeak", raising=False)

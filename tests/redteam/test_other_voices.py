@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-HOME = Path(os.environ.get("EARSHOT_HOME", ROOT / ".tools" / "earshot"))
+HOME = Path(os.environ.get("EARWARDEN_HOME", ROOT / ".tools" / "earwarden"))
 FRIEND = ROOT / "spikes" / "speech" / "out" / "replies" / "friend"
 DISGUISE = HOME / "disguise"
 
@@ -26,7 +26,7 @@ def test_no_other_voice_reaches_the_threshold() -> None:
     sys.path.insert(0, str(ROOT / "dev"))
     import calibrate_voiceprint as cv  # type: ignore[import-not-found]
 
-    from earshot.voice import voiceprint
+    from earwarden.voice import voiceprint
 
     profile = voiceprint.load(HOME / "voiceprint.json")
     assert profile is not None

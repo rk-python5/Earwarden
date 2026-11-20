@@ -1,16 +1,16 @@
 {
   "background_tasks": [],
-  "cwd": "/Users/rehaan/earshot-probe",
+  "cwd": "/Users/rehaan/earwarden-probe",
   "effort": {
     "level": "high"
   },
   "hook_event_name": "Stop",
-  "last_assistant_message": "I ran `touch probe-1.txt` in `/Users/rehaan/earshot-probe`. It finished without errors, so `probe-1.txt` now exists there. I didn't list the directory to confirm it.",
+  "last_assistant_message": "I ran `touch probe-1.txt` in `/Users/rehaan/earwarden-probe`. It finished without errors, so `probe-1.txt` now exists there. I didn't list the directory to confirm it.",
   "permission_mode": "default",
   "prompt_id": "b0bacb79-b710-4de4-adab-ae72e45e9320",
-  "scratchpad_dir": "/private/tmp/claude-501/-Users-rehaan-earshot-probe/c0259fc2-798d-4534-bf74-c180c398cabc/scratchpad",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-rehaan-earwarden-probe/c0259fc2-798d-4534-bf74-c180c398cabc/scratchpad",
   "session_crons": [],
   "session_id": "c0259fc2-798d-4534-bf74-c180c398cabc",
   "stop_hook_active": false,
-  "transcript_path": "/Users/rehaan/.claude/projects/-Users-rehaan-earshot-probe/c0259fc2-798d-4534-bf74-c180c398cabc.jsonl"
+  "transcript_path": "/Users/rehaan/.claude/projects/-Users-rehaan-earwarden-probe/c0259fc2-798d-4534-bf74-c180c398cabc.jsonl"
 }

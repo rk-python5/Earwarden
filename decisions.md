@@ -50,6 +50,10 @@ How this file works:
 
 ## Decisions
 
+> The project was called Earshot until D-039 (21 Nov 2026). Entries before it keep the old
+> names: read `earshot` as `earwarden`, `earshotd` as `earwardend` and `earshot-agents` as
+> `earwarden`.
+
 ### D-001 The design doc is the baseline spec
 
 - **Date:** 2026-11-03 · **Status:** Accepted · **By:** rehaan
@@ -828,6 +832,46 @@ How this file works:
   signing key. The Phase 5 gate, "v1.0 is public", is met when those are done and the first
   `uv tool install` works on a Mac that has never had Earshot.
 
+### D-039 The project is renamed Earwarden
+
+- **Date:** 2026-11-21 · **Status:** Accepted · **By:** rehaan ("there are many earshot names
+  repos out there, we need a new unique name"); the name is Claude's pick, checked below
+- **Decision:** Earshot is now **Earwarden**: a warden at the ear, guarding what an agent may do.
+
+  | Was | Is |
+  | --- | --- |
+  | Earshot | Earwarden |
+  | PyPI `earshot-agents`, `import earshot` | PyPI `earwarden`, `import earwarden` |
+  | `earshot`, `earshotd`, `earshot-hook` | `earwarden`, `earwardend`, `earwarden-hook` |
+  | `EarshotMotion.app`, `dev.earshot.motion` | `EarwardenMotion.app`, `dev.earwarden.motion` |
+  | LaunchAgent `dev.earshot.daemon` | `dev.earwarden.daemon` |
+  | `EARSHOT_*`, `~/.earshot`, `.tools/earshot` | `EARWARDEN_*`, `~/.earwarden`, `.tools/earwarden` |
+  | GitHub `rk-python5/Earshot` | `rk-python5/Earwarden` |
+
+- **Why:** the old name was taken in every way that matters. On PyPI, `earshot` and `earshot-ai`
+  were taken (Q-3), and pykeio's voice-activity library has the same import name, so the two can't
+  share an environment (D-008 flagged this). On GitHub, many repositories are named Earshot.
+- **Checked on 21 Nov 2026:** `earwarden` has no PyPI package, no npm package, no GitHub
+  repository named that and no GitHub user or organisation. Also free on PyPI and npm, if this one
+  is ever vetoed: `assentry`, `harkgate`, `nodgate`, `voxwarden`. (`assentry` has a GitHub
+  organisation; the others have repositories or none.) The name isn't reserved until the first
+  upload.
+- **What kept the old name, on purpose:** this file's entries before D-039, the changelog's
+  entries before 1.0.1, and the spec PDF (`earshot-technical-design-build-plan.pdf`). They record
+  what was true then, including which other projects used the name. Read `earshot` as `earwarden`,
+  `earshotd` as `earwardend` and `earshot-agents` as `earwarden`. The popular-package lists keep
+  their `earshot` entry, which is someone else's package.
+- **Consequences:**
+  - Nothing was published, so nobody migrates. On a development Mac: the data folder moves to
+    `.tools/earwarden`, the hooks are added again (`earwarden init`), and macOS asks once more for
+    the microphone and head motion, because the helper's bundle id changed.
+  - The speech front-end can't pronounce "earwarden" and spells it out, so Earwarden never says
+    its own name. `earwarden test` asks about a project called "demo".
+  - Version `1.0.0` exists as a git tag under the old name and was never published; the first
+    release under the new name is `1.0.1`.
+  - **Still the owner's** (`docs/releasing.md`): rename the GitHub repository, and register the
+    PyPI trusted publisher as `earwarden`. GitHub redirects the old address.
+
 ## Proposals
 
 From the design review of 3 Nov 2026. Each needs rehaan's call by the point listed.
@@ -1279,7 +1323,7 @@ From the plan's open-questions list.
 | --- | ------------------------------------------------------------------------------ | ------------------------------ | -------------------------------------------------------------- |
 | Q-1 | Does Claude Code show its dialog while a `PermissionRequest` hook is still running? | Step 0 hook spike          | **Answered 4 Nov 2026 (hook probe, rehaan's Mac, Claude Code 2.1.318): yes.** The dialog appears while the hook runs, and whichever answers first wins. Approving on screen lets the tool run while the hook keeps waiting; No or Esc end the hook with SIGTERM. So presence routing isn't needed to keep the session from freezing; it only decides whether Earshot speaks at all. See P-12 and `spikes/RESULTS.md`. |
 | Q-2 | How long does the AirPods mic take to switch on with the M2?                   | Step 0 audio spike             | **Answered 4 Nov 2026: 847 ms median, 931 ms max** (5 trials, `audio_io switch`). Long enough to clip the start of an answer, so the plan's fallback applies: keep the mic warm while an approval is pending, switching it on when the approval starts, while Earshot is still speaking. |
-| Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free, and D-008 adopts it. Whether the name is clear enough is still open. |
+| Q-3 | Is `earshot` free on PyPI, and is "Earshot" clear enough as a name?            | rehaan                         | Partly answered. On 3 Nov 2026 `earshot` was taken by an active voice-activity-detection library (pykeio/earshot) and `earshot-ai` by a placeholder uploaded on 2 Nov 2026. `earshot-agents` was free, and D-008 adopts it. Whether the name is clear enough is still open. **Answered 21 Nov 2026: no, so the project was renamed Earwarden (D-039).** |
 | Q-4 | Which small model clears EarshotBench in under 300 ms?                         | Phase 3                        | Open                                                           |
 | Q-5 | Which 3–5 friends will record impostor and gesture data?                       | rehaan                         | Open. Deferred at the Phase 2 gate (D-030); one friend's Step 0 phrases are the only impostor data so far. Deferred again at the Phase 4 gate (D-037). |
 | Q-6 | Release the summarizer under Apache-2.0, or match its base model's license?    | rehaan, before Phase 5         | Open                                                           |

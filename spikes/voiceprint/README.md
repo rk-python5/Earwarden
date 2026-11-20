@@ -11,7 +11,7 @@ PyTorch and the ECAPA model from Hugging Face; both stay inside the repo, under 
 ## 1. Record the phrases
 
 Use the speech spike's recorder, keeping only the ten challenge phrases ("approve orchard" and so
-on). Record them through the AirPods mic, in the same headset mode Earshot will use:
+on). Record them through the AirPods mic, in the same headset mode Earwarden will use:
 
 ```sh
 PHRASES=ch-orchard,ch-lantern,ch-harbor,ch-copper,ch-juniper,ch-ribbon,ch-marble,ch-compass,ch-tunnel,ch-glacier
@@ -29,7 +29,7 @@ uv run spikes/voiceprint/ecapa_gap.py --trim
 ```
 
 `--trim` first cuts the silence around each phrase, keeping a quarter of a second either side. It
-uses the same rule as the speech spike's `--trim`, and it's what Earshot's voice detector will do.
+uses the same rule as the speech spike's `--trim`, and it's what Earwarden's voice detector will do.
 A phrase lasts about a second of each 3-second recording, so without trimming, the silence and
 room noise, the same for both of you, make up most of what's scored.
 
@@ -44,7 +44,7 @@ your friend's, are scored against it. The report gives:
   like with like.
 - a mid-point threshold (Phase 2 calibrates the real one, aiming for at most 2% impostors accepted)
 - **ONNX parity:** the lowest cosine similarity between ONNX and PyTorch embeddings. The target is
-  at least 0.999. Every recording is 3 seconds long, but Earshot will trim silence, so phrases
+  at least 0.999. Every recording is 3 seconds long, but Earwarden will trim silence, so phrases
   will vary. Each recording is therefore also cut to 0.5, 1, 1.5, 2 and 2.5 seconds, and all
   lengths must pass.
 - the exported model's size, counting its weights. The exporter can put the weights in a

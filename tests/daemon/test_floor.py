@@ -7,8 +7,8 @@ import contextlib
 
 import pytest
 
-from earshot.daemon import floor as floor_module
-from earshot.daemon.floor import FAILURE, FINISHED, PROGRESS, Floor
+from earwarden.daemon import floor as floor_module
+from earwarden.daemon.floor import FAILURE, FINISHED, PROGRESS, Floor
 
 
 class Clock:

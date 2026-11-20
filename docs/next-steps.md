@@ -12,11 +12,11 @@ sections as they're done.
 - **Deferred from Phase 2, before 1.0:**
   - friends' phrases to calibrate the voiceprint (Q-5). The threshold stays at 0.50, uncalibrated.
   - the hour-long nod count with the new detector. Nods stay off until it's done.
-  - a longer stretch of real voice use for P-20, which stays open. Until then `earshotd --voice`
+  - a longer stretch of real voice use for P-20, which stays open. Until then `earwardend --voice`
     stays in the scratch project.
   - the helper's fixed signature (below).
 - **The helper's app predates its last fix** (the hello goes first). Rebuild it with
-  `src/earshot/helper_app/build.sh` before the next voice session; macOS asks for the mic and
+  `src/earwarden/helper_app/build.sh` before the next voice session; macOS asks for the mic and
   motion once more.
 - **CI** runs as one macOS job, and builds the helper too. GitHub's Mac runners were unreliable in
   early November, so a local `uv run pytest` is the dependable check.
@@ -27,12 +27,12 @@ sections as they're done.
   the AirPods and speak.
 - Tags can be pushed from the Mac, so a release no longer needs the separate tag step.
 - **Careful with hooks.**
-  - `earshot init` with no `--settings` edits `~/.claude/settings.json`. That file also governs
-    the Claude Code session doing the development, so while `earshotd --voice --pin-voice` runs,
+  - `earwarden init` with no `--settings` edits `~/.claude/settings.json`. That file also governs
+    the Claude Code session doing the development, so while `earwardend --voice --pin-voice` runs,
     that session's own prompts would be asked by voice.
-  - Keep the hooks in the scratch project, `~/earshot-scratch`, set up on 8 Nov.
-  - If the hooks ever end up global, `uv run earshot uninstall` restores the backup.
-- `earshotd` runs under `uv run`, which holds uv's cache lock. Stop the daemon before running
+  - Keep the hooks in the scratch project, `~/earwarden-scratch`, set up on 8 Nov.
+  - If the hooks ever end up global, `uv run earwarden uninstall` restores the backup.
+- `earwardend` runs under `uv run`, which holds uv's cache lock. Stop the daemon before running
   `uv cache prune`.
 - The disk is tight (about 7 GB free on 8 Nov). `.tools/huggingface/` holds only the three models
   the daemon uses, plus ECAPA for the voiceprint; Step 0's other candidates were deleted.
@@ -42,11 +42,11 @@ sections as they're done.
 ## 1. Day to day, and the deferred checks
 
 - The voice runs as in `docs/phase-2-gate.md`, step 3. The hooks live in
-  `~/earshot-scratch/.claude/settings.local.json`. Enrolling and recording use `--helper`, with
+  `~/earwarden-scratch/.claude/settings.local.json`. Enrolling and recording use `--helper`, with
   the daemon stopped.
 - When friends are around: step 5 of that file, then calibrate with `--write`, then run 5 of
   step 6. Each takes about 2 minutes per friend.
-- `--keep-audio` keeps each answer for checking P-20; delete `.tools/earshot/audio/`,
+- `--keep-audio` keeps each answer for checking P-20; delete `.tools/earwarden/audio/`,
   `enroll/normal-2` and `disguise/` when they're no longer needed.
 
 ## 2. Run the Phase 4 gate
@@ -60,7 +60,7 @@ with P-22's answers, and releases 0.3.0 if every target in the plan's gate table
 
 ## 3. Later, and loose ends
 
-- **Phases left to v1.0:** 3 (summarizer and EarshotBench; optional, since v1.0 can ship with
+- **Phases left to v1.0:** 3 (summarizer and EarwardenBench; optional, since v1.0 can ship with
   templates only), 4 (sessions, the risk gate, hardening: the red-team suite and an 8-hour soak)
   and 5 (launch).
 - Remove `misaki[en]` from the voice install before any public release (D-022, D-023).
@@ -71,7 +71,7 @@ with P-22's answers, and releases 0.3.0 if every target in the plan's gate table
   Shipping to others needs an Apple Developer ID (Phase 5).
 - Phase 1's milestone 8: the LaunchAgent at a real login, and its restart after a kill. This is
   step 8 of the gate session, optional.
-- A narration whose first clause is long and has no comma, such as "earshot scratch wants to
+- A narration whose first clause is long and has no comma, such as "earwarden scratch wants to
   write hello dot t x t", still takes about 1 s to its first word. Whisper's first second listen
   also loads it, in about 4.5 s.
-- Open questions: Q-3 (is "Earshot" clear enough as a name), Q-4, Q-5 (which friends), Q-6.
+- Open questions: Q-3 (is "Earwarden" clear enough as a name), Q-4, Q-5 (which friends), Q-6.

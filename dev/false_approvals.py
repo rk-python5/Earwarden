@@ -29,8 +29,8 @@ from typing import Any
 
 import numpy as np
 
-from earshot.voice import challenge, endpoint, intents
-from earshot.voice.mac import ASR_RATE, FRAME_S, PRE_ROLL_S, MacVoice
+from earwarden.voice import challenge, endpoint, intents
+from earwarden.voice.mac import ASR_RATE, FRAME_S, PRE_ROLL_S, MacVoice
 
 FRAME = int(FRAME_S * ASR_RATE)
 CUT_STEP_S = 0.05

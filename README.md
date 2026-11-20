@@ -1,6 +1,6 @@
-# Earshot
+# Earwarden
 
-Maker-checker for AI agents, in your ear. Earshot is a local macOS service that answers Claude Code
+Maker-checker for AI agents, in your ear. Earwarden is a local macOS service that answers Claude Code
 permission prompts by voice through your AirPods, with confirmation strength set by risk:
 
 - **Tier 1:** a nod or a "yes".
@@ -15,10 +15,10 @@ You need a Mac with Apple Silicon (macOS 14 or later), AirPods or another headse
 [uv](https://docs.astral.sh/uv/), Claude Code and Xcode's command line tools:
 
 ```sh
-uv tool install 'earshot-agents[voice]'
-earshot setup      # hooks, the helper app, and the voice models
-earshot enroll     # your voiceprint, about 3 minutes with the AirPods in
-earshot service install --voice --stem
+uv tool install 'earwarden[voice]'
+earwarden setup      # hooks, the helper app, and the voice models
+earwarden enroll     # your voiceprint, about 3 minutes with the AirPods in
+earwarden service install --voice --stem
 ```
 
 [docs/quickstart.md](docs/quickstart.md) has the five-minute version with what to expect. Without
@@ -26,7 +26,7 @@ earshot service install --voice --stem
 
 ## Status
 
-Earshot 1.0 passed its test suite, a red-team suite and recorded-audio checks, and has run live
+Earwarden 1.0 passed its test suite, a red-team suite and recorded-audio checks, and has run live
 on one setup: an M2 MacBook Air with AirPods 4 and one speaker's voice. Other headsets, rooms and
 voices are untested, and the voiceprint's threshold isn't calibrated on other people. Voice is a
 convenience check, never identity proof, and tier 3 is never approvable by voice. Read
@@ -49,7 +49,7 @@ first.
 
 ## Development
 
-Everything Earshot installs stays inside this folder, in venvs: uv itself, the Python 3.11 it
+Everything Earwarden installs stays inside this folder, in venvs: uv itself, the Python 3.11 it
 downloads, every library and every model. Nothing goes into your system or shell profile
 (decisions.md, D-013). In each new terminal, from the repo:
 
@@ -66,7 +66,7 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pyt
 
 To remove everything, delete `.tools/` and `.venv/`.
 
-The PyPI distribution is `earshot-agents`; the import name and commands are `earshot`.
+The PyPI distribution is `earwarden`; the import name and commands are `earwarden`.
 
 ## License
 

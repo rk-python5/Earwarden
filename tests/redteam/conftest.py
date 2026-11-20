@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "daemon"))  # the d
 
 from harness import RunningDaemon
 
-from earshot.daemon.server import MAX_WAIT_S, Decider, hand_off
+from earwarden.daemon.server import MAX_WAIT_S, Decider, hand_off
 
 
 @pytest.fixture

@@ -11,9 +11,9 @@ from typing import Any
 import pytest
 from harness import RunningDaemon
 
-from earshot.audit import AuditLog
-from earshot.daemon.floor import Floor
-from earshot.daemon.server import MAX_WAIT_S, Decider, hand_off
+from earwarden.audit import AuditLog
+from earwarden.daemon.floor import Floor
+from earwarden.daemon.server import MAX_WAIT_S, Decider, hand_off
 
 
 @pytest.fixture

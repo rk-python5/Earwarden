@@ -33,7 +33,7 @@ def run_hook(out: Path, stdin: str, mode: str | None = None) -> subprocess.Compl
     out.mkdir(parents=True, exist_ok=True)
     if mode is not None:
         (out / "mode").write_text(mode)
-    env = {**os.environ, "EARSHOT_PROBE_DIR": str(out)}
+    env = {**os.environ, "EARWARDEN_PROBE_DIR": str(out)}
     return subprocess.run(
         [sys.executable, str(PROBE), "hook"],
         input=stdin,
@@ -46,7 +46,7 @@ def run_hook(out: Path, stdin: str, mode: str | None = None) -> subprocess.Compl
 
 
 def run_cli(tmp: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    env = {**os.environ, "EARSHOT_PROBE_DIR": str(tmp / "out")}
+    env = {**os.environ, "EARWARDEN_PROBE_DIR": str(tmp / "out")}
     return subprocess.run(
         [sys.executable, str(CLI), *args],
         capture_output=True,
@@ -112,7 +112,7 @@ def test_hold_then_allow(tmp_path: Path) -> None:
 
 def test_signal_during_hold_is_logged_and_exits_zero(tmp_path: Path) -> None:
     (tmp_path / "mode").write_text("hold-allow 30")
-    env = {**os.environ, "EARSHOT_PROBE_DIR": str(tmp_path)}
+    env = {**os.environ, "EARWARDEN_PROBE_DIR": str(tmp_path)}
     with subprocess.Popen(
         [sys.executable, str(PROBE), "hook"],
         stdin=subprocess.PIPE,

@@ -1,4 +1,4 @@
-"""Run mic_check.py as a launchd agent, the way earshotd would start, and report what happens.
+"""Run mic_check.py as a launchd agent, the way earwardend would start, and report what happens.
 
     python3 spikes/launchd_mic/agent.py setup [--python 3.11]   # venv with sounddevice and numpy
     python3 spikes/launchd_mic/agent.py run                     # start under launchd, show result
@@ -24,8 +24,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out"
 VENV = OUT / "venv"
-PLIST = OUT / "dev.earshot.spike.mic.plist"
-LABEL = "dev.earshot.spike.mic"
+PLIST = OUT / "dev.earwarden.spike.mic.plist"
+LABEL = "dev.earwarden.spike.mic"
 RESULT = OUT / "launchd-result.json"
 
 

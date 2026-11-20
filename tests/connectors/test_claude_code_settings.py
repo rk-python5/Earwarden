@@ -1,4 +1,4 @@
-"""earshot init and uninstall edit Claude Code's settings without disturbing anything else."""
+"""earwarden init and uninstall edit Claude Code's settings without disturbing anything else."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from earshot.cli import hook_command, main
-from earshot.connectors.claude_code import settings
+from earwarden.cli import hook_command, main
+from earwarden.connectors.claude_code import settings
 
-COMMAND = "/repo/.venv/bin/earshot-hook --home /repo/.tools/earshot"
+COMMAND = "/repo/.venv/bin/earwarden-hook --home /repo/.tools/earwarden"
 
 THEIRS = (
     '{\n    "model": "opus",\n    "hooks": {\n        "PermissionRequest": [\n'
@@ -20,7 +20,7 @@ THEIRS = (
 )
 
 
-def test_init_adds_every_hook_earshot_needs(tmp_path: Path) -> None:
+def test_init_adds_every_hook_earwarden_needs(tmp_path: Path) -> None:
     path = tmp_path / "settings.json"
     settings.install(path, COMMAND)
     hooks = json.loads(path.read_text())["hooks"]
@@ -75,12 +75,12 @@ def test_uninstall_keeps_changes_made_since_init(tmp_path: Path) -> None:
     message = settings.uninstall(path)
     left = json.loads(path.read_text())
     assert left["theme"] == "dark"
-    assert "earshot-hook" not in path.read_text()
+    assert "earwarden-hook" not in path.read_text()
     assert settings.backup_path(path).exists()
     assert "backup stays" in message
 
 
-def test_a_file_that_held_only_earshot_is_removed(tmp_path: Path) -> None:
+def test_a_file_that_held_only_earwarden_is_removed(tmp_path: Path) -> None:
     path = tmp_path / ".claude" / "settings.local.json"
     settings.install(path, COMMAND)
     settings.uninstall(path)
@@ -101,7 +101,7 @@ def test_the_cli_installs_and_uninstalls(
 ) -> None:
     path = tmp_path / "settings.json"
     path.write_text(THEIRS)
-    home = tmp_path / "earshot home"
+    home = tmp_path / "earwarden home"
     assert main(["init", "--settings", str(path), "--home", str(home)]) == 0
     assert (home / "token").exists()
     command = json.loads(path.read_text())["hooks"]["PermissionRequest"][1]["hooks"][0]["command"]

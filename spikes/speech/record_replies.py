@@ -126,7 +126,7 @@ def main() -> None:
     info: Any = sd.query_devices(device)
     rate = int(info["default_samplerate"])
     print(f"Recording from {info['name']} at {rate} Hz, {args.seconds:g} s per reply.")
-    print("Speak naturally, as if answering Earshot. Ctrl-C stops; finished replies are kept.")
+    print("Speak naturally, as if answering Earwarden. Ctrl-C stops; finished replies are kept.")
 
     labels_path = OUT / "labels.csv"
     labels = load_labels(labels_path)
@@ -134,7 +134,7 @@ def main() -> None:
         with Recorder(device, rate) as recorder:
             time.sleep(1.0)  # let the headset-mode switch settle before the first prompt
             for number, reply in enumerate(replies, start=1):
-                cue = f"   (Earshot asked for: {reply.challenge})" if reply.challenge else ""
+                cue = f"   (Earwarden asked for: {reply.challenge})" if reply.challenge else ""
                 print(f"\n[{number}/{len(replies)}] Say: “{reply.text}”{cue}")
                 while True:
                     input("  Press Enter, then speak… ")

@@ -11,8 +11,8 @@ import pytest
 from conftest import StartDaemon
 from harness import fixture, run_hook
 
-from earshot import audit, paths
-from earshot.cli import main
+from earwarden import audit, paths
+from earwarden.cli import main
 
 KEY = b"k" * 32
 
@@ -115,7 +115,7 @@ def test_the_audit_commands(
     assert main(["audit", "tail", "--home", str(home)]) == 0
     out = capsys.readouterr().out
     assert "intact" in out
-    assert "earshot-probe: Bash -> handoff (decided)" in out
+    assert "earwarden-probe: Bash -> handoff (decided)" in out
 
 
 # The anchor (Phase 4, milestone 5; P-10's second half)
@@ -199,7 +199,7 @@ def test_a_restart_continues_the_anchor_and_a_mismatch_is_logged(
     assert audit.verify(tmp_path / "log", KEY, store.load()) == []
     [file] = (tmp_path / "log").glob("*.jsonl")
     file.write_text("\n".join(file.read_text().splitlines()[:-2]) + "\n")
-    with caplog.at_level("WARNING", logger="earshot.audit"):
+    with caplog.at_level("WARNING", logger="earwarden.audit"):
         audit.AuditLog(tmp_path / "log", KEY, store)
     assert "doesn't match its anchor (anchor: 4 records, log: 2)" in caplog.text
 

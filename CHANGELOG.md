@@ -1,10 +1,29 @@
 # Changelog
 
-All notable changes to Earshot are recorded here. The format follows
+All notable changes to Earwarden are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow Semantic Versioning,
 written in PEP 440 form (see D-006 in [decisions.md](decisions.md)).
 
+Earwarden was called Earshot until 21 Nov 2026 (D-039). Entries before 1.0.1 keep the old name.
+
 ## [Unreleased]
+
+### Changed
+
+- **Earshot is now Earwarden** (D-039). Other projects already used the old name, among them a
+  PyPI package with the same import name. Everything follows:
+  - the PyPI package is `earwarden`, and `import earwarden`;
+  - the commands are `earwarden`, `earwardend` (the daemon) and `earwarden-hook`;
+  - the helper app is `EarwardenMotion.app`, the LaunchAgent `dev.earwarden.daemon`, the
+    environment variables `EARWARDEN_*` and the data folder `~/.earwarden`;
+  - the repository is `rk-python5/Earwarden`.
+
+  Nothing was ever published under the old name, so there is nothing to migrate for users. A Mac
+  that ran a development build adds the hooks again with `earwarden init`, and macOS asks once more
+  for the microphone and head motion, since the helper has a new name.
+- `earwarden test` now asks about a project called "demo": the voice can't pronounce "earwarden",
+  and spells it out.
+- A spoken command may begin with the name, as one word or two ("Ear warden, quiet mode").
 
 ## [1.0.0] - 2026-11-17
 

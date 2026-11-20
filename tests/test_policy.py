@@ -8,10 +8,10 @@ from typing import Any
 
 import pytest
 
-from earshot import paths, stub
-from earshot.cli import main
-from earshot.policy import engine
-from earshot.policy.file import PolicyError, load, trust
+from earwarden import paths, stub
+from earwarden.cli import main
+from earwarden.policy import engine
+from earwarden.policy.file import PolicyError, load, trust
 
 CWD = "/Users/rehaan/code/api"
 
@@ -99,7 +99,7 @@ def test_the_floor_is_tier_3(command: str, effect: str) -> None:
         "src/.git/hooks/pre-commit",
         ".claude/settings.json",
         "/Users/rehaan/.claude/settings.json",
-        ".earshot/policy.yaml",
+        ".earwarden/policy.yaml",
         ".github/workflows/ci.yml",
         ".envrc",
     ],
@@ -196,8 +196,8 @@ def test_a_repo_policy_can_only_raise_until_trusted() -> None:
 def test_trust_pins_the_file_and_a_change_undoes_it(tmp_path: Path) -> None:
     project = tmp_path / "api"
     (project / ".git").mkdir(parents=True)
-    (project / ".earshot").mkdir()
-    policy = project / ".earshot" / "policy.yaml"
+    (project / ".earwarden").mkdir()
+    policy = project / ".earwarden" / "policy.yaml"
     policy.write_text("version: 1\nrules: [{id: m, match: {command: '^make$'}, tier: 1}]\n")
     where = paths.resolve(str(tmp_path / "home"))
     command = {"command": "make"}

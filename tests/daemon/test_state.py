@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from earshot import contracts, wire
-from earshot.daemon.state import CHIMES, Pending, PendingRequests, Sessions, spoken_name
+from earwarden import contracts, wire
+from earwarden.daemon.state import CHIMES, Pending, PendingRequests, Sessions, spoken_name
 
 TOKEN = "ab" * 32
 

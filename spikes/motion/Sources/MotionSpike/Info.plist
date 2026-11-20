@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>dev.earshot.motion-spike</string>
+	<string>dev.earwarden.motion-spike</string>
 	<key>CFBundleName</key>
-	<string>Earshot motion spike</string>
+	<string>Earwarden motion spike</string>
 	<key>NSMotionUsageDescription</key>
-	<string>Earshot reads head motion from your AirPods to recognise nods and shakes.</string>
+	<string>Earwarden reads head motion from your AirPods to recognise nods and shakes.</string>
 </dict>
 </plist>

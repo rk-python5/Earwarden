@@ -21,7 +21,7 @@ The plan's four week-1 tests map to the sections below:
 | macOS version                    | 27.0.1 |
 | Claude Code version              | 2.1.318 |
 | AirPods model and firmware       | AirPods 4 (ANC), model A3055, firmware 9A348. They show up as "femida's AirPods - Find My", with separate input and output devices. |
-| Earshot version / commit         | 0.0.2.dev0, commit c281407 (hook probe) |
+| Earwarden version / commit         | 0.0.2.dev0, commit c281407 (hook probe) |
 
 ## 1. Hook probe
 
@@ -30,7 +30,7 @@ Steps: [hook_probe/README.md](hook_probe/README.md).
 | Check                                                    | Target                 | Result | Pass |
 | -------------------------------------------------------- | ---------------------- | ------ | ---- |
 | `allow` honoured, no dialog                              | yes                    | Yes. Run 2: "Allowed by PermissionRequest hook", no dialog, and the tool ran 59 ms after the decision. | Yes |
-| `deny` honoured, the message reaches Claude              | yes                    | Yes. Run 3: no file was created. Claude quoted "Denied by the Earshot hook probe (Step 0 spike)" and stopped to ask how to go on. | Yes |
+| `deny` honoured, the message reaches Claude              | yes                    | Yes. Run 3: no file was created. Claude quoted "Denied by the Earwarden hook probe (Step 0 spike)" and stopped to ask how to go on. | Yes |
 | No output brings up the normal dialog                    | yes                    | Yes. Run 1: the dialog appeared; approved on screen after about 11.7 s. | Yes |
 | **Q-1:** dialog shown while the hook holds? (run 4)      | answer                 | **Yes, the dialog shows while the hook is still running.** Run 4 (`hold 30`): the tool ran 5.2 s after the hook started, because it was approved on screen, while the hook went on holding for the full 30 s. | —    |
 | Late hook decision vs. an on-screen answer (run 5)       | answer                 | The on-screen answer wins. Retry: approved on screen at 2.5 s, and the hook's allow at 20 s was ignored. First attempt: No on screen ended the hook with SIGTERM before it could answer. | —    |
@@ -183,14 +183,14 @@ Steps: [audio_io/README.md](audio_io/README.md).
 
 Notes:
 
-- **Kept warm:** the self-approval check ran with the mic open the whole time, the way Earshot
+- **Kept warm:** the self-approval check ran with the mic open the whole time, the way Earwarden
   would keep it warm, so the Q-2 fix and P-06 were tested together.
 - **A made-up "Mm-hmm.":** in one quiet window (tier 2, 500 ms guard, no pre-roll), Parakeet
   transcribed "Mm-hmm." from near-silence. It isn't an approval under the strict rules (P-07), but
   it shows two things: why recognition must sit behind voice-activity detection, and why fillers
   must never approve.
 - **24 kHz input:** in headset mode the AirPods mic runs at 24 kHz (from the launchd run), and the
-  plan's models expect 16 kHz, so Earshot resamples. It's cheap.
+  plan's models expect 16 kHz, so Earwarden resamples. It's cheap.
 - **Download:** the first `selfcheck --asr` downloaded 2.47 GB of model files (about 5.5 minutes),
   kept in `.tools/`.
 
@@ -200,7 +200,7 @@ Steps: [launchd_mic/README.md](launchd_mic/README.md). This feeds P-13.
 
 | Check                                                    | Target              | Result | Pass |
 | -------------------------------------------------------- | ------------------- | ------ | ---- |
-| Prompt shown when started by launchd? Name it shows      | a prompt, clear name | A popup appeared within a second of the first launchd run and was allowed. It's named after the Python program, not "Earshot". | Partly: a prompt, but not a clear name |
+| Prompt shown when started by launchd? Name it shows      | a prompt, clear name | A popup appeared within a second of the first launchd run and was allowed. It's named after the Python program, not "Earwarden". | Partly: a prompt, but not a clear name |
 | Verdict under launchd after granting                     | audio came through  | Audio came through: Python 3.11.18 started by launchd (parent pid 1), recording the AirPods at 24 kHz | Yes |
 | Verdict from Terminal                                    | audio came through  | Audio came through | —    |
 | After switching the interpreter: asked again? verdict    | note                | Audio came through with Python 3.12.16 under launchd. Each interpreter got its own grant: Privacy & Security → Microphone lists both Python versions. | —    |
@@ -268,7 +268,7 @@ Notes:
   scored against it.
 - **The trimmed numbers are the ones that count.** Each recording is 3 s, and the phrase lasts about
   one. Untrimmed, silence and room noise, the same for both of you, made up most of what was scored
-  and pulled the voices together. Cutting the silence, as Earshot's voice detector will, dropped
+  and pulled the voices together. Cutting the silence, as Earwarden's voice detector will, dropped
   your friend's highest from 0.527 to 0.440, while your lowest stayed at 0.55. At least one
   recording stayed 3.0 s long after trimming, probably because the Enter key's click counted as
   sound. A real voice detector should do better.

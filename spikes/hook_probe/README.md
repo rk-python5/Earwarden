@@ -2,7 +2,7 @@
 
 This probe covers the plan's first Step 0 items:
 
-- Capture real `PermissionRequest` payloads, and the other events Earshot listens to.
+- Capture real `PermissionRequest` payloads, and the other events Earwarden listens to.
 - Answer allow and deny from a script, and time the round trip.
 - **Q-1:** find out whether Claude Code shows its own dialog while the hook is still waiting.
 
@@ -15,12 +15,12 @@ From the repo root:
 ```sh
 source dev/activate
 uv sync
-uv run python spikes/hook_probe/probe_cli.py install ~/earshot-probe
+uv run python spikes/hook_probe/probe_cli.py install ~/earwarden-probe
 claude --version                     # note it in spikes/RESULTS.md
-cd ~/earshot-probe && claude
+cd ~/earwarden-probe && claude
 ```
 
-`install` writes `~/earshot-probe/.claude/settings.local.json`. That hooks the probe into
+`install` writes `~/earwarden-probe/.claude/settings.local.json`. That hooks the probe into
 `PreToolUse`, `PermissionRequest`, `PostToolUse`, `Notification`, `Stop`, `SessionStart` and
 `SessionEnd` for that folder only; your own settings aren't touched. Claude Code holds back hooks
 until you accept its workspace-trust prompt for the folder, so accept it.
@@ -53,7 +53,7 @@ which mode the session was in.
 | - | --------------- | ---------------------------------------------- | ------------------------------------------------------------- |
 | 1 | `none`          | Approve on screen                              | The dialog appears as usual                                   |
 | 2 | `allow`         | Nothing                                        | The command runs with no dialog                               |
-| 3 | `deny`          | Nothing                                        | Claude is told "Denied by the Earshot hook probe" and carries on |
+| 3 | `deny`          | Nothing                                        | Claude is told "Denied by the Earwarden hook probe" and carries on |
 | 4 | `hold 30`       | Watch the screen for 30 s                      | **Q-1:** does the dialog appear at once, or only after 30 s?  |
 | 5 | `hold-allow 20` | If a dialog appears during the hold, choose No | Which wins: your click or the hook's late allow?              |
 | 6 | `hold 60`       | Press Esc during the hold                      | How the hook ends: `report` shows a signal, or "vanished"     |

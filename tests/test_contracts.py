@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from earshot import contracts, wire
+from earwarden import contracts, wire
 
 TOKEN = "0123456789abcdef" * 4
 

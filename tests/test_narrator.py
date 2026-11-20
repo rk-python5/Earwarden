@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from earshot.narrator import redact, spoken
-from earshot.narrator.templates import MAX_WORDS, narrate
+from earwarden.narrator import redact, spoken
+from earwarden.narrator.templates import MAX_WORDS, narrate
 
 CWD = "/Users/rehaan/code/api"
 
@@ -121,10 +121,10 @@ def test_redaction_keeps_the_context(text: str, kept: str) -> None:
     "text",
     [
         "git push origin feature/login",
-        "src/earshot/daemon/server.py",
+        "src/earwarden/daemon/server.py",
         "uv run pytest -x",
         "a" * 40,
-        "/private/var/folders/x7/k2j3l4m5n6p7q8r9s0t1u2v3w4/T/earshot-test-Ab3dE5gH/notes.md",
+        "/private/var/folders/x7/k2j3l4m5n6p7q8r9s0t1u2v3w4/T/earwarden-test-Ab3dE5gH/notes.md",
     ],
 )
 def test_ordinary_text_isnt_redacted(text: str) -> None:

@@ -1,6 +1,6 @@
 # Phase 4 plan: sessions, the risk gate and hardening
 
-Phase 2 made one voice conversation safe. Phase 4 makes Earshot dependable with several Claude
+Phase 2 made one voice conversation safe. Phase 4 makes Earwarden dependable with several Claude
 Code sessions at once, and then tries to break it. This is the build plan's "week 7", and its
 **gate is one rule: the red-team suite gets no approval through.** Phase 3 (the summarizer) is
 postponed (D-031), so the releases are `0.3.x`.
@@ -30,7 +30,7 @@ Moved here by decisions:
 
 Not in Phase 4:
 
-- the summarizer and EarshotBench (postponed, D-031)
+- the summarizer and EarwardenBench (postponed, D-031)
 - a gesture classifier (v2), because there is no training data; the thresholds ship (D-018)
 - a replay-and-clone detector, and a voice-clone test (D-032); both are research items after 1.0
 - packaging and launch (Phase 5)
@@ -53,7 +53,7 @@ AirPods, friends or hours of wall time.
 | - | -------------------------------------------------- | --------- | ----------------- | ------ |
 | 1 | Session activity and briefings                     | Code      | D-020             | Done   |
 | 2 | The floor manager, modes and announcements         | Code      | D-031, D-032      | Done   |
-| 3 | Push-to-talk: the stem, `earshot talk`, commands   | Code, Mac | D-016, D-032      | Code*  |
+| 3 | Push-to-talk: the stem, `earwarden talk`, commands   | Code, Mac | D-016, D-032      | Code*  |
 | 4 | The risk-gate interface                            | Code      | the spec          | Done   |
 | 5 | Anchoring the audit chain                          | Code      | D-025, P-10       | Done   |
 | 6 | The red-team suite                                 | Code, Mac | D-030, D-032      | Code*  |
@@ -85,7 +85,7 @@ AirPods, friends or hours of wall time.
 - At most one unrequested announcement every 20 seconds. A stale one (two minutes old) is dropped.
 - **Modes:** quiet (approvals only), focus (approvals and failures; the default), chatty
   (everything, with a briefing every five minutes while something is running).
-- **Control:** `earshot mode NAME`, `earshot status` and `earshot talk` reach the running daemon
+- **Control:** `earwarden mode NAME`, `earwarden status` and `earwarden talk` reach the running daemon
   through a new `Command` message on the same socket, token and contract rules. This is the one
   addition to the five messages, and it only changes announcements: no command can approve a
   request.
@@ -96,16 +96,16 @@ AirPods, friends or hours of wall time.
 ### 3. Push-to-talk (code, then Mac)
 
 - **The press:** the helper registers the play/pause media commands (D-032) and sends `{"button":
-  "stem"}`. `earshotd --stem` starts it that way. `earshot talk` sends the same trigger.
+  "stem"}`. `earwardend --stem` starts it that way. `earwarden talk` sends the same trigger.
 - **The window:** a press takes the floor (it cuts off an announcement but never an open answer
   window), plays the listening tone, and listens for one command. A shake of the head cancels.
 - **Commands in v1.0:** `status` (the briefing), `repeat` (the last thing said), `details` (spell
   out the current request), `stop` (silence and clear the queue), and the three mode names, with
-  or without "mode" ("Earshot, quiet mode"). Anything else gets "Sorry, I didn't catch that."
+  or without "mode" ("Earwarden, quiet mode"). Anything else gets "Sorry, I didn't catch that."
 - **No command approves anything.** The window never parses yes or no, and an open approval is
   never answered from here.
 - **Left for the Mac:** the stem press itself, which needs the AirPods and may need changes once
-  seen on hardware (the fallback is `earshot talk`).
+  seen on hardware (the fallback is `earwarden talk`).
 
 ### 4. The risk-gate interface (code)
 
@@ -121,7 +121,7 @@ AirPods, friends or hours of wall time.
 ### 5. Anchoring the audit chain (code)
 
 - The chain's head and record count are stored outside the log: in the Keychain on a real install,
-  in a 0600 file in development, the way the key already is. `earshot audit verify` now catches
+  in a 0600 file in development, the way the key already is. `earwarden audit verify` now catches
   records cut off the end, which a hash chain alone can't.
 - **Done when:** tests cut, edit, reorder, forge and replace a log, and each is reported.
 
@@ -147,7 +147,7 @@ AirPods, friends or hours of wall time.
 
 ### 7. The soak tool, loose ends and the gate session (code)
 
-- `dev/soak.py` samples Earshot's memory and CPU every minute for the length of the soak, counts
+- `dev/soak.py` samples Earwarden's memory and CPU every minute for the length of the soak, counts
   false nods and helper crashes from the log, and says whether memory grew.
 - `docs/phase-4-gate.md` is the session on the Mac, with each command explained.
 - Loose ends: replace the challenge word `sphinx`, which two recognisers misheard (D-030).
@@ -163,7 +163,7 @@ AirPods, friends or hours of wall time.
 | No growth or crash over 8 hours         | `dev/soak.py`: memory, CPU and crashes                   |
 | No false approvals                      | `dev/false_approvals.py`, and the soak's kept audio (P-20) |
 | Announcements obey the floor            | a live check of each mode and a briefing                 |
-| The stem starts push-to-talk            | a live check, or `earshot talk` if the stem can't        |
+| The stem starts push-to-talk            | a live check, or `earwarden talk` if the stem can't        |
 
 ## Decisions Phase 4 needs
 
@@ -176,8 +176,8 @@ AirPods, friends or hours of wall time.
 
 ## Where things live during development
 
-As before: libraries and models stay inside the repo (D-013), data under `.tools/earshot/`, and
-hooks only in `~/earshot-scratch`. The soak runs real sessions there.
+As before: libraries and models stay inside the repo (D-013), data under `.tools/earwarden/`, and
+hooks only in `~/earwarden-scratch`. The soak runs real sessions there.
 
 ## Testing
 

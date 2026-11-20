@@ -6,7 +6,7 @@ import itertools
 
 import pytest
 
-from earshot.voice import challenge
+from earwarden.voice import challenge
 
 
 def test_about_200_words() -> None:

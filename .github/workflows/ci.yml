@@ -43,8 +43,8 @@ jobs:
           codesign --verify --verbose .build/MotionSpike.app
       - name: Build the signed helper and check its bundle
         if: ${{ !cancelled() }}
-        working-directory: src/earshot/helper_app
+        working-directory: src/earwarden/helper_app
         run: |
           ./build.sh
-          plutil -lint .build/EarshotMotion.app/Contents/Info.plist
-          codesign --verify --verbose .build/EarshotMotion.app
+          plutil -lint .build/EarwardenMotion.app/Contents/Info.plist
+          codesign --verify --verbose .build/EarwardenMotion.app

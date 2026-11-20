@@ -2,7 +2,7 @@
 
     uv run python dev/refresh_package_lists.py
 
-It downloads, at development time only (Earshot never fetches them at run time):
+It downloads, at development time only (Earwarden never fetches them at run time):
 
 - PyPI: the 15,000 most-downloaded packages, from https://hugovk.dev/top-pypi-packages/, which
   counts PyPI's public download statistics. Only the names are kept.
@@ -19,7 +19,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-DATA = Path(__file__).resolve().parents[1] / "src" / "earshot" / "policy" / "data"
+DATA = Path(__file__).resolve().parents[1] / "src" / "earwarden" / "policy" / "data"
 PYPI = "https://hugovk.dev/top-pypi-packages/top-pypi-packages.min.json"
 NPM_PACKAGE = "https://registry.npmjs.org/npm-high-impact/latest"
 NPM_TOP = "https://unpkg.com/npm-high-impact@{version}/lib/top.js"

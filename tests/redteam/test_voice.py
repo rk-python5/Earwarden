@@ -8,8 +8,8 @@ from typing import Any
 import pytest
 from test_voice_decider import Away, FakeVoice, pending
 
-from earshot.voice import challenge, intents
-from earshot.voice.decider import CUT_OFF, NOD, SHAKE, Heard, Speaker, VoiceDecider
+from earwarden.voice import challenge, intents
+from earwarden.voice.decider import CUT_OFF, NOD, SHAKE, Heard, Speaker, VoiceDecider
 
 PUSH = {"command": "git push --force origin main"}
 INSTALL = {"command": "pip install httpx"}

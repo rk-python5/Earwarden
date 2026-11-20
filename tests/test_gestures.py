@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from earshot.voice.gestures import Sample, detect
+from earwarden.voice.gestures import Sample, detect
 
 RATE = 50
 

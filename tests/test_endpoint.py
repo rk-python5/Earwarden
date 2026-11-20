@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from earshot.voice.endpoint import END_SILENCE_S, LEAD_QUIET_S, MAX_SPEECH_S, find_reply
+from earwarden.voice.endpoint import END_SILENCE_S, LEAD_QUIET_S, MAX_SPEECH_S, find_reply
 
 FRAME = 0.02
 ROOM = 0.002

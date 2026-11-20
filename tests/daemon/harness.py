@@ -12,14 +12,14 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from earshot import contracts, paths
-from earshot.audit import AuditLog
-from earshot.daemon.floor import Floor
-from earshot.daemon.server import Daemon, Decider
-from earshot.daemon.state import Pending
+from earwarden import contracts, paths
+from earwarden.audit import AuditLog
+from earwarden.daemon.floor import Floor
+from earwarden.daemon.server import Daemon, Decider
+from earwarden.daemon.state import Pending
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "claude_code" / "2.1.318"
-HOOK_MODULE = "earshot.connectors.claude_code.hook"
+HOOK_MODULE = "earwarden.connectors.claude_code.hook"
 
 
 def fixture(name: str) -> dict[str, Any]:

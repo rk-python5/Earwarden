@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from earshot.voice.helper import HelperLink
+from earwarden.voice.helper import HelperLink
 
 TOKEN = "ab" * 32
 
@@ -30,7 +30,9 @@ async def connect(
     path: Path, token: str = TOKEN
 ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
     reader, writer = await asyncio.open_unix_connection(str(path))
-    writer.write((json.dumps({"hello": "earshot-motion", "v": 1, "token": token}) + "\n").encode())
+    writer.write(
+        (json.dumps({"hello": "earwarden-motion", "v": 1, "token": token}) + "\n").encode()
+    )
     await writer.drain()
     return reader, writer
 
@@ -124,7 +126,7 @@ def test_the_helpers_notes_reach_the_log_and_permissions_add_up(
         writer.close()
         await link.stop()
 
-    with caplog.at_level("INFO", logger="earshot.helper"):
+    with caplog.at_level("INFO", logger="earwarden.helper"):
         asyncio.run(scenario())
 
 

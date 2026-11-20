@@ -29,7 +29,7 @@ cd spikes/motion
 ./run.sh calibrate
 ```
 
-The first run makes macOS ask for motion access for "Earshot motion spike"; allow it. If you
+The first run makes macOS ask for motion access for "Earwarden motion spike"; allow it. If you
 denied it by mistake, allow it in System Settings → Privacy & Security → Motion & Fitness.
 
 ## 1. Calibrate (1 minute)

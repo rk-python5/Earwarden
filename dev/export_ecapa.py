@@ -11,16 +11,16 @@
 #     "soundfile",
 # ]
 # ///
-"""Export ECAPA for the voiceprint, and check Earshot's numpy features match SpeechBrain's.
+"""Export ECAPA for the voiceprint, and check Earwarden's numpy features match SpeechBrain's.
 
-    uv run dev/export_ecapa.py [--home .tools/earshot]
+    uv run dev/export_ecapa.py [--home .tools/earwarden]
 
-It writes `models/ecapa_embedding.onnx` (and its weights file) under Earshot's home, which is what
-`earshot enroll` and the daemon load. Then it checks parity on Step 0's recordings, if they're
+It writes `models/ecapa_embedding.onnx` (and its weights file) under Earwarden's home, which is what
+`earwarden enroll` and the daemon load. Then it checks parity on Step 0's recordings, if they're
 there, and on synthetic noise:
 
-- Earshot's `voiceprint.fbank` against SpeechBrain's features: the largest difference
-- the ONNX model on Earshot's features against PyTorch on SpeechBrain's: the lowest cosine, which
+- Earwarden's `voiceprint.fbank` against SpeechBrain's features: the largest difference
+- the ONNX model on Earwarden's features against PyTorch on SpeechBrain's: the lowest cosine, which
   must be at least 0.999, as Step 0 required of the export
 """
 
@@ -38,8 +38,8 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from earshot import paths  # noqa: E402
-from earshot.voice import voiceprint  # noqa: E402
+from earwarden import paths  # noqa: E402
+from earwarden.voice import voiceprint  # noqa: E402
 
 RECORDINGS = ROOT / "spikes" / "speech" / "out" / "replies"
 
@@ -72,7 +72,7 @@ def clips() -> list[tuple[str, np.ndarray]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--home", help="Earshot's home, as for earshotd (default: the usual)")
+    parser.add_argument("--home", help="Earwarden's home, as for earwardend (default: the usual)")
     args = parser.parse_args()
     from speechbrain.inference.speaker import EncoderClassifier
 

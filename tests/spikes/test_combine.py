@@ -1,4 +1,4 @@
-"""combine.py works out a two-stage recogniser from two result files, with Earshot's rules."""
+"""combine.py works out a two-stage recogniser from two result files, with Earwarden's rules."""
 
 import csv
 import subprocess

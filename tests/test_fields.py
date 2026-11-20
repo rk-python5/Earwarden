@@ -8,9 +8,9 @@ from typing import Any
 
 import pytest
 
-from earshot.narrator import checker
-from earshot.narrator.templates import narrate
-from earshot.policy import engine, fields
+from earwarden.narrator import checker
+from earwarden.narrator.templates import narrate
+from earwarden.policy import engine, fields
 
 CWD = "/Users/rehaan/code/api"
 
@@ -58,8 +58,8 @@ def say(tool: str, tool_input: dict[str, Any], cwd: str = CWD) -> str:
         ),
         (
             "mcp__github__create_issue",
-            {"repo": "earshot", "title": "A very long issue title that goes on"},
-            "api wants to use create issue from github, on earshot.",
+            {"repo": "earwarden", "title": "A very long issue title that goes on"},
+            "api wants to use create issue from github, on earwarden.",
         ),
         (
             "Read",

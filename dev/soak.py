@@ -1,8 +1,8 @@
-"""The soak: watch Earshot for hours while you work (Phase 4, milestone 7; the spec's 8-hour test).
+"""The soak: watch Earwarden for hours while you work (Phase 4, milestone 7; the 8-hour test).
 
-    uv run python dev/soak.py --hours 8 --home .tools/earshot --log .tools/earshot/soak.log
+    uv run python dev/soak.py --hours 8 --home .tools/earwarden --log .tools/earwarden/soak.log
 
-Run it beside `earshotd --voice --helper … 2>&1 | tee .tools/earshot/soak.log`, with the AirPods
+Run it beside `earwardend --voice --helper … 2>&1 | tee .tools/earwarden/soak.log`, with the AirPods
 in and a few Claude Code sessions going in scratch projects. Every minute it samples the daemon's
 and the helper's memory and CPU (`ps`), and reads the daemon's log for what the gate asks:
 
@@ -34,7 +34,7 @@ from typing import ClassVar
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from earshot import paths  # noqa: E402
+from earwarden import paths  # noqa: E402
 
 SAMPLE_S = 60.0
 MEMORY_TARGET_MB = 3 * 1024
@@ -73,7 +73,7 @@ class LogCounts:
         "helper_connected": re.compile(r"helper connected"),
         "helper_disconnected": re.compile(r"helper disconnected"),
         "tracebacks": re.compile(r"Traceback \(most recent call last\)"),
-        "barge_ins": re.compile(r"barge-in: speech over Earshot"),
+        "barge_ins": re.compile(r"barge-in: speech over Earwarden"),
         "false_approval_checks": re.compile(r"recognized: approve"),
     }
 
@@ -98,8 +98,8 @@ class LogCounts:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--hours", type=float, default=8.0)
-    parser.add_argument("--home", help="Earshot's home, as for earshotd")
-    parser.add_argument("--log", help="the daemon's log file (tee earshotd's output to it)")
+    parser.add_argument("--home", help="Earwarden's home, as for earwardend")
+    parser.add_argument("--log", help="the daemon's log file (tee earwardend's output to it)")
     args = parser.parse_args()
     where = paths.resolve(args.home)
     out = where.state_dir / "soak.jsonl"
@@ -110,8 +110,8 @@ def main() -> int:
     print(f"Soaking for {args.hours:g} hours; samples go to {out}. Ctrl-C ends it early.")
     try:
         while time.monotonic() < end:
-            daemon = pids("bin/earshotd")
-            helper = pids("MacOS/earshot-motion")
+            daemon = pids("bin/earwardend")
+            helper = pids("MacOS/earwarden-motion")
             d = usage(daemon[0]) if daemon else None
             h = usage(helper[0]) if helper else None
             seen = counts.read()

@@ -22,7 +22,7 @@ uv run spikes/audio_io/airpods_io.py switch --trials 5
 Each trial:
 
 1. Plays a quiet tone in high-quality mode.
-2. Opens the AirPods mic, as Earshot does when an answer window opens.
+2. Opens the AirPods mic, as Earwarden does when an answer window opens.
 3. Measures how long until the mic delivers live audio. Before then it may deliver silence.
 
 It also counts glitches in the output stream. Listen for the tone dropping or changing quality
@@ -44,7 +44,7 @@ This plays a 3-second sweep through the AirPods while recording their mic, and r
 - **Leak gain:** how much of the playback reaches the mic.
 - **Leak above the noise floor:** how audible that leak is.
 
-**What it decides:** if the leak is clearly above the floor, barge-in (talking over Earshot) needs
+**What it decides:** if the leak is clearly above the floor, barge-in (talking over Earwarden) needs
 half-duplex or echo cancellation, and the answer window must wait out the delay.
 
 ## 3. Self-approval (P-06)
@@ -53,7 +53,7 @@ half-duplex or echo cancellation, and the answer window must wait out the delay.
 uv run spikes/audio_io/airpods_io.py selfcheck --asr    # stay quiet
 ```
 
-This keeps the mic warm, as Earshot does while an approval is pending, then plays two prompts
+This keeps the mic warm, as Earwarden does while an approval is pending, then plays two prompts
 through the AirPods with macOS `say`:
 
 - a tier-2 prompt ending "say: approve orchard"
@@ -62,7 +62,7 @@ through the AirPods with macOS `say`:
 For each prompt it cuts answer windows starting 0, 100, 250 and 500 ms after playback ends on the
 Mac's side, with and without the plan's 1.5 s pre-roll. For each window it reports the level
 relative to the room and what Parakeet hears. Any window that the intent rules read as an approval
-fails: Earshot would have approved itself.
+fails: Earwarden would have approved itself.
 
 **What it decides:** the guard delay before an answer window opens, and whether pre-roll may reach
 back before the window.

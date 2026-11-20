@@ -11,10 +11,10 @@ import pytest
 from conftest import StartDaemon
 from harness import FIXTURES, run_hook
 
-from earshot import audit, paths, service
-from earshot.cli import main
-from earshot.daemon.state import Pending
-from earshot.voice.decider import Heard, VoiceDecider
+from earwarden import audit, paths, service
+from earwarden.cli import main
+from earwarden.daemon.state import Pending
+from earwarden.voice.decider import Heard, VoiceDecider
 
 
 class SaysYes:
@@ -89,7 +89,7 @@ def test_an_edit_is_approved_by_voice_end_to_end(home: Path, start_daemon: Start
     request = request | {
         "tool_name": "Edit",
         "tool_input": {
-            "file_path": "/Users/rehaan/earshot-probe/notes.md",
+            "file_path": "/Users/rehaan/earwarden-probe/notes.md",
             "old_string": "a",
             "new_string": "b",
         },
@@ -98,7 +98,7 @@ def test_an_edit_is_approved_by_voice_end_to_end(home: Path, start_daemon: Start
     assert printed["hookSpecificOutput"]["decision"] == {"behavior": "allow"}
 
 
-def test_earshot_test_goes_through_the_running_daemon(
+def test_earwarden_test_goes_through_the_running_daemon(
     home: Path, start_daemon: StartDaemon, capsys: pytest.CaptureFixture[str]
 ) -> None:
     running = start_daemon(VoiceDecider(SaysYes(), Away(), reannounce_s=0))
@@ -117,7 +117,7 @@ def test_doctor_reports_what_is_missing(
     out = capsys.readouterr().out
     assert "ok  hooks are in" in out
     assert "ok  the token is private" in out
-    assert "ok  earshotd is running" in out
+    assert "ok  earwardend is running" in out
     assert code in (0, 1)  # the voice libraries only exist on the Mac
 
 
@@ -125,11 +125,11 @@ def test_the_launch_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.delenv("HF_HOME", raising=False)
     monkeypatch.delenv("HF_HUB_CACHE", raising=False)
     agent = plistlib.loads(
-        service.agent(["--home", "/repo/.tools/earshot", "--voice"], tmp_path / "earshotd.log")
+        service.agent(["--home", "/repo/.tools/earwarden", "--voice"], tmp_path / "earwardend.log")
     )
     assert agent["Label"] == service.LABEL
-    assert agent["ProgramArguments"][0].endswith("/earshotd")
-    assert agent["ProgramArguments"][1:] == ["--home", "/repo/.tools/earshot", "--voice"]
+    assert agent["ProgramArguments"][0].endswith("/earwardend")
+    assert agent["ProgramArguments"][1:] == ["--home", "/repo/.tools/earwarden", "--voice"]
     assert agent["KeepAlive"] is True
     assert agent["RunAtLoad"] is True
     assert "EnvironmentVariables" not in agent
@@ -140,7 +140,7 @@ def test_the_launch_agent_keeps_the_models_where_they_are(
 ) -> None:
     monkeypatch.setenv("HF_HOME", "/repo/.tools/huggingface")
     monkeypatch.delenv("HF_HUB_CACHE", raising=False)
-    agent = plistlib.loads(service.agent(["--voice"], tmp_path / "earshotd.log"))
+    agent = plistlib.loads(service.agent(["--voice"], tmp_path / "earwardend.log"))
     assert agent["EnvironmentVariables"] == {"HF_HOME": "/repo/.tools/huggingface"}
 
 
@@ -151,7 +151,7 @@ def test_pending_requests_carry_their_notes() -> None:
 
 
 def test_service_install_passes_the_helper_and_stem_on(monkeypatch: pytest.MonkeyPatch) -> None:
-    from earshot import cli
+    from earwarden import cli
 
     installed: list[list[str]] = []
 

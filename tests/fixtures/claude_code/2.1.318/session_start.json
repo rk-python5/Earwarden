@@ -1,9 +1,9 @@
 {
-  "cwd": "/Users/rehaan/earshot-probe",
+  "cwd": "/Users/rehaan/earwarden-probe",
   "hook_event_name": "SessionStart",
   "model": "claude-sonnet-5-5",
-  "scratchpad_dir": "/private/tmp/claude-501/-Users-rehaan-earshot-probe/c0259fc2-798d-4534-bf74-c180c398cabc/scratchpad",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-rehaan-earwarden-probe/c0259fc2-798d-4534-bf74-c180c398cabc/scratchpad",
   "session_id": "c0259fc2-798d-4534-bf74-c180c398cabc",
   "source": "startup",
-  "transcript_path": "/Users/rehaan/.claude/projects/-Users-rehaan-earshot-probe/c0259fc2-798d-4534-bf74-c180c398cabc.jsonl"
+  "transcript_path": "/Users/rehaan/.claude/projects/-Users-rehaan-earwarden-probe/c0259fc2-798d-4534-bf74-c180c398cabc.jsonl"
 }

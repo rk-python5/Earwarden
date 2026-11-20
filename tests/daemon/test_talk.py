@@ -11,9 +11,9 @@ from typing import Any
 from conftest import StartDaemon
 from harness import finish, fixture, never, start_hook
 
-from earshot import wire
-from earshot.daemon.floor import FAILURE, Floor
-from earshot.voice.decider import SHAKE, Heard
+from earwarden import wire
+from earwarden.daemon.floor import FAILURE, Floor
+from earwarden.voice.decider import SHAKE, Heard
 
 
 class Voice:
@@ -77,7 +77,7 @@ def test_status_by_voice_says_the_briefing(home: Path, start_daemon: StartDaemon
 
 
 def test_modes_and_stop_by_voice(home: Path, start_daemon: StartDaemon) -> None:
-    running, voice = started(start_daemon, ["Earshot, chatty mode.", "Stop.", "Repeat."])
+    running, voice = started(start_daemon, ["Earwarden, chatty mode.", "Stop.", "Repeat."])
     floor = running.daemon.floor
     assert talk(home)["text"] == "Chatty mode."
     assert floor.mode == "chatty"

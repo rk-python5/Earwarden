@@ -12,10 +12,10 @@ import pytest
 from conftest import StartDaemon
 from harness import finish, fixture, run_hook, start_hook
 
-from earshot import contracts, wire
-from earshot.daemon.state import Pending, Sessions
-from earshot.voice import challenge
-from earshot.voice.decider import CUT_OFF, NOD, SHAKE, Heard, Speaker, VoiceDecider
+from earwarden import contracts, wire
+from earwarden.daemon.state import Pending, Sessions
+from earwarden.voice import challenge
+from earwarden.voice.decider import CUT_OFF, NOD, SHAKE, Heard, Speaker, VoiceDecider
 
 TOO_EARLY = Heard("", CUT_OFF, 0)  # an answer begun before the listening tone
 
@@ -257,7 +257,7 @@ def test_silence_is_announced_again_then_handed_off() -> None:
 
 
 def test_an_approval_that_outlives_its_window_is_announced(monkeypatch: pytest.MonkeyPatch) -> None:
-    from earshot.daemon.floor import FAILURE
+    from earwarden.daemon.floor import FAILURE
 
     async def scenario() -> None:
         voice = FakeVoice([None, None, None, None])
@@ -346,7 +346,7 @@ def test_approving_on_screen_silences_a_waiting_question(
         | {
             "tool_name": "Edit",
             "tool_input": {
-                "file_path": "/Users/rehaan/earshot-probe/a.txt",
+                "file_path": "/Users/rehaan/earwarden-probe/a.txt",
                 "old_string": "a",
                 "new_string": "b",
             },
@@ -356,7 +356,7 @@ def test_approving_on_screen_silences_a_waiting_question(
     tool_ran = fixture("post_tool_use") | {
         "tool_name": "Edit",
         "tool_input": {
-            "file_path": "/Users/rehaan/earshot-probe/a.txt",
+            "file_path": "/Users/rehaan/earwarden-probe/a.txt",
             "old_string": "a",
             "new_string": "b",
         },

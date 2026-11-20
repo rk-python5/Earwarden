@@ -8,7 +8,7 @@
     uv run spikes/speech/combine.py moonshine-base whisper-large-v3-turbo-asr-fp16
 
 The first recogniser hears every reply. Only when its answer is unclear, an empty transcript
-included, does the second one get a listen. Each transcript is judged with the rules Earshot would
+included, does the second one get a listen. Each transcript is judged with the rules Earwarden would
 use: the whole reply must match (P-07), and for a challenge phrase the challenge word alone decides
 (P-08, revised). Reads out/asr_results-<model>-trim.csv for both; --untrimmed reads the 3-second
 runs instead. Standard library only.

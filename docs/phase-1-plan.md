@@ -1,7 +1,7 @@
 # Phase 1 plan: the walking skeleton
 
-Phase 1 turns the Step 0 spikes into a thin Earshot that works end to end. Claude Code asks for
-permission, Earshot speaks the request in your AirPods, you answer, and Claude Code gets the
+Phase 1 turns the Step 0 spikes into a thin Earwarden that works end to end. Claude Code asks for
+permission, Earwarden speaks the request in your AirPods, you answer, and Claude Code gets the
 decision. This is the build plan's "weeks 2–3", plus what the Step 0 gate added (D-014 to D-018).
 
 **Gate:** a real Claude Code session on rehaan's subscription, approved by voice end to end. Run it
@@ -18,15 +18,15 @@ Phase 2). The recorded-audio test runs by hand on the Mac.
 From the build plan's Phase 1 list:
 
 - `contracts.py` with all five messages, and the daemon's socket server with a token check
-- `earshot-hook` (standard library only), with every fail-safe path tested
-- `earshot init` and `earshot uninstall`, editing Claude Code's settings with a backup
+- `earwarden-hook` (standard library only), with every fail-safe path tested
+- `earwarden init` and `earwarden uninstall`, editing Claude Code's settings with a backup
 - the template narrator for the six action families, and the spoken-form normaliser
 - speech out (Kokoro and chimes) and speech in (voice detection and recognition), with answer
   windows
 - intent rules (yes, no, wait, instruction) and the deny-message path
 - presence routing: keyboard idle time and the output device
-- the hash-chained audit log and `earshot audit verify`
-- the LaunchAgent and `earshot doctor`
+- the hash-chained audit log and `earwarden audit verify`
+- the LaunchAgent and `earwarden doctor`
 - the first end-to-end test with a fake Claude Code
 
 Added by the Step 0 gate:
@@ -52,12 +52,12 @@ Phase 1 speaks requests and accepts "yes", but the rules that keep tier 3 away f
 arrive with Phase 2's policy engine. Until then, a stub applies (D-019, from P-19):
 
 - **Voice approves only an allowlist:**
-  - file edits and writes inside the session's folder, except in `.git/`, `.claude/`, `.earshot/`,
+  - file edits and writes inside the session's folder, except in `.git/`, `.claude/`, `.earwarden/`,
     `.github/workflows/` and `.envrc`, and except build and test config (`conftest.py`,
     `package.json`, `Makefile`, `pyproject.toml`, `setup.py`)
   - single test commands (`pytest`, `uv run pytest`, `npm test`), with no chaining, pipes or
     redirection
-- **Everything else goes to the screen.** With voice on, Earshot says so briefly ("API needs you;
+- **Everything else goes to the screen.** With voice on, Earwarden says so briefly ("API needs you;
   it's on your screen") and doesn't listen.
 - **Secrets are redacted** by pattern before anything is spoken or logged.
 
@@ -80,10 +80,10 @@ rehaan's Mac and AirPods.
 
 ### 1. Contracts and the hook client (cloud)
 
-- `src/earshot/contracts.py`: the five messages (ApprovalRequest, Assessment, Decision, Event,
+- `src/earwarden/contracts.py`: the five messages (ApprovalRequest, Assessment, Decision, Event,
   AuditRecord) as Pydantic models at version 1, validated at every hop. Anything unrecognised
   becomes a hand-off to the screen. Pydantic is the first runtime dependency.
-- `earshot-hook`, grown from the Step 0 probe:
+- `earwarden-hook`, grown from the Step 0 probe:
   - It reads Claude Code's JSON and sends an ApprovalRequest over the socket with the token.
   - It waits up to the hand-off limit, then prints one decision object or nothing, and always
     exits 0.
@@ -98,7 +98,7 @@ rehaan's Mac and AirPods.
   them on rehaan's Mac.
 - **Done when:** those tests pass in CI, and a round trip against a stub daemon stays within the
   plan's 80 ms on the Mac.
-- **Done (4 Nov):** the contracts, `wire.py` and `paths.py`, and `earshot-hook`. All 214 tests
+- **Done (4 Nov):** the contracts, `wire.py` and `paths.py`, and `earwarden-hook`. All 214 tests
   pass on rehaan's Mac. The round trip against a stand-in daemon took **21 ms median (max 24 ms)
   on the Mac**, against the plan's 80 ms, and 38 ms in the cloud container.
 - **Found in the payloads:** Claude Code 2.1.318 sends a `prompt_id` with every event, shared by
@@ -107,7 +107,7 @@ rehaan's Mac and AirPods.
 
 ### 2. The daemon core (cloud)
 
-- `earshotd`: one asyncio process. It speaks newline-delimited JSON over a Unix socket with mode
+- `earwardend`: one asyncio process. It speaks newline-delimited JSON over a Unix socket with mode
   0600, checks a random token kept in a 0600 file, and never opens a network port.
 - A registry of pending requests: a decision must match a waiting hook's id.
 - Sessions: registered by SessionStart, updated by Stop, removed by SessionEnd. Any request from
@@ -117,7 +117,7 @@ rehaan's Mac and AirPods.
 - At this stage every request goes to the screen. The voice path plugs in at milestone 6.
 - **Done when:** tests cover the protocol, token rejection, three sessions at once, both kinds of
   cancellation, and a killed daemon (the hook prints nothing).
-- **Done (4 Nov):** `earshotd` and its 47 tests, all with the real hook. They cover the cases
+- **Done (4 Nov):** `earwardend` and its 47 tests, all with the real hook. They cover the cases
   above, a session ending, the wait limit, a failing or confused decider, stopping, a second
   daemon, and a socket left by a crash. A request that arrives while the daemon stops goes to
   the screen.
@@ -127,18 +127,18 @@ rehaan's Mac and AirPods.
 
 ### 3. Install, uninstall and observe mode (cloud, then a week on the Mac)
 
-- `earshot init` backs up Claude Code's settings and adds Earshot's hooks next to any you already
-  have. It also creates the config and the token. `earshot uninstall` removes only Earshot's
+- `earwarden init` backs up Claude Code's settings and adds Earwarden's hooks next to any you already
+  have. It also creates the config and the token. `earwarden uninstall` removes only Earwarden's
   entries.
 - Observe mode (D-021): for each request, the daemon logs the permission mode, the tool, and the
   tier the stub would give it, then hands the request to the screen. It never answers.
 - **Mac:** run observe mode in the background through a week of normal work, while milestones 4
-  to 7 are built. It counts how many prompts reach Earshot per hour under auto mode, and supplies
+  to 7 are built. It counts how many prompts reach Earwarden per hour under auto mode, and supplies
   real payloads for the tests.
 - **Done when:** an init-then-uninstall round trip leaves the settings file byte-for-byte as it
   was, tested with temporary home folders, and the week's counts are written up.
-- **Built (4 Nov):** `earshot init`, `earshot uninstall`, `earshot observe` (the week's summary),
-  `earshotd --observe`, and the safety stub (`stub.py`, D-019) whose verdict observe mode logs.
+- **Built (4 Nov):** `earwarden init`, `earwarden uninstall`, `earwarden observe` (the week's summary),
+  `earwardend --observe`, and the safety stub (`stub.py`, D-019) whose verdict observe mode logs.
   The log holds the time, session, permission mode, tool and verdict, never command text or file
   contents. The commands use argparse for now rather than the spec's Typer and Rich, to keep
   dependencies down until the CLI grows.
@@ -168,7 +168,7 @@ rehaan's Mac and AirPods.
     (Q-2).
   - Silero voice detection: an answer ends after 400 ms of silence, or at 6 s. Pre-roll never
     reaches back before the window opened (D-015).
-  - Barge-in: talking while Earshot speaks stops playback.
+  - Barge-in: talking while Earwarden speaks stops playback.
   - Two-stage recognition (D-017). An answer that's still unclear is asked once more, then goes
     to the screen.
 - Audio capture sits behind one interface: sounddevice inside the daemon for now, and the helper
@@ -178,7 +178,7 @@ rehaan's Mac and AirPods.
   and an instruction correctly, with per-stage timings logged. The 100 Step 0 recordings run
   through voice detection, recognition and intent; P-14 decides where that test runs.
 - **Done (8 Nov):**
-  - On the Mac, `earshot test` heard "approve", "no" and "no, call it readme instead" correctly,
+  - On the Mac, `earwarden test` heard "approve", "no" and "no, call it readme instead" correctly,
     with speaking and recognition times in the audit log and listen levels in the daemon's log.
   - The recorded-audio test waits for P-14 (deferred by D-023).
   - Running the recordings by hand found P-20: non-speech and cut-off replies can be heard as
@@ -193,30 +193,30 @@ rehaan's Mac and AirPods.
   whole-utterance match and P-16's rule that an answer goes to the one open approval. A deny
   carries its message back to Claude Code.
 - Presence routing: voice only when the AirPods are the output and you've been away from the
-  keyboard for 45 s, or voice is pinned on. Otherwise Earshot hands off at once.
+  keyboard for 45 s, or voice is pinned on. Otherwise Earwarden hands off at once.
 - A minimal floor: one approval open at a time, and the rest queued ("two more waiting"). Modes
   and briefings wait for Phase 4.
-- While you're away, Earshot holds and re-announces a prompt instead of handing off at 90 s
+- While you're away, Earwarden holds and re-announces a prompt instead of handing off at 90 s
   (D-020).
 - **Done when:** unit tests cover every intent label and the presence rules, with the system
   calls faked.
 
 ### 7. The audit log (cloud)
 
-- One JSON line per decision, hash-chained, with `earshot audit verify` and `earshot audit tail`.
+- One JSON line per decision, hash-chained, with `earwarden audit verify` and `earwarden audit tail`.
 - P-10 decides whether the chain is keyed with a secret held in the Keychain and anchored outside
   the file.
 - **Done when:** in tests, verify catches an edited, deleted or reordered line.
 
 ### 8. The helper app, the LaunchAgent and doctor (Mac)
 
-- `src/earshot/helper_app/`, the signed helper app (D-016), in Swift:
+- `src/earwarden/helper_app/`, the signed helper app (D-016), in Swift:
   - It captures the AirPods mic, converts it to 16 kHz mono and streams it to the daemon.
   - It reports device changes, such as the AirPods connecting.
   - It's signed with a fixed identity, so permissions survive rebuilds.
   - Head motion stays in Phase 2.
 - A LaunchAgent starts the daemon and the helper at login, and restarts them if they crash.
-- `earshot doctor` checks the mic and motion permissions, the output device, the AirPods, the
+- `earwarden doctor` checks the mic and motion permissions, the output device, the AirPods, the
   models, the socket and the hooks.
 - **Mac setup:** full Xcode and a free Apple Development certificate (Xcode → Settings →
   Accounts), for the fixed signing identity.
@@ -226,16 +226,16 @@ rehaan's Mac and AirPods.
   - A killed daemon restarts.
 - **8 Nov:**
   - The helper app moved to Phase 2 (D-023).
-  - `earshot doctor` ran on the Mac and found every piece.
+  - `earwarden doctor` ran on the Mac and found every piece.
   - The LaunchAgent now passes on `HF_HOME`, but it hasn't run on the Mac yet. Still to check: it
     starts at a real login, and it restarts a killed daemon.
 
 ### 9. End to end, and the gate (cloud, then Mac)
 
-- A fake Claude Code replays captured payloads into `earshot-hook`, against a daemon with
+- A fake Claude Code replays captured payloads into `earwarden-hook`, against a daemon with
   scripted audio, and checks the printed decision. Kill-the-daemon and slow-model tests sit
   alongside it. This runs in CI.
-- `earshot test` runs one fake approval end to end on the Mac.
+- `earwarden test` runs one fake approval end to end on the Mac.
 - **The gate:** a real Claude Code session, in a scratch repo, approved by voice end to end.
 - **Then:** record the gate in `decisions.md`, and release 0.1.0.
 - **Done (8 Nov):** the gate passed (D-026), and 0.1.0 was released.
@@ -257,12 +257,12 @@ rehaan's Mac and AirPods.
 ## Where things live during development
 
 - Libraries, models and tools stay inside the repo (D-013).
-- Earshot's own data (the socket, token, config and audit log) goes under `.tools/earshot/` in the
-  repo, through an override. The plan's paths in `~/Library/Application Support/Earshot/` and
-  `~/.earshot/` apply to real installs.
+- Earwarden's own data (the socket, token, config and audit log) goes under `.tools/earwarden/` in the
+  repo, through an override. The plan's paths in `~/Library/Application Support/Earwarden/` and
+  `~/.earwarden/` apply to real installs.
 - Hooks go into a scratch project's `.claude/settings.local.json`, not your global settings.
   Observe mode is the one exception: it needs the global settings to see your normal sessions, so
-  it's opt-in (D-021), with a backup that `earshot uninstall` restores.
+  it's opt-in (D-021), with a backup that `earwarden uninstall` restores.
 
 ## Testing
 
@@ -278,17 +278,17 @@ rehaan's Mac and AirPods.
 ## Running the gate (on the Mac)
 
 1. `uv sync --group voice`, then
-   `uv run earshot init --home .tools/earshot --settings ~/earshot-scratch/.claude/settings.local.json`.
+   `uv run earwarden init --home .tools/earwarden --settings ~/earwarden-scratch/.claude/settings.local.json`.
    With the hooks in a scratch project, the Claude Code session you develop in isn't asked by
    voice.
-2. `uv run earshotd --home .tools/earshot --voice --pin-voice` (pinned, because you'll be at the
+2. `uv run earwardend --home .tools/earwarden --voice --pin-voice` (pinned, because you'll be at the
    keyboard). The first run downloads the models.
-3. `uv run earshot doctor --home .tools/earshot --settings ~/earshot-scratch/.claude/settings.local.json`,
-   then `uv run earshot test --home .tools/earshot`: answer "yes" in the AirPods.
+3. `uv run earwarden doctor --home .tools/earwarden --settings ~/earwarden-scratch/.claude/settings.local.json`,
+   then `uv run earwarden test --home .tools/earwarden`: answer "yes" in the AirPods.
 4. In a scratch repo, start `claude --permission-mode default` and ask it to edit a file. Answer
    "yes" by voice; then ask for a `git push` and check it's only announced.
-5. `uv run earshot audit verify --home .tools/earshot` and `audit tail`.
+5. `uv run earwarden audit verify --home .tools/earwarden` and `audit tail`.
 
 When the edit is approved by voice end to end, record the gate in `decisions.md` and release
-0.1.0. `earshot service install --home … --voice` makes the daemon start at login.
+0.1.0. `earwarden service install --home … --voice` makes the daemon start at login.
 

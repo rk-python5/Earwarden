@@ -1,4 +1,4 @@
-// Earshot Step 0 head-motion spike: AirPods head motion through CMHeadphoneMotionManager.
+// Earwarden Step 0 head-motion spike: AirPods head motion through CMHeadphoneMotionManager.
 //
 //   motion-spike calibrate           nod, then shake, to see which axis carries each gesture
 //   motion-spike count [--minutes N] count nods and shakes during normal work (false positives)

@@ -7,24 +7,24 @@ command line tools (`xcode-select --install`, if `swift --version` doesn't answe
 ## 1. Install
 
 ```sh
-uv tool install 'earshot-agents[voice]'
-earshot setup
+uv tool install 'earwarden[voice]'
+earwarden setup
 ```
 
-`earshot setup` adds Earshot's hooks to `~/.claude/settings.json` (the file as it was is saved
-beside it, and `earshot uninstall` puts it back), builds the helper app that listens through your
+`earwarden setup` adds Earwarden's hooks to `~/.claude/settings.json` (the file as it was is saved
+beside it, and `earwarden uninstall` puts it back), builds the helper app that listens through your
 AirPods, installs spaCy's English model and downloads the voiceprint model. The first voice start
 downloads the speech models (about 4 GB, once). If a step fails it says which, and running
-`earshot setup` again redoes only what's missing.
+`earwarden setup` again redoes only what's missing.
 
-macOS asks to let **Earshot** use the microphone and head motion the first time. Allow both.
+macOS asks to let **Earwarden** use the microphone and head motion the first time. Allow both.
 
 ## 2. Enrol your voice
 
 With your AirPods in:
 
 ```sh
-earshot enroll
+earwarden enroll
 ```
 
 You say 18 short phrases (about 3 minutes). This is what tier 2 checks against. It stays on your
@@ -33,34 +33,34 @@ Mac, readable only by you.
 ## 3. Start it
 
 ```sh
-earshot service install --voice --stem
-earshot doctor
+earwarden service install --voice --stem
+earwarden doctor
 ```
 
-This starts Earshot at login. `--stem` makes a press of the AirPods stem open a command window
+This starts Earwarden at login. `--stem` makes a press of the AirPods stem open a command window
 ("status", "repeat", "details", "quiet mode") but stops the stem playing or pausing music; leave
-it off if you'd rather keep that. `earshot doctor` lists what's in place and what isn't.
+it off if you'd rather keep that. `earwarden doctor` lists what's in place and what isn't.
 
 ## 4. Try it
 
 ```sh
-earshot test               # a harmless request, answered by "yes" or "no"
-earshot test --tier 2      # a stricter one: say "approve", then the word it asks for
+earwarden test               # a harmless request, answered by "yes" or "no"
+earwarden test --tier 2      # a stricter one: say "approve", then the word it asks for
 ```
 
-Then use Claude Code as usual. Earshot speaks only when you're away from the keyboard and your
+Then use Claude Code as usual. Earwarden speaks only when you're away from the keyboard and your
 AirPods are the output. At the keyboard, prompts stay on screen.
 
 ## Day to day
 
 - Answer a question with **yes**, **no**, or **no, use X instead** (the instruction goes to the
   agent). Say **wait** to move it to the screen. A head shake moves it to the screen too.
-- Press the stem (or run `earshot talk`) for a command: **status**, **repeat**, **details**,
+- Press the stem (or run `earwarden talk`) for a command: **status**, **repeat**, **details**,
   **stop**, **quiet mode**, **focus mode**, **chatty mode**.
-- `earshot mode quiet|focus|chatty` sets how much Earshot announces; `earshot status` shows the
+- `earwarden mode quiet|focus|chatty` sets how much Earwarden announces; `earwarden status` shows the
   sessions.
-- `earshot audit tail` shows recent decisions, and `earshot audit verify` checks the log.
-- `earshot service uninstall` and `earshot uninstall` take Earshot out again.
+- `earwarden audit tail` shows recent decisions, and `earwarden audit verify` checks the log.
+- `earwarden service uninstall` and `earwarden uninstall` take Earwarden out again.
 
-If anything is unclear or broken, Earshot's answer is always the same: the prompt stays on your
-screen. Nothing is ever approved because Earshot couldn't tell.
+If anything is unclear or broken, Earwarden's answer is always the same: the prompt stays on your
+screen. Nothing is ever approved because Earwarden couldn't tell.

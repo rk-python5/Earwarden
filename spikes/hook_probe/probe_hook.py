@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Claude Code hook probe for Earshot's Step 0 hook spike.
+"""Claude Code hook probe for Earwarden's Step 0 hook spike.
 
 Claude Code runs this as a command hook (`probe_hook.py hook`) for every event the probe is
 installed on. It appends one JSON line per invocation to `out/events.jsonl` and, for
@@ -11,7 +11,7 @@ installed on. It appends one JSON line per invocation to `out/events.jsonl` and,
     hold-allow N    wait N seconds, then allow
     hold-deny N     wait N seconds, then deny
 
-Like the real `earshot-hook`, it uses only the standard library, always exits 0, and never prints
+Like the real `earwarden-hook`, it uses only the standard library, always exits 0, and never prints
 anything except one decision object on `PermissionRequest`.
 """
 
@@ -31,11 +31,11 @@ T0_NS = time.time_ns()
 
 MODES = {"none", "allow", "deny", "hold", "hold-allow", "hold-deny"}
 BEHAVIOR = {"allow": "allow", "deny": "deny", "hold-allow": "allow", "hold-deny": "deny"}
-DENY_MESSAGE = "Denied by the Earshot hook probe (Step 0 spike)."
+DENY_MESSAGE = "Denied by the Earwarden hook probe (Step 0 spike)."
 
 
 def out_dir() -> Path:
-    override = os.environ.get("EARSHOT_PROBE_DIR")
+    override = os.environ.get("EARWARDEN_PROBE_DIR")
     return Path(override) if override else Path(__file__).resolve().parent / "out"
 
 

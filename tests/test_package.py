@@ -8,10 +8,10 @@ def test_import_pulls_in_no_other_modules() -> None:
     code = (
         "import sys\n"
         "before = set(sys.modules)\n"
-        "import earshot\n"
+        "import earwarden\n"
         "print('\\n'.join(sorted(set(sys.modules) - before)))\n"
     )
     result = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
-    assert result.stdout.split() == ["earshot"]
+    assert result.stdout.split() == ["earwarden"]

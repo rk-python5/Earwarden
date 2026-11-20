@@ -7,10 +7,10 @@ from typing import Any
 
 import pytest
 
-from earshot import contracts, paths, wire
-from earshot.daemon import briefing
-from earshot.daemon.server import Daemon
-from earshot.daemon.state import Session, Sessions
+from earwarden import contracts, paths, wire
+from earwarden.daemon import briefing
+from earwarden.daemon.server import Daemon
+from earwarden.daemon.state import Session, Sessions
 
 NOW = 1_000_000.0
 

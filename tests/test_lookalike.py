@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from earshot.narrator.templates import narrate
-from earshot.policy import engine, lookalike
+from earwarden.narrator.templates import narrate
+from earwarden.policy import engine, lookalike
 
 CWD = "/Users/rehaan/code/api"
 FIXTURE = Path(__file__).parent / "fixtures" / "typosquats.csv"

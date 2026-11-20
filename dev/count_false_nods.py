@@ -1,9 +1,9 @@
 """Count false nods during normal work (milestone 7's done-when; D-018). Run on the Mac:
 
-    src/earshot/helper_app/build.sh
-    uv run python dev/count_false_nods.py --minutes 60 [--home .tools/earshot]
+    src/earwarden/helper_app/build.sh
+    uv run python dev/count_false_nods.py --minutes 60 [--home .tools/earwarden]
 
-Stop earshotd first: this takes the helper's place for the hour. It opens the helper app, asks it
+Stop earwardend first: this takes the helper's place for the hour. It opens the helper app, asks it
 for head motion only (never the mic), and you work as usual with the AirPods in, without nodding
 on purpose. It cuts the motion into 6-second answer windows and reports:
 
@@ -27,11 +27,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from earshot import auth, paths  # noqa: E402
-from earshot.voice import gestures  # noqa: E402
-from earshot.voice.helper import HelperLink  # noqa: E402
+from earwarden import auth, paths  # noqa: E402
+from earwarden.voice import gestures  # noqa: E402
+from earwarden.voice.helper import HelperLink  # noqa: E402
 
-APP = ROOT / "helpers" / "earshot-motion" / ".build" / "EarshotMotion.app"
+APP = ROOT / "helpers" / "earwarden-motion" / ".build" / "EarwardenMotion.app"
 WINDOW_S = 6.0
 
 
@@ -78,7 +78,7 @@ async def record(minutes: float, where: paths.Paths) -> list[gestures.Sample]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--minutes", type=float, default=60.0)
-    parser.add_argument("--home", help="Earshot's home, for the token")
+    parser.add_argument("--home", help="Earwarden's home, for the token")
     args = parser.parse_args()
     samples = asyncio.run(record(args.minutes, paths.resolve(args.home)))
     if not samples:

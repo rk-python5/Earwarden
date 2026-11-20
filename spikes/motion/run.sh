@@ -10,7 +10,7 @@
 # Why an app: macOS judges a program by the app responsible for it. Run straight from Terminal,
 # the spike is Terminal's responsibility, and Terminal declares no use of motion data, so macOS
 # stops it with "abort" instead of asking. Opened as its own app, it gets asked about in its own
-# name, "Earshot motion spike". Everything stays in .build/, inside the repo (D-013).
+# name, "Earwarden motion spike". Everything stays in .build/, inside the repo (D-013).
 set -eu
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -28,9 +28,9 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 	<key>CFBundleExecutable</key>
 	<string>motion-spike</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.earshot.motion-spike</string>
+	<string>dev.earwarden.motion-spike</string>
 	<key>CFBundleName</key>
-	<string>Earshot motion spike</string>
+	<string>Earwarden motion spike</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -38,7 +38,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSMotionUsageDescription</key>
-	<string>Earshot reads head motion from your AirPods to recognise nods and shakes.</string>
+	<string>Earwarden reads head motion from your AirPods to recognise nods and shakes.</string>
 </dict>
 </plist>
 PLIST

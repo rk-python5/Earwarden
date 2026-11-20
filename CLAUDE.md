@@ -5,7 +5,7 @@ to the rules, commands or layout it describes.
 
 ## Project
 
-Earshot is a local macOS service that answers Claude Code permission prompts by voice through
+Earwarden is a local macOS service that answers Claude Code permission prompts by voice through
 AirPods, with confirmation strength set by risk tier. Tier 3 is never approvable by voice.
 
 - **Spec:** `docs/design/earshot-technical-design-build-plan.pdf` (revision of 3 Nov 2026). It's
@@ -27,18 +27,22 @@ Phase 2 (the safety layer) passed its gate on 11 Nov 2026 (D-030), with deferral
 released as 0.2.0. Its milestones are in `docs/phase-2-plan.md`. Deferred to before 1.0: friends'
 calibration of the voiceprint (Q-5), the hour-long nod count (nods stay off), the helper's fixed
 signature, and a longer stretch of voice use for P-20, which stays open. Until it closes, run
-`earshotd --voice` only with the hooks in a scratch project. **Start with `docs/next-steps.md`.**
+`earwardend --voice` only with the hooks in a scratch project. **Start with `docs/next-steps.md`.**
 Phase 3 is postponed (D-031). Phase 4 (sessions, the risk gate and hardening) passed its gate on
 16 Nov 2026 (D-037), with deferrals, and was released as 0.3.0. Its milestones are in
 `docs/phase-4-plan.md`; `docs/phase-4-gate.md` is the session on the Mac, and `docs/redteam.md`
 the red-team table.
 
-Phase 5 (public launch) is released as 1.0.0 (D-038): `earshot setup` makes a Mac ready from an
+Phase 5 (public launch) is released as 1.0.0 (D-038): `earwarden setup` makes a Mac ready from an
 installed package, and the docs, `SECURITY.md` and the release workflow are in. It becomes public
 when the owner does `docs/releasing.md` (repository public, the model upload, PyPI, signing key).
 Deferred to before or after launch: the live replay attack, the 8-hour soak, friends' calibration
 (Q-5), P-20's longer run, the Claude Code plugin and the demo. Until P-20 closes, run
-`earshotd --voice` with the hooks in a scratch project at first.
+`earwardend --voice` with the hooks in a scratch project at first.
+
+The project was renamed from Earshot to Earwarden on 21 Nov 2026 (D-039). `decisions.md` and the
+changelog's older entries keep the old names on purpose: read `earshot` as `earwarden`, `earshotd`
+as `earwardend` and `earshot-agents` as `earwarden`.
 
 A phase starts only after the previous gate is recorded as passed in `decisions.md`. Don't build a
 later phase's components before the current phase's gate passes.
@@ -101,20 +105,20 @@ uv run pytest                  # tests
 
 Run all four before every push. CI (`.github/workflows/ci.yml`, macOS 15 on Apple Silicon) runs
 the same checks on every push to `main`. It also builds the Swift spike in `spikes/motion` and the helper in
-`src/earshot/helper_app`. That's the only place they compile when you work in the Linux container, so check
+`src/earwarden/helper_app`. That's the only place they compile when you work in the Linux container, so check
 the CI run after changing Swift code.
 
 ## Layout
 
-- `src/earshot/helper_app/`: the signed helper app (Swift, D-016, D-033): the mic, device changes and
-  head motion, for `earshotd --helper`. `build.sh` builds and signs it; CI builds it too.
+- `src/earwarden/helper_app/`: the signed helper app (Swift, D-016, D-033): the mic, device changes and
+  head motion, for `earwardend --helper`. `build.sh` builds and signs it; CI builds it too.
 - `dev/activate`: sourced per terminal on the Mac. It keeps uv, its Python, caches, spike
   environments and model downloads in the git-ignored `.tools/` (D-013).
 - `dev/false_approvals.py`: the recorded-audio check for false approvals (D-027), run by hand on
   the Mac, since P-14's runner is deferred (D-023). It sends Step 0's recordings in
   `spikes/speech/out/` through the daemon's own listening path. Run it after any change there.
 - `dev/refresh_package_lists.py`: rebuilds the popular-package lists at release time.
-- `dev/redteam_replay.py`: the replay attack on the Mac, your own recordings played at Earshot.
+- `dev/redteam_replay.py`: the replay attack on the Mac, your own recordings played at Earwarden.
 - `dev/gate_voice.py`: Phase 4's voice runs, guided by voice in the AirPods and checked from
   the daemon's log.
 - `dev/soak.py`: the hours-long soak beside a running daemon: memory, CPU, crashes, nods seen.
@@ -130,18 +134,18 @@ the CI run after changing Swift code.
 - `docs/phase-4-plan.md` and `docs/phase-4-gate.md`: the same for Phase 4; `docs/redteam.md` is
   the red-team table.
 - `docs/next-steps.md`: the hand-over to local sessions: running the voice, P-20, Phase 2.
-- `src/earshot/`: the package. The PyPI name is `earshot-agents` (D-008). Keep
-  `src/earshot/__init__.py` free of imports; a test enforces it.
-  - `contracts.py`: the spec's five messages, plus the `Command` from `earshot mode`, `status`
+- `src/earwarden/`: the package. The PyPI name is `earwarden` (D-008). Keep
+  `src/earwarden/__init__.py` free of imports; a test enforces it.
+  - `contracts.py`: the spec's five messages, plus the `Command` from `earwarden mode`, `status`
     and `talk` (Phase 4), as Pydantic models, at version 1.
   - `wire.py` and `paths.py`: the wire format and file locations that the hook and the daemon
     share. Standard library only.
-  - `connectors/claude_code/hook.py`: `earshot-hook`. Standard library only; a test checks its
+  - `connectors/claude_code/hook.py`: `earwarden-hook`. Standard library only; a test checks its
     imports.
-  - `provision.py`: `earshot setup`: builds the helper from `helper_app/`, installs spaCy's model
+  - `provision.py`: `earwarden setup`: builds the helper from `helper_app/`, installs spaCy's model
     and downloads the voiceprint model (D-038).
-  - `cli.py`: the `earshot` command (`init`, `uninstall`, `observe`, `audit`, `service`, `doctor`,
-    `test`, `policy`, `enroll`, `mode`, `status`, `talk`). `service.py`: the LaunchAgent that starts `earshotd` at login. `stub.py`:
+  - `cli.py`: the `earwarden` command (`init`, `uninstall`, `observe`, `audit`, `service`, `doctor`,
+    `test`, `policy`, `enroll`, `mode`, `status`, `talk`). `service.py`: the LaunchAgent that starts `earwardend` at login. `stub.py`:
     Phase 1's safety stub (D-019), kept as the reference the policy engine must never be looser
     than.
   - `policy/`: the policy engine (`engine.py`) and policy files (`file.py`, YAML): a tier for
@@ -151,10 +155,10 @@ the CI run after changing Swift code.
     interface: a score can only raise a tier (no gate ships). `lookalike.py` compares
     package names with the popular lists in `policy/data/` (D-029, P-09).
   - `audit.py`: the keyed, hash-chained audit log (D-025), with its head anchored outside the
-    file (Phase 4), behind `earshot audit verify`.
+    file (Phase 4), behind `earwarden audit verify`.
   - `narrator/`: the template narrator, spoken forms, secret redaction, and the fidelity
     checker (`checker.py`), which refuses a sentence that drops or invents a detail.
-  - `connectors/claude_code/settings.py`: adds and removes Earshot's hooks in a Claude Code
+  - `connectors/claude_code/settings.py`: adds and removes Earwarden's hooks in a Claude Code
     settings file, with a byte-for-byte backup.
   - `voice/`: the voice decider, intent rules, push-to-talk commands (`commands.py`), endpointer
     and challenge words (`challenge.py`,
@@ -163,10 +167,10 @@ the CI run after changing Swift code.
     helper (`helper.py`) and nods and shakes (`gestures.py`, D-018); presence by
     keyboard idle time, and `mac.py`, which speaks and listens with Kokoro, Silero VAD, Parakeet
     and Whisper (macOS only; `uv sync --group voice`).
-  - `daemon/`: `earshotd`, the background service. `server.py` is the socket server, `state.py`
+  - `daemon/`: `earwardend`, the background service. `server.py` is the socket server, `state.py`
     the sessions and waiting requests, `cli.py` the command. `floor.py` decides who speaks when
     (priorities, modes, the 20-second gap), `briefing.py` says what every session is doing, and
-    `client.py` sends `earshot mode`, `status` and `talk` to the daemon. `auth.py` keeps the
+    `client.py` sends `earwarden mode`, `status` and `talk` to the daemon. `auth.py` keeps the
     shared token.
 - `spikes/`: Step 0 feasibility kits. Each has a README with steps, and results go in
   `spikes/RESULTS.md`. Spike scripts declare their dependencies inline (PEP 723) and run with
@@ -186,8 +190,8 @@ These come from the spec and the Claude Code hooks reference. Don't break one wi
 entry.
 
 - **Fail toward the screen.** Any error, doubt, timeout or unrecognised input ends with the hook
-  printing nothing, so Claude Code shows its normal dialog. Earshot never approves by default.
-- **The hook client is minimal.** `earshot-hook` uses only the standard library, always exits 0, and
+  printing nothing, so Claude Code shows its normal dialog. Earwarden never approves by default.
+- **The hook client is minimal.** `earwarden-hook` uses only the standard library, always exits 0, and
   never prints anything except one final decision object on `PermissionRequest`. This matters
   because:
   - Exit code 2 isn't honoured on `PermissionRequest`, but on `Stop` it keeps Claude running, and

@@ -10,7 +10,7 @@ import pytest
 from conftest import StartDaemon
 from harness import fixture, run_hook
 
-from earshot.cli import main, summarise
+from earwarden.cli import main, summarise
 
 
 def test_observe_mode_logs_each_prompt_without_its_contents(
@@ -30,7 +30,7 @@ def test_observe_mode_logs_each_prompt_without_its_contents(
         False,
         "default",
     )
-    assert first["session"] == "earshot-probe"
+    assert first["session"] == "earwarden-probe"
     assert (second["tool"], second["voice_ok"]) == ("Edit", True)
     assert "touch" not in log.read_text()
     assert "secret" not in log.read_text()

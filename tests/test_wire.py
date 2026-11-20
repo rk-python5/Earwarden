@@ -1,4 +1,4 @@
-"""The wire helpers that the hook and the daemon share, and where Earshot keeps its files."""
+"""The wire helpers that the hook and the daemon share, and where Earwarden keeps its files."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from earshot import paths, wire
+from earwarden import paths, wire
 
 
 def test_a_message_is_one_ascii_line() -> None:
@@ -55,14 +55,14 @@ def test_one_home_holds_everything(tmp_path: Path) -> None:
     where = paths.resolve(str(tmp_path))
     assert where.token == tmp_path / "token"
     assert where.config == tmp_path / "config.toml"
-    assert where.socket == tmp_path / "earshotd.sock"
+    assert where.socket == tmp_path / "earwardend.sock"
     assert where.audit_dir == tmp_path / "audit"
 
 
 def test_the_environment_sets_the_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(paths.HOME_ENV, str(tmp_path))
-    assert paths.resolve().socket == tmp_path / "earshotd.sock"
-    assert paths.resolve("/elsewhere").socket == Path("/elsewhere/earshotd.sock")
+    assert paths.resolve().socket == tmp_path / "earwardend.sock"
+    assert paths.resolve("/elsewhere").socket == Path("/elsewhere/earwardend.sock")
 
 
 def test_the_plans_defaults(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -70,7 +70,8 @@ def test_the_plans_defaults(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> 
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(sys, "platform", "darwin")
     where = paths.resolve()
-    assert where.token == tmp_path / ".earshot" / "token"
+    assert where.token == tmp_path / ".earwarden" / "token"
     assert (
-        where.socket == tmp_path / "Library" / "Application Support" / "Earshot" / "earshotd.sock"
+        where.socket
+        == tmp_path / "Library" / "Application Support" / "Earwarden" / "earwardend.sock"
     )

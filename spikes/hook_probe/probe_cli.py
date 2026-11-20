@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tools around the hook probe: install it, switch modes, benchmark it, report what it saw.
 
-    python probe_cli.py install ~/earshot-probe     # write .claude/settings.local.json there
+    python probe_cli.py install ~/earwarden-probe     # write .claude/settings.local.json there
     python probe_cli.py mode hold 30                # set the PermissionRequest behaviour
     python probe_cli.py bench                       # cost of starting the hook process
     python probe_cli.py report [--fixtures DIR]     # timings, field inventory, sample payloads
@@ -44,7 +44,7 @@ SAMPLE_REQUEST = {
 
 
 def out_dir() -> Path:
-    override = os.environ.get("EARSHOT_PROBE_DIR")
+    override = os.environ.get("EARWARDEN_PROBE_DIR")
     return Path(override) if override else HERE / "out"
 
 
@@ -102,7 +102,7 @@ def _time_runs(argv: list[str], runs: int, env: dict[str, str]) -> list[float]:
 
 def cmd_bench(args: argparse.Namespace) -> int:
     with tempfile.TemporaryDirectory() as scratch:
-        env = {**os.environ, "EARSHOT_PROBE_DIR": scratch}
+        env = {**os.environ, "EARWARDEN_PROBE_DIR": scratch}
         variants = {
             "python probe_hook.py hook": [sys.executable, str(PROBE), "hook"],
             "python -I -S probe_hook.py hook": [sys.executable, "-I", "-S", str(PROBE), "hook"],

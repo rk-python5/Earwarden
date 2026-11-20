@@ -1,6 +1,6 @@
 # Microphone access under launchd (Step 0)
 
-This is a short check added from the design review (P-13). `earshotd` will be started at login by
+This is a short check added from the design review (P-13). `earwardend` will be started at login by
 a launchd agent, as a Python interpreter from a uv-managed environment. It needs the microphone,
 and macOS ties microphone permission to the binary that asks for it. This check answers:
 

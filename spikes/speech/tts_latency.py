@@ -18,7 +18,7 @@
 Text is streamed sentence by sentence, as the plan specifies. "First audio" is the time until the
 first sentence's samples are ready; playback adds the Bluetooth output delay on top (measured by
 spikes/audio_io). Note: misaki[en] 0.9.4 bundles espeak-ng (GPL) through espeakng-loader. That's
-fine for a local spike but not for Earshot itself (decisions.md, P-04).
+fine for a local spike but not for Earwarden itself (decisions.md, P-04).
 """
 
 from __future__ import annotations

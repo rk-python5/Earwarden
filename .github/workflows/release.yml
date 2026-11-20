@@ -4,8 +4,8 @@ name: Release
 # PyPI with trusted publishing (no token is stored), and attaches them to a GitHub release.
 #
 # One-time setup, by the repository's owner:
-#   1. PyPI: add a pending trusted publisher for `earshot-agents`: owner rk-python5, repository
-#      Earshot, workflow release.yml, environment pypi.
+#   1. PyPI: add a pending trusted publisher for `earwarden`: owner rk-python5, repository
+#      Earwarden, workflow release.yml, environment pypi.
 #   2. GitHub: Settings > Environments > New environment, named `pypi`.
 #   3. GitHub: Settings > Code security > enable private vulnerability reporting (SECURITY.md).
 #   4. Attach the two voiceprint model files to a release tagged model-ecapa-1 (docs/releasing.md).
@@ -37,9 +37,9 @@ jobs:
           uv run pytest
       - name: The helper builds from the packaged source
         run: |
-          cp -R src/earshot/helper_app "$RUNNER_TEMP/helper"
+          cp -R src/earwarden/helper_app "$RUNNER_TEMP/helper"
           (cd "$RUNNER_TEMP/helper" && ./build.sh)
-          codesign --verify --verbose "$RUNNER_TEMP/helper/.build/EarshotMotion.app"
+          codesign --verify --verbose "$RUNNER_TEMP/helper/.build/EarwardenMotion.app"
       - name: Build
         run: uv build
       - uses: actions/upload-artifact@v4
@@ -77,5 +77,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
-            --title "Earshot ${GITHUB_REF_NAME#v}" \
+            --title "Earwarden ${GITHUB_REF_NAME#v}" \
             --notes "See the [changelog](https://github.com/$GITHUB_REPOSITORY/blob/main/CHANGELOG.md)."

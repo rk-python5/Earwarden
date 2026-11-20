@@ -7,7 +7,7 @@ From a pool of easy, concrete words, it keeps a word when:
 - its Double Metaphone codes are at least 2 edits from every word already kept
 - and as far from the words people say in replies, and other everyday words
 
-It writes `src/earshot/voice/data/challenge-words.txt`, up to 200 words. A test checks the list
+It writes `src/earwarden/voice/data/challenge-words.txt`, up to 200 words. A test checks the list
 keeps both properties, so a hand edit can't break them.
 """
 
@@ -19,10 +19,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from earshot.voice import challenge  # noqa: E402
+from earwarden.voice import challenge  # noqa: E402
 
 TARGET = 200
-OUT = ROOT / "src" / "earshot" / "voice" / "data" / "challenge-words.txt"
+OUT = ROOT / "src" / "earwarden" / "voice" / "data" / "challenge-words.txt"
 
 _POOL = """
 orchard lantern harbor copper juniper ribbon marble compass tunnel glacier anchor apricot arrow

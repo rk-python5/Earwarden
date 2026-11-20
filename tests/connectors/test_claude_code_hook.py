@@ -1,4 +1,4 @@
-"""earshot-hook against a stand-in daemon, run as a real subprocess the way Claude Code runs it.
+"""earwarden-hook against a stand-in daemon, run as a real subprocess the way Claude Code runs it.
 
 Every case checks the hook's two promises: it exits 0 with nothing on stderr, and the only thing
 it ever prints is one valid decision object for a PermissionRequest. The payloads were captured
@@ -23,11 +23,11 @@ from typing import Any
 
 import pytest
 
-from earshot import contracts, wire
-from earshot.connectors.claude_code import hook
+from earwarden import contracts, wire
+from earwarden.connectors.claude_code import hook
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "claude_code" / "2.1.318"
-HOOK_MODULE = "earshot.connectors.claude_code.hook"
+HOOK_MODULE = "earwarden.connectors.claude_code.hook"
 TOKEN = "0123456789abcdef" * 4
 HANG = b"hang"  # the stand-in keeps the connection open and never answers
 
@@ -120,7 +120,7 @@ def daemon(home: Path) -> Iterator[Callable[[Reply], StubDaemon]]:
     started: list[StubDaemon] = []
 
     def start(reply: Reply) -> StubDaemon:
-        stub = StubDaemon(home / "earshotd.sock", reply)
+        stub = StubDaemon(home / "earwardend.sock", reply)
         started.append(stub)
         return stub
 
@@ -280,7 +280,7 @@ BAD_INPUTS = {
     "no tool name": _without("tool_name"),
     "no tool input": _without("tool_input"),
     "tool input not an object": _with("tool_input", "touch probe-1.txt"),
-    "relative cwd": _with("cwd", "earshot-probe"),
+    "relative cwd": _with("cwd", "earwarden-probe"),
     "empty session id": _with("session_id", ""),
     "huge tool name": _with("tool_name", "x" * 500),
 }
@@ -421,7 +421,7 @@ def test_events_dont_wait_for_the_daemon(home: Path, daemon: Callable[[Reply], S
     assert time.monotonic() - start < 3
 
 
-def test_events_earshot_doesnt_use_are_dropped(
+def test_events_earwarden_doesnt_use_are_dropped(
     home: Path, daemon: Callable[[Reply], StubDaemon]
 ) -> None:
     stub = daemon(decide("allow"))
@@ -472,21 +472,21 @@ def test_the_hook_imports_only_the_standard_library() -> None:
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
     roots = {name.split(".")[0] for name in result.stdout.split()}
-    assert roots - set(sys.stdlib_module_names) == {"earshot"}
-    loaded = {name for name in result.stdout.split() if name.startswith("earshot")}
+    assert roots - set(sys.stdlib_module_names) == {"earwarden"}
+    loaded = {name for name in result.stdout.split() if name.startswith("earwarden")}
     assert loaded == {
-        "earshot",
-        "earshot.connectors",
-        "earshot.connectors.claude_code",
+        "earwarden",
+        "earwarden.connectors",
+        "earwarden.connectors.claude_code",
         HOOK_MODULE,
-        "earshot.paths",
-        "earshot.wire",
+        "earwarden.paths",
+        "earwarden.wire",
     }
 
 
 def test_the_console_script_works(home: Path, daemon: Callable[[Reply], StubDaemon]) -> None:
     daemon(decide("allow"))
-    script = Path(sys.executable).parent / "earshot-hook"
+    script = Path(sys.executable).parent / "earwarden-hook"
     result = subprocess.run(
         [str(script), "--home", str(home)],
         input=json.dumps(fixture("permission_request")).encode(),
@@ -513,5 +513,5 @@ def test_round_trip_time(home: Path, daemon: Callable[[Reply], StubDaemon]) -> N
         timings.append((time.perf_counter() - start) * 1000)
         assert result.stdout
     median = statistics.median(timings)
-    print(f"\nearshot-hook round trip: median {median:.0f} ms, max {max(timings):.0f} ms")
+    print(f"\nearwarden-hook round trip: median {median:.0f} ms, max {max(timings):.0f} ms")
     assert median < 1000

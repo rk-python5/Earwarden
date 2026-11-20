@@ -44,7 +44,7 @@ sentence's samples are ready; Bluetooth output adds its delay on top (`spikes/au
 that). The budget is 200 ms.
 
 With `--no-fallback` you can hear section 1's finding: "quickstart" disappears from summary 01.
-`misaki[en]` bundles espeak-ng (GPL) for this run only; Earshot itself must not (P-04).
+`misaki[en]` bundles espeak-ng (GPL) for this run only; Earwarden itself must not (P-04).
 
 ## 3. Record the replies (about 25 minutes)
 
@@ -61,7 +61,7 @@ Each condition has 50 replies. They cover:
 - approval words inside refusals ("don't do it", "do it later")
 - addressing a session ("API, yes") and the push-to-talk commands
 - ten challenge phrases ("approve orchard"), plus decoys that must not pass ("approve orchid" when
-  Earshot asked for "orchard")
+  Earwarden asked for "orchard")
 
 Read each line naturally. Use `--only id1,id2` to redo some. Recordings stay in `out/replies/`,
 which git ignores.
@@ -129,7 +129,7 @@ uv run spikes/speech/combine.py parakeet-tdt-0.6b-v2 whisper-large-v3-turbo-asr-
 
 This works out, from two finished runs, what would happen if the first recogniser heard every
 reply and the second got a listen only when the first was unclear (an empty transcript included).
-Both are judged with Earshot's rules. For each setup it reports:
+Both are judged with Earwarden's rules. For each setup it reports:
 
 - yes/no accuracy
 - false approvals

@@ -7,7 +7,7 @@
     uv run spikes/audio_io/airpods_io.py devices
     uv run spikes/audio_io/airpods_io.py switch            # how long the mic takes to come alive
     uv run spikes/audio_io/airpods_io.py leak              # how much playback the mic hears
-    uv run spikes/audio_io/airpods_io.py selfcheck --asr   # can Earshot hear itself approve? (P-06)
+    uv run spikes/audio_io/airpods_io.py selfcheck --asr   # can it hear itself approve? (P-06)
 
 Stay quiet during leak and selfcheck: the mic must hear only the AirPods themselves. Use your
 normal listening volume. Raw audio goes to out/ (git-ignored).
@@ -183,7 +183,7 @@ class Tone:
 
 
 def cmd_switch(args: argparse.Namespace) -> None:
-    """Open the mic while a quiet tone plays, as Earshot does when an answer window opens."""
+    """Open the mic while a quiet tone plays, as Earwarden does when an answer window opens."""
     in_dev, out_dev = find_device(args.device, "input"), find_device(args.device, "output")
     print("A quiet tone plays; listen for the glitch when the mic opens.")
     first_block, first_sound = [], []
@@ -296,7 +296,7 @@ def cmd_selfcheck(args: argparse.Namespace) -> None:
     print(f"{'prompt':6} {'guard':>6} {'pre-roll':>8} {'level':>9}  transcript → intent")
     found_approval = False
     with tempfile.TemporaryDirectory() as tmp, Capture(in_dev, in_rate) as capture:
-        time.sleep(2.0)  # warm mic, as Earshot keeps it while an approval is pending
+        time.sleep(2.0)  # warm mic, as Earwarden keeps it while an approval is pending
         floor_db = db(rms(capture.audio()[-in_rate:]))
         for name, (text, challenge) in PROMPTS.items():
             prompt, prompt_rate = make_prompt(text, Path(tmp) / f"{name}.wav")
@@ -326,7 +326,7 @@ def cmd_selfcheck(args: argparse.Namespace) -> None:
     print(f"\nLevel is relative to the room's noise floor. Windows saved in {OUT / 'selfcheck'}.")
     if asr is not None:
         print(
-            "FAIL: Earshot heard itself approve." if found_approval else "No self-approval heard."
+            "FAIL: Earwarden heard itself approve." if found_approval else "No self-approval heard."
         )
 
 

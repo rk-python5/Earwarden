@@ -1,4 +1,4 @@
-"""The `earshot` command's client: how long it waits for the daemon's reply."""
+"""The `earwarden` command's client: how long it waits for the daemon's reply."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from earshot import paths, wire
-from earshot.daemon import client
+from earwarden import paths, wire
+from earwarden.daemon import client
 
 
 def _answer_after(server: socket.socket, delay: float, ready: threading.Event) -> None:
